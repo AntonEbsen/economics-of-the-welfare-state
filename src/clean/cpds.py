@@ -55,7 +55,7 @@ def filter_cpds_32countries(
     Filter CPDS data to:
     - The same 32 countries used in the analysis
     - Year range (default 1980-2023)
-    - Keep only: country, year, sstran, deficit, debt
+    - Keep only: iso3, year, sstran, deficit, debt
     """
     out = df.copy()
     
@@ -75,7 +75,7 @@ def filter_cpds_32countries(
             out = out[out["year"] <= year_max]
     
     # Keep only required columns
-    required_cols = ["country", "year"]
+    required_cols = ["iso3", "year"]
     data_cols = ["sstran", "deficit", "debt"]
     
     # Check which columns exist
@@ -86,8 +86,8 @@ def filter_cpds_32countries(
     
     out = out[existing_cols].copy()
     
-    # Sort by country and year
-    out = out.sort_values(["country", "year"]).reset_index(drop=True)
+    # Sort by iso3 and year
+    out = out.sort_values(["iso3", "year"]).reset_index(drop=True)
     
     return out
 

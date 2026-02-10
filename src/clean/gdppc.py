@@ -269,6 +269,17 @@ def filter_32_and_log(df_mapped: pd.DataFrame, cfg: GDPPCConfig = GDPPCConfig())
     return out
 
 
+def get_final_gdppc(df_mapped: pd.DataFrame, cfg: GDPPCConfig = GDPPCConfig()) -> pd.DataFrame:
+    """
+    Filter to 32 countries and return minimal columns: iso3, year, ln_gdppc
+    This is the final clean output for merging with other datasets.
+    """
+    df_full = filter_32_and_log(df_mapped, cfg=cfg)
+    
+    # Keep only essential columns
+    return df_full[["iso3", "year", "ln_gdppc"]].copy()
+
+
 def save_processed(df: pd.DataFrame, out_path: Union[str, Path]) -> Path:
     """
     Save processed dataset to .parquet or .csv
