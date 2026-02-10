@@ -34,7 +34,11 @@ def read_inflation_excel(path: str | Path, sheet_name: str | int = 0) -> pd.Data
 
     # 1. Try Calamine first (most robust against style corruption)
     try:
-        from python_calamine import CalamineWorkbook
+        try:
+            from python_calamine import CalamineWorkbook
+        except ImportError:
+            from calamine import CalamineWorkbook
+            
         workbook = CalamineWorkbook.from_path(str(path))
         sheet_names = workbook.sheet_names
         target = sheet_names[sheet_name] if isinstance(sheet_name, int) else sheet_name

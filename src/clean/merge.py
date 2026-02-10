@@ -45,14 +45,22 @@ def merge_all_datasets(
     first_key = next(k for k in dataset_order if k in available)
     master = available[first_key].copy()
     
+    if "country" in master.columns:
+        master = master.drop(columns=["country"])
+        
     print(f"Starting merge with {first_key}: {len(master)} rows")
     
     # Merge each subsequent dataset
     for name in dataset_order:
         if name in available and name != first_key:
             before_rows = len(master)
+            # Drop 'country' if it exists to keep only 'iso3' as requested
+            other_df = available[name]
+            if "country" in other_df.columns:
+                other_df = other_df.drop(columns=["country"])
+            
             master = master.merge(
-                available[name],
+                other_df,
                 on=['iso3', 'year'],
                 how=how,
                 validate=validate

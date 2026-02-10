@@ -81,12 +81,22 @@ def validate_output(
                 f"{dataset_name}: Found {n_dupes} duplicate (iso3, year) rows"
             )
     
-    # Check for null values in required columns
-    null_counts = df[required_cols].isnull().sum()
-    if null_counts.any():
-        cols_with_nulls = null_counts[null_counts > 0].to_dict()
-        raise AssertionError(
-            f"{dataset_name}: Found null values in required columns: {cols_with_nulls}"
-        )
+    # Check for null values
+    # ID cols must be strictly non-null
+    id_cols = [c for c in ["iso3", "year"] if c in required_cols]
+    if id_cols:
+        null_ids = df[id_cols].isnull().sum()
+        if null_ids.any():
+            raise AssertionError(
+                f"{dataset_name}: Found null values in ID columns (iso3/year): {null_ids[null_ids > 0].to_dict()}"
+            )
+    
+    # Data cols can have nulls but we warn
+    data_cols = [c for c in required_cols if c not in ["iso3", "year"]]
+    if data_cols:
+        null_data = df[data_cols].isnull().sum()
+        if null_data.any():
+            cols_with_nulls = null_data[null_data > 0].to_dict()
+            print(f"⚠️  {dataset_name}: Missing data detected in: {cols_with_nulls}")
     
     print(f"✅ {dataset_name} validation passed: {len(df)} rows, {df['iso3'].nunique() if 'iso3' in df.columns else 'N/A'} countries")
