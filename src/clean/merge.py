@@ -17,7 +17,7 @@ def merge_all_datasets(
     
     Args:
         results_dict: Dictionary from process_all_datasets() with keys:
-                     'cpds', 'population', 'gdppc', 'inflation', 'dependency'
+                     'cpds', 'population', 'gdppc', 'inflation', 'dependency', 'kof'
         how: Type of merge ('inner', 'outer', 'left')
             - 'inner': Only keep rows with data in ALL datasets
             - 'outer': Keep all rows from all datasets (may have NaNs)
@@ -41,7 +41,7 @@ def merge_all_datasets(
         raise ValueError("No datasets available to merge (all are None)")
     
     # Start with the first available dataset
-    dataset_order = ['cpds', 'population', 'gdppc', 'inflation', 'dependency']
+    dataset_order = ['cpds', 'population', 'gdppc', 'inflation', 'dependency', 'kof']
     first_key = next(k for k in dataset_order if k in available)
     master = available[first_key].copy()
     

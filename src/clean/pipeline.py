@@ -20,7 +20,7 @@ def process_all_datasets(
     validate: bool = True,
 ) -> dict[str, pd.DataFrame]:
     """
-    Process all datasets (CPDS, Population, GDP, Inflation, Dependency) in one call.
+    Process all datasets (CPDS, Population, GDP, Inflation, Dependency, KOF) in one call.
     
     Args:
         repo_root: Path to repository root
@@ -30,7 +30,7 @@ def process_all_datasets(
         validate: If True, validate outputs before returning
         
     Returns:
-        Dictionary with keys: 'cpds', 'population', 'gdppc', 'inflation', 'dependency'
+        Dictionary with keys: 'cpds', 'population', 'gdppc', 'inflation', 'dependency', 'kof'
         Each value is a processed DataFrame
     """
     results = {}
@@ -215,10 +215,46 @@ def process_all_datasets(
         print(f"❌ Dependency Ratio failed: {e}")
         results['dependency'] = None
     
+    # 6. KOF Globalization Index
+    print("\n🌍 Processing KOF Globalization Index...")
+    try:
+        from .kofgi import (
+            KOFConfig,
+            read_kof_excel,
+            standardize_kof,
+            filter_kof_32countries,
+            save_processed as save_kof
+        )
+        
+        kof_cfg = KOFConfig(year_min=year_min, year_max=year_max)
+        df_kof_raw = read_kof_excel(raw_path / "KOF_index_raw.xlsx")
+        df_kof_std = standardize_kof(df_kof_raw)
+        df_kof = filter_kof_32countries(df_kof_std, cfg=kof_cfg)
+        
+        if validate:
+            validate_output(
+                df_kof,
+                required_cols=["iso3", "year", "KOFGI"],
+                dataset_name="KOF Globalization Index",
+                year_min=year_min,
+                year_max=year_max,
+                expect_32_countries=False
+            )
+        
+        if save_outputs:
+            save_kof(df_kof, processed_path / f"kofgi_32countries_{year_min}_{year_max}.parquet")
+            save_kof(df_kof, processed_path / f"kofgi_32countries_{year_min}_{year_max}.csv")
+        
+        results['kof'] = df_kof
+        print(f"✅ KOF Index: {len(df_kof)} rows")
+    except Exception as e:
+        print(f"❌ KOF failed: {e}")
+        results['kof'] = None
+    
     # Summary
     print("\n" + "=" * 60)
     successful = sum(1 for v in results.values() if v is not None)
-    print(f"✅ Completed: {successful}/5 datasets processed successfully")
+    print(f"✅ Completed: {successful}/6 datasets processed successfully")
     print("=" * 60)
     
     return results
