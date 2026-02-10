@@ -154,7 +154,7 @@ def process_all_datasets(
             save_inflation
         )
         
-        df_inf_raw = read_inflation_excel(raw_path / "Inflation_CPI.xlsx")
+        df_inf_raw = read_inflation_excel(raw_path / "Inflation_cpi.xlsx")
         df_inf_long = standardize_inflation_to_long(df_inf_raw)
         df_inf_mapped = map_inflation_to_iso3(df_inf_long)
         df_inf = filter_inflation_32(df_inf_mapped, year_min=year_min, year_max=year_max)
