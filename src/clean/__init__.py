@@ -8,6 +8,15 @@ This package provides utilities for processing and cleaning economic datasets.
 from .pipeline import process_all_datasets
 from .merge import merge_all_datasets, get_merge_summary, save_master_dataset
 
+# Shared utilities
+from .utils import (
+    map_country_to_iso3,
+    filter_to_target_countries,
+    filter_to_year_range,
+    save_dataframe,
+)
+from .worldbank import WorldBankProcessor
+
 # Validation
 from .validation import validate_output
 

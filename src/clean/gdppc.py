@@ -9,7 +9,8 @@ import numpy as np
 import pandas as pd
 
 # Import from centralized constants
-from .constants import TARGET_ISO3_32, COUNTRY_TO_ISO3
+from .constants import TARGET_ISO3_32
+from .utils import map_country_to_iso3, save_dataframe
 
 
 
@@ -172,10 +173,7 @@ def standardize_gdppc_to_long(df_raw: pd.DataFrame, cfg: GDPPCConfig = GDPPCConf
     return df_long
 
 
-def map_country_to_iso3(df_long: pd.DataFrame) -> pd.DataFrame:
-    out = df_long.copy()
-    out["iso3"] = out["country"].map(COUNTRY_TO_ISO3)
-    return out
+# Removed: Now using shared map_country_to_iso3 from utils.py
 
 
 def report_unmapped_countries(df_long: pd.DataFrame) -> pd.Series:
@@ -238,15 +236,4 @@ def save_processed(df: pd.DataFrame, out_path: Union[str, Path]) -> Path:
     """
     Save processed dataset to .parquet or .csv
     """
-    out_path = Path(out_path)
-    out_path.parent.mkdir(parents=True, exist_ok=True)
-
-    suf = out_path.suffix.lower()
-    if suf == ".parquet":
-        df.to_parquet(out_path, index=False)
-    elif suf == ".csv":
-        df.to_csv(out_path, index=False)
-    else:
-        raise ValueError("Output must end with .parquet or .csv")
-
-    return out_path
+    return save_dataframe(df, out_path)

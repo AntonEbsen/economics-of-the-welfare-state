@@ -11,6 +11,7 @@ import re
 
 # Import from centralized constants
 from .constants import TARGET_ISO3_32
+from .utils import save_dataframe
 
 
 @dataclass(frozen=True)
@@ -145,18 +146,5 @@ def filter_32_and_log(long_pop: pd.DataFrame, cfg: PopulationConfig = Population
 
 
 def save_processed(df: pd.DataFrame, out_path: Union[str, Path]) -> Path:
-    """
-    Save processed dataset to .parquet or .csv
-    """
-    out_path = Path(out_path)
-    out_path.parent.mkdir(parents=True, exist_ok=True)
-
-    suf = out_path.suffix.lower()
-    if suf == ".parquet":
-        df.to_parquet(out_path, index=False)
-    elif suf == ".csv":
-        df.to_csv(out_path, index=False)
-    else:
-        raise ValueError("Output must end with .parquet or .csv")
-
-    return out_path
+    """Save processed population dataset to .parquet or .csv."""
+    return save_dataframe(df, out_path)

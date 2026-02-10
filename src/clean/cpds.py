@@ -12,6 +12,7 @@ import pandas as pd
 
 # Import the same 32 countries from centralized constants
 from .constants import TARGET_ISO3_32
+from .utils import save_dataframe
 
 
 def read_cpds_excel(path: str | Path, sheet_name: str | int = 0) -> pd.DataFrame:
@@ -94,14 +95,4 @@ def filter_cpds_32countries(
 
 def save_cpds(df: pd.DataFrame, out_path: str | Path) -> Path:
     """Save processed CPDS data to parquet or CSV."""
-    out_path = Path(out_path)
-    out_path.parent.mkdir(parents=True, exist_ok=True)
-    
-    if out_path.suffix.lower() == ".parquet":
-        df.to_parquet(out_path, index=False)
-    elif out_path.suffix.lower() == ".csv":
-        df.to_csv(out_path, index=False)
-    else:
-        raise ValueError("Output must end with .parquet or .csv")
-    
-    return out_path
+    return save_dataframe(df, out_path)

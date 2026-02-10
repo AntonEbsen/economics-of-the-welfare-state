@@ -8,6 +8,7 @@ import pandas as pd
 
 # Import centralized constants
 from .constants import TARGET_ISO3_32
+from .utils import save_dataframe
 
 NAME_MAP = {
     # common variants you mentioned
@@ -106,15 +107,5 @@ def assert_exact_32(df: pd.DataFrame, expected_iso3: Iterable[str] = TARGET_ISO3
 
 
 def save_processed(df: pd.DataFrame, out_path: str | Path) -> Path:
-    out_path = Path(out_path)
-    out_path.parent.mkdir(parents=True, exist_ok=True)
-
-    # parquet preferred (fast + preserves dtypes), csv okay too
-    if out_path.suffix.lower() == ".parquet":
-        df.to_parquet(out_path, index=False)
-    elif out_path.suffix.lower() == ".csv":
-        df.to_csv(out_path, index=False)
-    else:
-        raise ValueError("Output must end with .parquet or .csv")
-
-    return out_path
+    """Save processed KOF data to .parquet or .csv."""
+    return save_dataframe(df, out_path)
