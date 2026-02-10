@@ -8,55 +8,9 @@ from typing import Optional, Union
 import numpy as np
 import pandas as pd
 
+# Import from centralized constants
+from .constants import TARGET_ISO3_32, COUNTRY_TO_ISO3
 
-# --- Target sample (your 32 countries) ---
-TARGET_ISO3_32 = {
-    "AUS","AUT","BEL","BGR","CAN","CZE","DNK","EST","FIN","FRA","DEU","GRC","HUN","ISL",
-    "IRL","ITA","JPN","LVA","LTU","LUX","NLD","NZL","NOR","POL","PRT","SVK","SVN","ESP",
-    "SWE","CHE","GBR","USA"
-}
-
-# Country-name mapping (extend if your GDP file uses variants)
-COUNTRY_TO_ISO3 = {
-    "Australia": "AUS",
-    "Austria": "AUT",
-    "Belgium": "BEL",
-    "Bulgaria": "BGR",
-    "Canada": "CAN",
-    "Czech Republic": "CZE",
-    "Czechia": "CZE",
-    "Denmark": "DNK",
-    "Estonia": "EST",
-    "Finland": "FIN",
-    "France": "FRA",
-    "Germany": "DEU",
-    "Greece": "GRC",
-    "Hungary": "HUN",
-    "Iceland": "ISL",
-    "Ireland": "IRL",
-    "Italy": "ITA",
-    "Japan": "JPN",
-    "Latvia": "LVA",
-    "Lithuania": "LTU",
-    "Luxembourg": "LUX",
-    "Netherlands": "NLD",
-    "New Zealand": "NZL",
-    "Norway": "NOR",
-    "Poland": "POL",
-    "Portugal": "PRT",
-    "Slovak Republic": "SVK",
-    "Slovakia": "SVK",
-    "Slovenia": "SVN",
-    "Spain": "ESP",
-    "Sweden": "SWE",
-    "Switzerland": "CHE",
-    "United Kingdom": "GBR",
-    "UK": "GBR",
-    "U.K.": "GBR",
-    "United States": "USA",
-    "United States of America": "USA",
-    "USA": "USA",
-}
 
 
 @dataclass(frozen=True)

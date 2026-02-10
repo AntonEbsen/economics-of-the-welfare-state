@@ -1,0 +1,224 @@
+"""
+Master data processing pipeline.
+Processes all datasets with a single function call.
+"""
+from __future__ import annotations
+
+from pathlib import Path
+from typing import Optional
+import pandas as pd
+
+from .constants import DEFAULT_YEAR_MIN, DEFAULT_YEAR_MAX
+from .validation import validate_output
+
+
+def process_all_datasets(
+    repo_root: Path,
+    year_min: int = DEFAULT_YEAR_MIN,
+    year_max: int = DEFAULT_YEAR_MAX,
+    save_outputs: bool = True,
+    validate: bool = True,
+) -> dict[str, pd.DataFrame]:
+    """
+    Process all datasets (CPDS, Population, GDP, Inflation, Dependency) in one call.
+    
+    Args:
+        repo_root: Path to repository root
+        year_min: Minimum year to include
+        year_max: Maximum year to include
+        save_outputs: If True, save processed data to parquet and CSV
+        validate: If True, validate outputs before returning
+        
+    Returns:
+        Dictionary with keys: 'cpds', 'population', 'gdppc', 'inflation', 'dependency'
+        Each value is a processed DataFrame
+    """
+    results = {}
+    repo_root = Path(repo_root)
+    raw_path = repo_root / "data" / "raw"
+    processed_path = repo_root / "data" / "processed"
+    
+    print("=" * 60)
+    print("🔄 Processing all datasets...")
+    print("=" * 60)
+    
+    # 1. CPDS
+    print("\n📊 Processing CPDS...")
+    try:
+        from .cpds import read_cpds_excel, standardize_cpds, filter_cpds_32countries, save_cpds
+        
+        df_cpds_raw = read_cpds_excel(raw_path / "cpds_raw.xlsx")
+        df_cpds_std = standardize_cpds(df_cpds_raw)
+        df_cpds = filter_cpds_32countries(df_cpds_std, year_min=year_min, year_max=year_max)
+        
+        if validate:
+            validate_output(
+                df_cpds, 
+                required_cols=["iso3", "year", "sstran", "deficit", "debt"],
+                dataset_name="CPDS",
+                year_min=year_min,
+                year_max=year_max,
+                expect_32_countries=False  # Not all countries have all years
+            )
+        
+        if save_outputs:
+            save_cpds(df_cpds, processed_path / f"cpds_32countries_{year_min}_{year_max}.parquet")
+            save_cpds(df_cpds, processed_path / f"cpds_32countries_{year_min}_{year_max}.csv")
+        
+        results['cpds'] = df_cpds
+        print(f"✅ CPDS: {len(df_cpds)} rows")
+    except Exception as e:
+        print(f"❌ CPDS failed: {e}")
+        results['cpds'] = None
+    
+    # 2. Population
+    print("\n👥 Processing Population...")
+    try:
+        from .population import (
+            read_population_excel, 
+            standardize_worldbank_population_to_long,
+            filter_32_and_log as filter_pop_32,
+            save_processed as save_population
+        )
+        
+        df_pop_raw = read_population_excel(raw_path / "Population_raw.xlsx")
+        df_pop_long = standardize_worldbank_population_to_long(df_pop_raw)
+        df_pop = filter_pop_32(df_pop_long)  # Uses default year range
+        
+        if validate:
+            validate_output(
+                df_pop,
+                required_cols=["iso3", "year", "ln_population"],
+                dataset_name="Population",
+                year_min=year_min,
+                year_max=year_max,
+                expect_32_countries=False
+            )
+        
+        if save_outputs:
+            save_population(df_pop, processed_path / f"population_32countries_{year_min}_{year_max}.parquet")
+            save_population(df_pop, processed_path / f"population_32countries_{year_min}_{year_max}.csv")
+        
+        results['population'] = df_pop
+        print(f"✅ Population: {len(df_pop)} rows")
+    except Exception as e:
+        print(f"❌ Population failed: {e}")
+        results['population'] = None
+    
+    # 3. GDP per capita
+    print("\n💰 Processing GDP per capita...")
+    try:
+        from .gdppc import (
+            GDPPCConfig,
+            read_gdppc_excel,
+            standardize_gdppc_to_long,
+            map_country_to_iso3 as map_gdp_to_iso3,
+            get_final_gdppc,
+            save_processed as save_gdppc
+        )
+        
+        cfg = GDPPCConfig(year_min=year_min, year_max=year_max, country_col="Reference area")
+        df_gdp_raw = read_gdppc_excel(raw_path / "GDP_per_capita.xlsx")
+        df_gdp_long = standardize_gdppc_to_long(df_gdp_raw, cfg=cfg)
+        df_gdp_mapped = map_gdp_to_iso3(df_gdp_long)
+        df_gdp = get_final_gdppc(df_gdp_mapped, cfg=cfg)
+        
+        if validate:
+            validate_output(
+                df_gdp,
+                required_cols=["iso3", "year", "ln_gdppc"],
+                dataset_name="GDP per capita",
+                year_min=year_min,
+                year_max=year_max,
+                expect_32_countries=False
+            )
+        
+        if save_outputs:
+            save_gdppc(df_gdp, processed_path / f"gdppc_32countries_{year_min}_{year_max}.parquet")
+            save_gdppc(df_gdp, processed_path / f"gdppc_32countries_{year_min}_{year_max}.csv")
+        
+        results['gdppc'] = df_gdp
+        print(f"✅ GDP per capita: {len(df_gdp)} rows")
+    except Exception as e:
+        print(f"❌ GDP per capita failed: {e}")
+        results['gdppc'] = None
+    
+    # 4. Inflation CPI
+    print("\n📈 Processing Inflation CPI...")
+    try:
+        from .inflation import (
+            read_inflation_excel,
+            standardize_inflation_to_long,
+            map_country_to_iso3 as map_inflation_to_iso3,
+            filter_32_countries as filter_inflation_32,
+            save_inflation
+        )
+        
+        df_inf_raw = read_inflation_excel(raw_path / "Inflation_CPI.xlsx")
+        df_inf_long = standardize_inflation_to_long(df_inf_raw)
+        df_inf_mapped = map_inflation_to_iso3(df_inf_long)
+        df_inf = filter_inflation_32(df_inf_mapped, year_min=year_min, year_max=year_max)
+        
+        if validate:
+            validate_output(
+                df_inf,
+                required_cols=["iso3", "year", "inflation_cpi"],
+                dataset_name="Inflation CPI",
+                year_min=year_min,
+                year_max=year_max,
+                expect_32_countries=False
+            )
+        
+        if save_outputs:
+            save_inflation(df_inf, processed_path / f"inflation_32countries_{year_min}_{year_max}.parquet")
+            save_inflation(df_inf, processed_path / f"inflation_32countries_{year_min}_{year_max}.csv")
+        
+        results['inflation'] = df_inf
+        print(f"✅ Inflation CPI: {len(df_inf)} rows")
+    except Exception as e:
+        print(f"❌ Inflation CPI failed: {e}")
+        results['inflation'] = None
+    
+    # 5. Dependency Ratio
+    print("\n👶👴 Processing Dependency Ratio...")
+    try:
+        from .dependency_ratio import (
+            read_dependency_excel,
+            standardize_dependency_to_long,
+            map_country_to_iso3 as map_dep_to_iso3,
+            filter_32_countries as filter_dep_32,
+            save_dependency
+        )
+        
+        df_dep_raw = read_dependency_excel(raw_path / "Dependency_ratio.xlsx")
+        df_dep_long = standardize_dependency_to_long(df_dep_raw)
+        df_dep_mapped = map_dep_to_iso3(df_dep_long)
+        df_dep = filter_dep_32(df_dep_mapped, year_min=year_min, year_max=year_max)
+        
+        if validate:
+            validate_output(
+                df_dep,
+                required_cols=["iso3", "year", "dependency_ratio"],
+                dataset_name="Dependency Ratio",
+                year_min=year_min,
+                year_max=year_max,
+                expect_32_countries=False
+            )
+        
+        if save_outputs:
+            save_dependency(df_dep, processed_path / f"dependency_ratio_32countries_{year_min}_{year_max}.parquet")
+            save_dependency(df_dep, processed_path / f"dependency_ratio_32countries_{year_min}_{year_max}.csv")
+        
+        results['dependency'] = df_dep
+        print(f"✅ Dependency Ratio: {len(df_dep)} rows")
+    except Exception as e:
+        print(f"❌ Dependency Ratio failed: {e}")
+        results['dependency'] = None
+    
+    # Summary
+    print("\n" + "=" * 60)
+    successful = sum(1 for v in results.values() if v is not None)
+    print(f"✅ Completed: {successful}/5 datasets processed successfully")
+    print("=" * 60)
+    
+    return results

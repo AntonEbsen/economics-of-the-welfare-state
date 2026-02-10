@@ -10,8 +10,8 @@ from typing import Iterable
 
 import pandas as pd
 
-# Import the same 32 countries from kofgi
-from clean.kofgi import TARGET_ISO3_32
+# Import the same 32 countries from centralized constants
+from .constants import TARGET_ISO3_32
 
 
 def read_cpds_excel(path: str | Path, sheet_name: str | int = 0) -> pd.DataFrame:

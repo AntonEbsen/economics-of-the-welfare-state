@@ -9,13 +9,8 @@ import numpy as np
 import pandas as pd
 import re
 
-
-# --- Target sample (your 32 countries) ---
-TARGET_ISO3_32 = {
-    "AUS","AUT","BEL","BGR","CAN","CZE","DNK","EST","FIN","FRA","DEU","GRC","HUN","ISL",
-    "IRL","ITA","JPN","LVA","LTU","LUX","NLD","NZL","NOR","POL","PRT","SVK","SVN","ESP",
-    "SWE","CHE","GBR","USA"
-}
+# Import from centralized constants
+from .constants import TARGET_ISO3_32
 
 
 @dataclass(frozen=True)

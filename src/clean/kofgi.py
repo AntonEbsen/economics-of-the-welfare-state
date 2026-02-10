@@ -6,12 +6,8 @@ from typing import Iterable
 
 import pandas as pd
 
-
-TARGET_ISO3_32 = {
-    "AUS","AUT","BEL","BGR","CAN","CZE","DNK","EST","FIN","FRA","DEU","GRC","HUN","ISL",
-    "IRL","ITA","JPN","LVA","LTU","LUX","NLD","NZL","NOR","POL","PRT","SVK","SVN","ESP",
-    "SWE","CHE","GBR","USA"
-}
+# Import centralized constants
+from .constants import TARGET_ISO3_32
 
 NAME_MAP = {
     # common variants you mentioned
