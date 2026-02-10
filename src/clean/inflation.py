@@ -17,64 +17,82 @@ from .constants import TARGET_ISO3_32, COUNTRY_TO_ISO3
 def read_inflation_excel(path: str | Path, sheet_name: str | int = 0) -> pd.DataFrame:
     """
     Read Inflation CPI Excel file with extreme robustness.
-    If default read fails due to style corruption, it attempts to:
-    1. Use Calamine engine.
-    2. Manually strip styles from the zip package and retry.
+    Includes smart header detection to skip metadata rows.
     """
     path = Path(path)
     if not path.exists():
         raise FileNotFoundError(f"File not found: {path.resolve()}")
     
-    # 1. Try standard pandas read
-    try:
-        return pd.read_excel(path, sheet_name=sheet_name)
-    except Exception as e:
-        error_msg = str(e)
-        print(f"⚠️  Pandas default read failed for {path.name}: {error_msg}")
-        
-    # 2. Try Calamine (best fallback if available)
+    # helper for smart header detection
+    def find_header_row(data_rows):
+        keywords = {"country", "reference area", "ref_area", "iso3", "location"}
+        for i, row in enumerate(data_rows[:20]):
+            row_str = [str(c).lower().strip() for c in row if c is not None]
+            if any(k in row_str for k in keywords):
+                return i
+        return 0
+
+    # 1. Try Calamine first (most robust against style corruption)
     try:
         from python_calamine import CalamineWorkbook
-        print("🚀 Attempting direct Calamine extraction...")
         workbook = CalamineWorkbook.from_path(str(path))
         sheet_names = workbook.sheet_names
         target = sheet_names[sheet_name] if isinstance(sheet_name, int) else sheet_name
         data = workbook.get_sheet_by_name(target).to_python()
+        
         if data:
-            return pd.DataFrame(data[1:], columns=data[0])
-    except Exception:
-        pass
+            header_idx = find_header_row(data)
+            df = pd.DataFrame(data[header_idx + 1:], columns=data[header_idx])
+            return df
+    except Exception as e:
+        print(f"⚠️  Calamine read failed: {e}")
 
-    # 3. CRITICAL FALLBACK: Style Stripping
-    # The 'expected Fill' error is caused by corrupted style XML. 
-    # We can fix this by removing xl/styles.xml from a temp copy of the file.
+    # 2. Try standard pandas read with manual header detection
+    try:
+        # Load a few rows to find header
+        preview = pd.read_excel(path, sheet_name=sheet_name, nrows=20, header=None)
+        data_preview = preview.values.tolist()
+        header_idx = find_header_row(data_preview)
+        
+        # Reload with correct header
+        return pd.read_excel(path, sheet_name=sheet_name, header=header_idx)
+    except Exception as e:
+        error_msg = str(e)
+        print(f"⚠️  Pandas read failed: {error_msg}")
+        
+    # 3. CRITICAL FALLBACK: Style Stripping (if it's a style error)
     if "expected" in error_msg and "Fill" in error_msg:
         import zipfile
         import tempfile
-        import shutil
-        import os
-        
         print("🛠️  Corrupted Excel styles detected. Cleaning file metadata...")
-        
         try:
             with tempfile.TemporaryDirectory() as tmpdir:
                 tmp_path = Path(tmpdir) / "cleaned_data.xlsx"
-                
-                # Copy original to temp, but skip the problematic styles file
                 with zipfile.ZipFile(path, 'r') as zin:
                     with zipfile.ZipFile(tmp_path, 'w') as zout:
                         for item in zin.infolist():
-                            # Skip the styles file which is usually the source of the crash
                             if item.filename != 'xl/styles.xml':
                                 zout.writestr(item, zin.read(item.filename))
                 
-                # Now try to read the "style-free" version
-                print("🔍 Attempting to read cleaned version...")
-                # We use openpyxl engine specifically as it's most likely to work with styles missing
-                return pd.read_excel(tmp_path, sheet_name=sheet_name, engine='openpyxl')
-                
+                # Try reading the cleaned version with header detection
+                preview = pd.read_excel(tmp_path, sheet_name=sheet_name, nrows=20, header=None, engine='openpyxl')
+                header_idx = find_header_row(preview.values.tolist())
+                return pd.read_excel(tmp_path, sheet_name=sheet_name, header=header_idx, engine='openpyxl')
         except Exception as clean_e:
             print(f"❌ Style cleaning failed: {clean_e}")
+
+    # 4. Final attempt: Manual openpyxl
+    try:
+        import openpyxl
+        wb = openpyxl.load_workbook(path, data_only=True, read_only=True)
+        ws = wb.worksheets[sheet_name] if isinstance(sheet_name, int) else wb[sheet_name]
+        data = [row for row in ws.iter_rows(values_only=True)]
+        if data:
+            header_idx = find_header_row(data)
+            return pd.DataFrame(data[header_idx + 1:], columns=data[header_idx])
+    except Exception as final_e:
+        print(f"❌ All extraction methods failed for {path.name}")
+        raise final_e
 
     # 4. Final attempt: Manual openpyxl with values_only=True
     try:
