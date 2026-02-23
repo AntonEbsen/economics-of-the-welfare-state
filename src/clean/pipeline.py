@@ -236,7 +236,7 @@ def process_all_datasets(
         if validate:
             validate_output(
                 df_kof,
-                required_cols=["iso3", "year", "KOFGI"],
+                required_cols=["iso3", "year", "KOFGI", "KOFEcGI", "KOFSoGI", "KOFPoGI"],
                 dataset_name="KOF Globalization Index",
                 year_min=year_min,
                 year_max=year_max,

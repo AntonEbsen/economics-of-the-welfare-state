@@ -71,15 +71,21 @@ def filter_kof_32countries(df: pd.DataFrame, cfg: KOFConfig = KOFConfig()) -> pd
     if cfg.year_max is not None:
         out = out[out["year"] <= cfg.year_max]
 
-    # drop rows with all index columns missing (optional but usually sensible)
-    index_cols = [c for c in out.columns if c.startswith("KOF") or c.startswith("KOFGI")]
-    if cfg.drop_all_missing_index and index_cols:
-        out = out.dropna(subset=index_cols, how="all")
-
+    # select core indices
+    core_indices = ["KOFGI", "KOFEcGI", "KOFSoGI", "KOFPoGI"]
+    
+    # check which ones exist in the dataframe to avoid errors
+    available_indices = [c for c in core_indices if c in out.columns]
+    
     # identifiers first
     id_cols = ["code", "country_clean", "year"]
-    other_cols = [c for c in out.columns if c not in id_cols and c != "country"]
-    out = out[id_cols + other_cols].sort_values(["country_clean", "year"]).reset_index(drop=True)
+    
+    # drop rows with all index columns missing (optional but usually sensible)
+    if cfg.drop_all_missing_index and available_indices:
+        out = out.dropna(subset=available_indices, how="all")
+
+    # final selection
+    out = out[id_cols + available_indices].sort_values(["country_clean", "year"]).reset_index(drop=True)
 
     # rename for downstream merges
     out = out.rename(columns={"code": "iso3", "country_clean": "country"})
