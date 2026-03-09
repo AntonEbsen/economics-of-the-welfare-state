@@ -208,3 +208,56 @@ def fill_panel_gaps(
     
     print(f"✅ Filled gaps using {method} interpolation")
     return result
+
+
+def add_welfare_regimes(df: pd.DataFrame, id_var: str = 'iso3') -> pd.DataFrame:
+    """
+    Categorize countries into welfare regimes and create indicator dummies.
+    
+    Welfare regimes included:
+    - Liberal
+    - Conservative (Corporatist)
+    - Social Democrat
+    - Mediterranean
+    - Post-Communist
+    
+    Args:
+        df: Panel DataFrame
+        id_var: Country identifier (ISO3)
+        
+    Returns:
+        DataFrame with indicator columns and 'welfare_regime' categorical column.
+    """
+    from .constants import WELFARE_REGIME_MAP
+    
+    result = df.copy()
+    
+    # 1. Create individual indicator columns (dummies)
+    # Note: A country can belong to multiple regimes (e.g., Mediterranean countries 
+    # are often also in the Conservative list)
+    for regime, list_iso3 in WELFARE_REGIME_MAP.items():
+        col_name = f"regime_{regime.lower().replace(' ', '_').replace('-', '_')}"
+        result[col_name] = result[id_var].isin(list_iso3).astype(int)
+        print(f"✅ Created indicator: {col_name}")
+        
+    # 2. Create a single 'welfare_regime' categorical column
+    # We apply prioritizing logic for overlaps
+    def get_regime(iso3):
+        # Priority: Mediterranean > Post-Communist > Social Democrat > Conservative > Liberal
+        # This highlights the specific Mediterranean sub-type over General Conservative
+        if iso3 in WELFARE_REGIME_MAP.get("Mediterranean", []):
+            return "Mediterranean"
+        if iso3 in WELFARE_REGIME_MAP.get("Post-Communist", []):
+            return "Post-Communist"
+        if iso3 in WELFARE_REGIME_MAP.get("Social Democrat", []):
+            return "Social Democrat"
+        if iso3 in WELFARE_REGIME_MAP.get("Conservative", []):
+            return "Conservative"
+        if iso3 in WELFARE_REGIME_MAP.get("Liberal", []):
+            return "Liberal"
+        return "Other"
+
+    result["welfare_regime"] = result[id_var].apply(get_regime)
+    print("✅ Created categorical column: welfare_regime")
+    
+    return result

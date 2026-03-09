@@ -57,3 +57,14 @@ COUNTRY_TO_ISO3 = {
 # Default year range for processing
 DEFAULT_YEAR_MIN = 1980
 DEFAULT_YEAR_MAX = 2023
+
+# --- Welfare Regime Mappings ---
+# Based on Esping-Andersen (1990) and subsequent classifications
+# Note: Some countries belong to multiple categories (e.g., Mediterranean is a subset of Conservative/other)
+WELFARE_REGIME_MAP = {
+    "Liberal": ["AUS", "CAN", "JPN", "IRL", "NZL", "GBR", "USA"],
+    "Conservative": ["AUT", "BEL", "FRA", "DEU", "GRC", "ITA", "LUX", "NLD", "PRT", "ESP", "CHE"],
+    "Social Democrat": ["DNK", "FIN", "NOR", "SWE"],
+    "Mediterranean": ["GRC", "ITA", "PRT", "ESP"],
+    "Post-Communist": ["BGR", "HRV", "CZE", "EST", "HUN", "LVA", "LTU", "POL", "ROU", "SVK", "SVN", "UKR"]
+}
