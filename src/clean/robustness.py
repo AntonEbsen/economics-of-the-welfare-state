@@ -114,7 +114,10 @@ def _winsorize_data(df: pd.DataFrame, formula: str, limits: tuple = (0.01, 0.01)
     df_wins = df.copy()
     for var in vars_in_formula:
         if df[var].dtype in [np.float64, np.int64]:
-            df_wins[var] = mstats.winsorize(df[var].dropna(), limits=limits)
+            # Only winsorize non-null rows; assign back by index to preserve length
+            non_null_mask = df[var].notna()
+            winsorized_vals = mstats.winsorize(df.loc[non_null_mask, var], limits=limits)
+            df_wins.loc[non_null_mask, var] = winsorized_vals
     
     return df_wins
 
