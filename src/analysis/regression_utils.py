@@ -156,7 +156,48 @@ def plot_coefficients(results, title: str = "Regression Coefficients"):
                  fmt='o', color='royalblue', capsize=5, markersize=8)
     
     plt.axvline(x=0, color='red', linestyle='--', alpha=0.7)
-    plt.xlabel("Coefficient Estimate (95% CI)")
-    plt.title(title)
     plt.tight_layout()
     plt.show()
+
+def adjust_pvalues(pvalues: pd.Series, method: str = 'fdr_bh') -> pd.DataFrame:
+    """
+    Adjust p-values for multiple hypothesis testing.
+    
+    Args:
+        pvalues: Series of raw p-values.
+        method: Correction method ('fdr_bh' for Benjamini-Hochberg, 'bonferroni', etc.)
+    """
+    from statsmodels.stats.multitest import multipletests
+    
+    rejected, corrected, _, _ = multipletests(pvalues, alpha=0.05, method=method)
+    
+    return pd.DataFrame({
+        'Variable': pvalues.index,
+        'Raw P-Value': pvalues.values,
+        'Corrected P-Value': corrected,
+        'Significant (0.05)': rejected
+    })
+
+def run_placebo_test(ols_data: pd.DataFrame, dep_var: str, indep_var: str, exog_vars: list[str], n_sims: int = 100):
+    """
+    Run a placebo test by shuffling the independent variable.
+    
+    Args:
+        ols_data: DataFrame for regression.
+        dep_var: Dependent variable.
+        indep_var: The variable to shuffle.
+        exog_vars: All exogenous variables (including the one to be shuffled).
+        n_sims: Number of simulations.
+    """
+    coefficients = []
+    
+    for _ in range(n_sims):
+        mock_data = ols_data.copy()
+        # Shuffle the independent variable within each entity (country) to preserve structure
+        # but destroy the correlation with the dependent variable
+        mock_data[indep_var] = mock_data.groupby(level=0)[indep_var].transform(np.random.permutation)
+        
+        results = run_panel_ols(mock_data, dep_var, exog_vars)
+        coefficients.append(results.params[indep_var])
+        
+    return np.array(coefficients)
