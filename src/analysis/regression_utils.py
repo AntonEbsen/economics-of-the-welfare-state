@@ -117,4 +117,46 @@ def generate_marginal_effects(results, g_var: str) -> pd.DataFrame:
         "Marginal Effect": [b1, b1 + b2, b1 + b3, b1 + b4, b1 + b5]
     })
     
-    return me_table
+def plot_coefficients(results, title: str = "Regression Coefficients"):
+    """
+    Plot coefficients with 95% confidence intervals.
+    
+    Args:
+        results: Fitted results from linearmodels.
+        title: Title of the forest plot.
+    """
+    import matplotlib.pyplot as plt
+    import seaborn as sns
+    
+    params = results.params
+    std_errors = results.std_errors
+    variables = params.index
+    
+    # Calculate confidence intervals (1.96 * SE for 95%)
+    lower_ci = params - 1.96 * std_errors
+    upper_ci = params + 1.96 * std_errors
+    
+    df_plot = pd.DataFrame({
+        'variable': variables,
+        'coefficient': params,
+        'lower': lower_ci,
+        'upper': upper_ci
+    })
+    
+    # Don't plot the constant
+    df_plot = df_plot[df_plot['variable'] != 'const']
+    
+    plt.figure(figsize=(10, 6))
+    sns.set_style("whitegrid")
+    
+    # Plot point estimates
+    plt.errorbar(x=df_plot['coefficient'], y=df_plot['variable'], 
+                 xerr=[df_plot['coefficient'] - df_plot['lower'], 
+                       df_plot['upper'] - df_plot['coefficient']],
+                 fmt='o', color='royalblue', capsize=5, markersize=8)
+    
+    plt.axvline(x=0, color='red', linestyle='--', alpha=0.7)
+    plt.xlabel("Coefficient Estimate (95% CI)")
+    plt.title(title)
+    plt.tight_layout()
+    plt.show()

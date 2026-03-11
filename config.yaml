@@ -1,0 +1,28 @@
+# Regression Analysis Configuration
+
+# Globalization Indices
+indices:
+  - KOFGI
+  - KOFEcGI
+  - KOFSoGI
+  - KOFPoGI
+
+# Control Variables
+controls:
+  - ln_gdppc
+  - inflation_cpi
+  - deficit
+  - debt
+  - ln_population
+  - dependency_ratio
+
+# Dependent Variable
+dependent_var: sstran
+
+# Regression Settings
+lags: [1]
+robustness_checks:
+  - drop_outliers
+  - winsorize
+  - pre_2008
+  - post_2008
