@@ -13,5 +13,9 @@ format:
 data:
 	python -m src.clean.pipeline --save-outputs
 
-# Execute full replication (Placeholder, as analysis endpoint is pending)
-all: env format data
+# Execute full replication: install env, format code, process data, compile paper
+all: env format data paper
+
+# Compile the LaTeX paper to PDF
+paper:
+	cd paper && latexmk -pdf main.tex -interaction=nonstopmode || pdflatex main.tex
