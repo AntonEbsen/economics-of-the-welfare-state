@@ -3,10 +3,10 @@ CPDS (Comparative Political Data Set) cleaning utilities
 Extracts social spending transfers (sstran), deficit, and debt data
 for the same 32 countries used in the main analysis.
 """
+
 from __future__ import annotations
 
 from pathlib import Path
-from typing import Iterable
 
 import pandas as pd
 
@@ -30,19 +30,19 @@ def standardize_cpds(df: pd.DataFrame) -> pd.DataFrame:
     - Keep only required variables: sstran, deficit, debt
     """
     out = df.copy()
-    
+
     # Ensure year is integer type
     if "year" in out.columns:
         out["year"] = pd.to_numeric(out["year"], errors="coerce").astype("Int64")
-    
+
     # Clean country name
     if "country" in out.columns:
         out["country"] = out["country"].astype(str).str.strip()
-    
+
     # Clean iso3 code
     if "iso" in out.columns:
         out["iso3"] = out["iso"].astype(str).str.strip().str.upper()
-    
+
     return out
 
 
@@ -59,7 +59,7 @@ def filter_cpds_32countries(
     - Keep only: iso3, year, sstran, deficit, debt
     """
     out = df.copy()
-    
+
     # Filter countries (assuming 'iso3' or 'iso' column exists)
     if "iso3" in out.columns:
         out = out[out["iso3"].isin(target_iso3)].copy()
@@ -67,29 +67,29 @@ def filter_cpds_32countries(
         # If only 'iso' exists, create iso3 and filter
         out["iso3"] = out["iso"].astype(str).str.strip().str.upper()
         out = out[out["iso3"].isin(target_iso3)].copy()
-    
+
     # Filter years
     if "year" in out.columns:
         if year_min is not None:
             out = out[out["year"] >= year_min]
         if year_max is not None:
             out = out[out["year"] <= year_max]
-    
+
     # Keep only required columns
     required_cols = ["iso3", "year"]
     data_cols = ["sstran", "deficit", "debt"]
-    
+
     # Check which columns exist
     existing_cols = required_cols.copy()
     for col in data_cols:
         if col in out.columns:
             existing_cols.append(col)
-    
+
     out = out[existing_cols].copy()
-    
+
     # Sort by iso3 and year
     out = out.sort_values(["iso3", "year"]).reset_index(drop=True)
-    
+
     return out
 
 

@@ -2,18 +2,21 @@
 Inflation CPI cleaning utilities
 Processes inflation CPI data for the same 32 countries used in the main analysis.
 """
+
 from __future__ import annotations
 
 from pathlib import Path
-from typing import Iterable
-import re
 
 import pandas as pd
 
 # Import from centralized constants
 from .constants import TARGET_ISO3_32
+from .utils import (
+    filter_to_target_countries,
+    filter_to_year_range,
+    save_dataframe,
+)
 from .worldbank import WorldBankProcessor
-from .utils import map_country_to_iso3, filter_to_target_countries, filter_to_year_range, save_dataframe
 
 
 def read_inflation_excel(path: str | Path, sheet_name: str | int = 0) -> pd.DataFrame:
@@ -24,7 +27,7 @@ def read_inflation_excel(path: str | Path, sheet_name: str | int = 0) -> pd.Data
     path = Path(path)
     if not path.exists():
         raise FileNotFoundError(f"File not found: {path.resolve()}")
-    
+
     # helper for smart header detection
     def find_header_row(data_rows):
         keywords = {"country", "reference area", "ref_area", "iso3", "location"}
@@ -40,15 +43,15 @@ def read_inflation_excel(path: str | Path, sheet_name: str | int = 0) -> pd.Data
             from python_calamine import CalamineWorkbook
         except ImportError:
             from calamine import CalamineWorkbook
-            
+
         workbook = CalamineWorkbook.from_path(str(path))
         sheet_names = workbook.sheet_names
         target = sheet_names[sheet_name] if isinstance(sheet_name, int) else sheet_name
         data = workbook.get_sheet_by_name(target).to_python()
-        
+
         if data:
             header_idx = find_header_row(data)
-            df = pd.DataFrame(data[header_idx + 1:], columns=data[header_idx])
+            df = pd.DataFrame(data[header_idx + 1 :], columns=data[header_idx])
             return df
     except Exception as e:
         print(f"⚠️  Calamine read failed: {e}")
@@ -59,43 +62,49 @@ def read_inflation_excel(path: str | Path, sheet_name: str | int = 0) -> pd.Data
         preview = pd.read_excel(path, sheet_name=sheet_name, nrows=20, header=None)
         data_preview = preview.values.tolist()
         header_idx = find_header_row(data_preview)
-        
+
         # Reload with correct header
         return pd.read_excel(path, sheet_name=sheet_name, header=header_idx)
     except Exception as e:
         error_msg = str(e)
         print(f"⚠️  Pandas read failed: {error_msg}")
-        
+
     # 3. CRITICAL FALLBACK: Style Stripping (if it's a style error)
     if "expected" in error_msg and "Fill" in error_msg:
-        import zipfile
         import tempfile
+        import zipfile
+
         print("🛠️  Corrupted Excel styles detected. Cleaning file metadata...")
         try:
             with tempfile.TemporaryDirectory() as tmpdir:
                 tmp_path = Path(tmpdir) / "cleaned_data.xlsx"
-                with zipfile.ZipFile(path, 'r') as zin:
-                    with zipfile.ZipFile(tmp_path, 'w') as zout:
+                with zipfile.ZipFile(path, "r") as zin:
+                    with zipfile.ZipFile(tmp_path, "w") as zout:
                         for item in zin.infolist():
-                            if item.filename != 'xl/styles.xml':
+                            if item.filename != "xl/styles.xml":
                                 zout.writestr(item, zin.read(item.filename))
-                
+
                 # Try reading the cleaned version with header detection
-                preview = pd.read_excel(tmp_path, sheet_name=sheet_name, nrows=20, header=None, engine='openpyxl')
+                preview = pd.read_excel(
+                    tmp_path, sheet_name=sheet_name, nrows=20, header=None, engine="openpyxl"
+                )
                 header_idx = find_header_row(preview.values.tolist())
-                return pd.read_excel(tmp_path, sheet_name=sheet_name, header=header_idx, engine='openpyxl')
+                return pd.read_excel(
+                    tmp_path, sheet_name=sheet_name, header=header_idx, engine="openpyxl"
+                )
         except Exception as clean_e:
             print(f"❌ Style cleaning failed: {clean_e}")
 
     # 4. Final attempt: Manual openpyxl
     try:
         import openpyxl
+
         wb = openpyxl.load_workbook(path, data_only=True, read_only=True)
         ws = wb.worksheets[sheet_name] if isinstance(sheet_name, int) else wb[sheet_name]
         data = [row for row in ws.iter_rows(values_only=True)]
         if data:
             header_idx = find_header_row(data)
-            return pd.DataFrame(data[header_idx + 1:], columns=data[header_idx])
+            return pd.DataFrame(data[header_idx + 1 :], columns=data[header_idx])
     except Exception as final_e:
         print(f"❌ All extraction methods failed for {path.name}")
         raise final_e
@@ -104,6 +113,7 @@ def read_inflation_excel(path: str | Path, sheet_name: str | int = 0) -> pd.Data
     try:
         print("🔍 Attempting manual extraction (ignoring metadata)...")
         import openpyxl
+
         wb = openpyxl.load_workbook(path, data_only=True, read_only=True)
         ws = wb.worksheets[sheet_name] if isinstance(sheet_name, int) else wb[sheet_name]
         data = [row for row in ws.iter_rows(values_only=True)]
@@ -141,13 +151,13 @@ def filter_32_countries(
     # Use shared utility functions
     out = filter_to_year_range(df_mapped, year_min, year_max)
     out = filter_to_target_countries(out, target_iso3)
-    
+
     # Keep only essential columns
     out = out[["iso3", "year", "inflation_cpi"]].copy()
-    
+
     # Sort by iso3 and year
     out = out.sort_values(["iso3", "year"]).reset_index(drop=True)
-    
+
     return out
 
 

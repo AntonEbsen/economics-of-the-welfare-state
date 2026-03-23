@@ -32,7 +32,9 @@ class KOFConfig:
 
     def __post_init__(self):
         # dataclass(frozen=True) workaround
-        object.__setattr__(self, "target_iso3", TARGET_ISO3_32 if self.target_iso3 is None else self.target_iso3)
+        object.__setattr__(
+            self, "target_iso3", TARGET_ISO3_32 if self.target_iso3 is None else self.target_iso3
+        )
 
 
 def read_kof_excel(path: str | Path, sheet_name: str = "Sheet1") -> pd.DataFrame:
@@ -73,19 +75,23 @@ def filter_kof_32countries(df: pd.DataFrame, cfg: KOFConfig = KOFConfig()) -> pd
 
     # select core indices
     core_indices = ["KOFGI", "KOFEcGI", "KOFSoGI", "KOFPoGI"]
-    
+
     # check which ones exist in the dataframe to avoid errors
     available_indices = [c for c in core_indices if c in out.columns]
-    
+
     # identifiers first
     id_cols = ["code", "country_clean", "year"]
-    
+
     # drop rows with all index columns missing (optional but usually sensible)
     if cfg.drop_all_missing_index and available_indices:
         out = out.dropna(subset=available_indices, how="all")
 
     # final selection
-    out = out[id_cols + available_indices].sort_values(["country_clean", "year"]).reset_index(drop=True)
+    out = (
+        out[id_cols + available_indices]
+        .sort_values(["country_clean", "year"])
+        .reset_index(drop=True)
+    )
 
     # rename for downstream merges
     out = out.rename(columns={"code": "iso3", "country_clean": "country"})

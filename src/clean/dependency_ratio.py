@@ -2,17 +2,22 @@
 Dependency Ratio cleaning utilities
 Processes dependency ratio data for the same 32 countries used in the main analysis.
 """
+
 from __future__ import annotations
 
 from pathlib import Path
-import re
 
 import pandas as pd
 
 # Import from centralized constants
 from .constants import TARGET_ISO3_32
+from .utils import (
+    filter_to_target_countries,
+    filter_to_year_range,
+    read_excel_robust,
+    save_dataframe,
+)
 from .worldbank import WorldBankProcessor
-from .utils import map_country_to_iso3, filter_to_target_countries, filter_to_year_range, save_dataframe, read_excel_robust
 
 
 def read_dependency_excel(path: str | Path, sheet_name: str | int = 0) -> pd.DataFrame:
@@ -47,13 +52,13 @@ def filter_32_countries(
     # Use shared utility functions
     out = filter_to_year_range(df_mapped, year_min, year_max)
     out = filter_to_target_countries(out, target_iso3)
-    
+
     # Keep only essential columns
     out = out[["iso3", "year", "dependency_ratio"]].copy()
-    
+
     # Sort by iso3 and year
     out = out.sort_values(["iso3", "year"]).reset_index(drop=True)
-    
+
     return out
 
 

@@ -1,6 +1,7 @@
 """
 Regression utilities for panel data analysis.
 """
+
 from __future__ import annotations
 
 import pandas as pd
@@ -24,26 +25,27 @@ LATEX_LABEL_MAP = {
     "debt\\_lag1": "Debt$_{t-1}$",
     "ln\\_population\\_lag1": "log Population$_{t-1}$",
     "dependency\\_ratio\\_lag1": "Dependency Ratio$_{t-1}$",
-    "const": "Constant"
+    "const": "Constant",
 }
 
+
 def prepare_regression_data(
-    df: pd.DataFrame, 
-    dep_var: str, 
-    indep_var: str, 
-    ctrls_lagged: list[str], 
-    interactions: bool = False
+    df: pd.DataFrame,
+    dep_var: str,
+    indep_var: str,
+    ctrls_lagged: list[str],
+    interactions: bool = False,
 ) -> tuple[pd.DataFrame, list[str]]:
     """
     Prepare DataFrame and exog_vars for PanelOLS regression.
-    
+
     Args:
         df: The DataFrame with ALL variables including lags created.
         dep_var: The name of the dependent variable column.
         indep_var: The name of the independent variable column.
         ctrls_lagged: List of control variables that have already been created/lagged.
         interactions: If True, creates interaction terms with welfare_regime indicators.
-        
+
     Returns:
         tuple containing:
         - ols_data: DataFrame with NaN rows dropped and MultiIndex set.
@@ -56,8 +58,14 @@ def prepare_regression_data(
         reg_data["int_mediterranean"] = reg_data[indep_var] * reg_data["regime_mediterranean"]
         reg_data["int_liberal"] = reg_data[indep_var] * reg_data["regime_liberal"]
         reg_data["int_post_communist"] = reg_data[indep_var] * reg_data["regime_post_communist"]
-        
-        exog_vars = [indep_var, "int_conservative", "int_mediterranean", "int_liberal", "int_post_communist"] + ctrls_lagged
+
+        exog_vars = [
+            indep_var,
+            "int_conservative",
+            "int_mediterranean",
+            "int_liberal",
+            "int_post_communist",
+        ] + ctrls_lagged
     else:
         exog_vars = [indep_var] + ctrls_lagged
 
@@ -70,17 +78,24 @@ def prepare_regression_data(
     # Filter out NaNs for the variables to be used in model
     vars_to_check = [dep_var] + exog_vars
     ols_data = reg_data.dropna(subset=vars_to_check).copy()
-    
+
     # Set MultiIndex for panel regression
-    if 'iso3' in ols_data.columns and 'year' in ols_data.columns:
+    if "iso3" in ols_data.columns and "year" in ols_data.columns:
         ols_data = ols_data.set_index(["iso3", "year"])
-        
+
     return ols_data, exog_vars
 
-def run_panel_ols(ols_data: pd.DataFrame, dep_var: str, exog_vars: list[str], entity_effects: bool = True, time_effects: bool = True):
+
+def run_panel_ols(
+    ols_data: pd.DataFrame,
+    dep_var: str,
+    exog_vars: list[str],
+    entity_effects: bool = True,
+    time_effects: bool = True,
+):
     """
     Execute standard PanelOLS with clustered standard errors.
-    
+
     Args:
         ols_data: Cleaned DataFrame with a MultiIndex.
         dep_var: Dependent Variable.
@@ -90,16 +105,19 @@ def run_panel_ols(ols_data: pd.DataFrame, dep_var: str, exog_vars: list[str], en
     """
     exog = sm.add_constant(ols_data[exog_vars])
     exog = exog.loc[:, ~exog.columns.duplicated()]
-    
-    model = PanelOLS(ols_data[dep_var], exog, entity_effects=entity_effects, time_effects=time_effects)
+
+    model = PanelOLS(
+        ols_data[dep_var], exog, entity_effects=entity_effects, time_effects=time_effects
+    )
     results = model.fit(cov_type="clustered", cluster_entity=True)
     return results
+
 
 def generate_marginal_effects(results, g_var: str) -> pd.DataFrame:
     """
     Given regression results model fitted with interactions, generate Marginal Effects Table.
     Assumes Social Democrat is reference group.
-    
+
     Args:
         results: Fitted results from linearmodels.
         g_var: String representing the main variable that interactions are derived from.
@@ -111,77 +129,96 @@ def generate_marginal_effects(results, g_var: str) -> pd.DataFrame:
     b4 = params.get("int_liberal", 0)
     b5 = params.get("int_post_communist", 0)
 
-    me_table = pd.DataFrame({
-        "Welfare Regime": ["Social Democrat (Ref)", "Conservative", "Mediterranean", "Liberal", "Post-Communist"],
-        "Formula": ["β1", "β1 + β2", "β1 + β3", "β1 + β4", "β1 + β5"],
-        "Marginal Effect": [b1, b1 + b2, b1 + b3, b1 + b4, b1 + b5]
-    })
-    
+    me_table = pd.DataFrame(
+        {
+            "Welfare Regime": [
+                "Social Democrat (Ref)",
+                "Conservative",
+                "Mediterranean",
+                "Liberal",
+                "Post-Communist",
+            ],
+            "Formula": ["β1", "β1 + β2", "β1 + β3", "β1 + β4", "β1 + β5"],
+            "Marginal Effect": [b1, b1 + b2, b1 + b3, b1 + b4, b1 + b5],
+        }
+    )
+
+    return me_table
+
+
 def plot_coefficients(results, title: str = "Regression Coefficients"):
     """
     Plot coefficients with 95% confidence intervals.
-    
+
     Args:
         results: Fitted results from linearmodels.
         title: Title of the forest plot.
     """
     import matplotlib.pyplot as plt
     import seaborn as sns
-    
+
     params = results.params
     std_errors = results.std_errors
     variables = params.index
-    
+
     # Calculate confidence intervals (1.96 * SE for 95%)
     lower_ci = params - 1.96 * std_errors
     upper_ci = params + 1.96 * std_errors
-    
-    df_plot = pd.DataFrame({
-        'variable': variables,
-        'coefficient': params,
-        'lower': lower_ci,
-        'upper': upper_ci
-    })
-    
+
+    df_plot = pd.DataFrame(
+        {"variable": variables, "coefficient": params, "lower": lower_ci, "upper": upper_ci}
+    )
+
     # Don't plot the constant
-    df_plot = df_plot[df_plot['variable'] != 'const']
-    
+    df_plot = df_plot[df_plot["variable"] != "const"]
+
     plt.figure(figsize=(10, 6))
     sns.set_style("whitegrid")
-    
+
     # Plot point estimates
-    plt.errorbar(x=df_plot['coefficient'], y=df_plot['variable'], 
-                 xerr=[df_plot['coefficient'] - df_plot['lower'], 
-                       df_plot['upper'] - df_plot['coefficient']],
-                 fmt='o', color='royalblue', capsize=5, markersize=8)
-    
-    plt.axvline(x=0, color='red', linestyle='--', alpha=0.7)
+    plt.errorbar(
+        x=df_plot["coefficient"],
+        y=df_plot["variable"],
+        xerr=[df_plot["coefficient"] - df_plot["lower"], df_plot["upper"] - df_plot["coefficient"]],
+        fmt="o",
+        color="royalblue",
+        capsize=5,
+        markersize=8,
+    )
+
+    plt.axvline(x=0, color="red", linestyle="--", alpha=0.7)
     plt.tight_layout()
     plt.show()
 
-def adjust_pvalues(pvalues: pd.Series, method: str = 'fdr_bh') -> pd.DataFrame:
+
+def adjust_pvalues(pvalues: pd.Series, method: str = "fdr_bh") -> pd.DataFrame:
     """
     Adjust p-values for multiple hypothesis testing.
-    
+
     Args:
         pvalues: Series of raw p-values.
         method: Correction method ('fdr_bh' for Benjamini-Hochberg, 'bonferroni', etc.)
     """
     from statsmodels.stats.multitest import multipletests
-    
-    rejected, corrected, _, _ = multipletests(pvalues, alpha=0.05, method=method)
-    
-    return pd.DataFrame({
-        'Variable': pvalues.index,
-        'Raw P-Value': pvalues.values,
-        'Corrected P-Value': corrected,
-        'Significant (0.05)': rejected
-    })
 
-def run_placebo_test(ols_data: pd.DataFrame, dep_var: str, indep_var: str, exog_vars: list[str], n_sims: int = 100):
+    rejected, corrected, _, _ = multipletests(pvalues, alpha=0.05, method=method)
+
+    return pd.DataFrame(
+        {
+            "Variable": pvalues.index,
+            "Raw P-Value": pvalues.values,
+            "Corrected P-Value": corrected,
+            "Significant (0.05)": rejected,
+        }
+    )
+
+
+def run_placebo_test(
+    ols_data: pd.DataFrame, dep_var: str, indep_var: str, exog_vars: list[str], n_sims: int = 100
+):
     """
     Run a placebo test by shuffling the independent variable.
-    
+
     Args:
         ols_data: DataFrame for regression.
         dep_var: Dependent variable.
@@ -190,14 +227,16 @@ def run_placebo_test(ols_data: pd.DataFrame, dep_var: str, indep_var: str, exog_
         n_sims: Number of simulations.
     """
     coefficients = []
-    
+
     for _ in range(n_sims):
         mock_data = ols_data.copy()
         # Shuffle the independent variable within each entity (country) to preserve structure
         # but destroy the correlation with the dependent variable
-        mock_data[indep_var] = mock_data.groupby(level=0)[indep_var].transform(np.random.permutation)
-        
+        mock_data[indep_var] = mock_data.groupby(level=0)[indep_var].transform(
+            np.random.permutation
+        )
+
         results = run_panel_ols(mock_data, dep_var, exog_vars)
         coefficients.append(results.params[indep_var])
-        
+
     return np.array(coefficients)

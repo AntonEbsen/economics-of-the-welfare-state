@@ -1,13 +1,11 @@
-import streamlit as st
-import pandas as pd
-import yaml
-import matplotlib.pyplot as plt
-import seaborn as sns
 import os
 import sys
 
+import streamlit as st
+import yaml
+
 # Add src to path
-sys.path.append(os.path.join(os.getcwd(), 'src'))
+sys.path.append(os.path.join(os.getcwd(), "src"))
 from analysis.regression_utils import LATEX_LABEL_MAP
 
 st.set_page_config(page_title="Welfare State & Globalization Dashboard", layout="wide")
@@ -19,12 +17,12 @@ and social security transfers across OECD countries.
 """)
 
 # Load Config
-with open('config.yaml', 'r') as f:
+with open("config.yaml", "r") as f:
     config = yaml.safe_load(f)
 
 # Sidebar
 st.sidebar.header("Settings")
-selected_index = st.sidebar.selectbox("Select Globalization Index", config['indices'])
+selected_index = st.sidebar.selectbox("Select Globalization Index", config["indices"])
 
 # Main Content
 col1, col2 = st.columns(2)

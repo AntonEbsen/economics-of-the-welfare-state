@@ -13,7 +13,6 @@ from .constants import TARGET_ISO3_32
 from .utils import map_country_to_iso3, save_dataframe
 
 
-
 @dataclass(frozen=True)
 class GDPPCConfig:
     year_min: Optional[int] = 1980
@@ -50,6 +49,7 @@ def _normalize_country(x) -> str:
     s = " ".join(s.split())  # collapse multiple spaces
     return s
 
+
 def read_gdppc_excel(path, sheet_name=None, header=0):
     """
     Read GDP per capita excel file.
@@ -66,15 +66,22 @@ def read_gdppc_excel(path, sheet_name=None, header=0):
         sheet_name = xls.sheet_names[0]
 
     if isinstance(sheet_name, str) and sheet_name not in xls.sheet_names:
-        raise ValueError(f"Worksheet named '{sheet_name}' not found. Available sheets: {xls.sheet_names}")
+        raise ValueError(
+            f"Worksheet named '{sheet_name}' not found. Available sheets: {xls.sheet_names}"
+        )
 
     if isinstance(sheet_name, int):
         if sheet_name < 0 or sheet_name >= len(xls.sheet_names):
-            raise ValueError(f"Worksheet index {sheet_name} out of range. Available sheets: {xls.sheet_names}")
+            raise ValueError(
+                f"Worksheet index {sheet_name} out of range. Available sheets: {xls.sheet_names}"
+            )
 
     return pd.read_excel(xls, sheet_name=sheet_name, header=header)
 
-def standardize_gdppc_to_long(df_raw: pd.DataFrame, cfg: GDPPCConfig = GDPPCConfig()) -> pd.DataFrame:
+
+def standardize_gdppc_to_long(
+    df_raw: pd.DataFrame, cfg: GDPPCConfig = GDPPCConfig()
+) -> pd.DataFrame:
     """
     Standardize GDP per capita dataset to long format with columns:
         country, year, gdppc
@@ -92,10 +99,18 @@ def standardize_gdppc_to_long(df_raw: pd.DataFrame, cfg: GDPPCConfig = GDPPCConf
         country_col = cfg.country_col
     else:
         country_candidates = [
-            c for c in df_raw.columns
-            if c.strip().lower() in {
-                "country", "location", "name", "country_name",
-                "reference area", "reference_area", "ref_area", "referencearea"
+            c
+            for c in df_raw.columns
+            if c.strip().lower()
+            in {
+                "country",
+                "location",
+                "name",
+                "country_name",
+                "reference area",
+                "reference_area",
+                "ref_area",
+                "referencearea",
             }
         ]
         if not country_candidates:
@@ -115,8 +130,8 @@ def standardize_gdppc_to_long(df_raw: pd.DataFrame, cfg: GDPPCConfig = GDPPCConf
         # WIDE -> LONG
         df_long = (
             df_raw.rename(columns={country_col: "country"})
-                  .melt(id_vars=["country"], value_vars=year_cols, var_name="year", value_name="gdppc")
-                  .copy()
+            .melt(id_vars=["country"], value_vars=year_cols, var_name="year", value_name="gdppc")
+            .copy()
         )
     else:
         # LONG format: find year column
@@ -124,8 +139,10 @@ def standardize_gdppc_to_long(df_raw: pd.DataFrame, cfg: GDPPCConfig = GDPPCConf
             year_col = cfg.year_col
         else:
             year_candidates = [
-                c for c in df_raw.columns
-                if c.strip().lower() in {"year", "time", "time_period", "time period", "periode", "år"}
+                c
+                for c in df_raw.columns
+                if c.strip().lower()
+                in {"year", "time", "time_period", "time period", "periode", "år"}
             ]
             if not year_candidates:
                 raise ValueError(
@@ -140,8 +157,10 @@ def standardize_gdppc_to_long(df_raw: pd.DataFrame, cfg: GDPPCConfig = GDPPCConf
             val_col = cfg.value_col
         else:
             val_candidates = [
-                c for c in df_raw.columns
-                if c.strip().lower() in {"gdppc", "gdp per capita", "gdp_per_capita", "gdp_pc", "value", "val"}
+                c
+                for c in df_raw.columns
+                if c.strip().lower()
+                in {"gdppc", "gdp per capita", "gdp_per_capita", "gdp_pc", "value", "val"}
             ]
             if val_candidates:
                 val_col = val_candidates[0]
@@ -156,11 +175,9 @@ def standardize_gdppc_to_long(df_raw: pd.DataFrame, cfg: GDPPCConfig = GDPPCConf
                     )
                 val_col = num_cols[-1]
 
-        df_long = (
-            df_raw.rename(columns={country_col: "country", year_col: "year", val_col: "gdppc"})
-                  [["country", "year", "gdppc"]]
-                  .copy()
-        )
+        df_long = df_raw.rename(
+            columns={country_col: "country", year_col: "year", val_col: "gdppc"}
+        )[["country", "year", "gdppc"]].copy()
 
     # ---- 3) Type cleaning ----
     df_long["country"] = df_long["country"].map(_normalize_country)
@@ -206,7 +223,11 @@ def filter_32_and_log(df_mapped: pd.DataFrame, cfg: GDPPCConfig = GDPPCConfig())
     out["ln_gdppc"] = np.where(out["gdppc"] > 0, np.log(out["gdppc"]), np.nan)
 
     # tidy output
-    out = out[["iso3", "country", "year", "gdppc", "ln_gdppc"]].sort_values(["iso3", "year"]).reset_index(drop=True)
+    out = (
+        out[["iso3", "country", "year", "gdppc", "ln_gdppc"]]
+        .sort_values(["iso3", "year"])
+        .reset_index(drop=True)
+    )
 
     # strict 32 check (at least once each)
     if cfg.strict_32:
@@ -227,7 +248,7 @@ def get_final_gdppc(df_mapped: pd.DataFrame, cfg: GDPPCConfig = GDPPCConfig()) -
     This is the final clean output for merging with other datasets.
     """
     df_full = filter_32_and_log(df_mapped, cfg=cfg)
-    
+
     # Keep only essential columns
     return df_full[["iso3", "year", "ln_gdppc"]].copy()
 

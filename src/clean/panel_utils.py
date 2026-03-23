@@ -1,60 +1,68 @@
 """
 Panel data utilities for time series analysis.
 """
+
 from __future__ import annotations
 
+import logging
+
 import pandas as pd
-import numpy as np
+
+logger = logging.getLogger(__name__)
 
 
-def check_panel_balance(df: pd.DataFrame, id_var: str = 'iso3', time_var: str = 'year') -> dict:
+def check_panel_balance(df: pd.DataFrame, id_var: str = "iso3", time_var: str = "year") -> dict:
     """
     Check if panel is balanced (all units have all time periods).
-    
+
     Args:
         df: Panel DataFrame
         id_var: Panel identifier (default: 'iso3')
         time_var: Time identifier (default: 'year')
-        
+
     Returns:
         Dictionary with balance information
-        
+
     Example:
         >>> balance_info = check_panel_balance(master)
-        >>> print(f"Balanced: {balance_info['balanced']}")
+        >>> logger.info(f"Balanced: {balance_info['balanced']}")
     """
     # Get unique values
     units = df[id_var].unique()
     times = df[time_var].unique()
-    
+
     # Count observations per unit
     obs_per_unit = df.groupby(id_var)[time_var].count()
-    
+
     # Expected observations if balanced
     expected_obs = len(times)
-    
+
     # Check if balanced
     balanced = all(obs_per_unit == expected_obs)
-    
+
     result = {
-        'balanced': balanced,
-        'n_units': len(units),
-        'n_periods': len(times),
-        'expected_obs_per_unit': expected_obs,
-        'min_obs': obs_per_unit.min(),
-        'max_obs': obs_per_unit.max(),
-        'mean_obs': obs_per_unit.mean(),
-        'units_with_all_periods': sum(obs_per_unit == expected_obs),
+        "balanced": balanced,
+        "n_units": len(units),
+        "n_periods": len(times),
+        "expected_obs_per_unit": expected_obs,
+        "min_obs": obs_per_unit.min(),
+        "max_obs": obs_per_unit.max(),
+        "mean_obs": obs_per_unit.mean(),
+        "units_with_all_periods": sum(obs_per_unit == expected_obs),
     }
-    
+
     if balanced:
-        print(f"✅ Panel is BALANCED: {result['n_units']} units × {result['n_periods']} periods")
+        logger.info(
+            f"✅ Panel is BALANCED: {result['n_units']} units × {result['n_periods']} periods"
+        )
     else:
-        print(f"⚠️  Panel is UNBALANCED:")
-        print(f"   {result['n_units']} units, {result['n_periods']} periods")
-        print(f"   Observations per unit: {result['min_obs']}-{result['max_obs']} (mean: {result['mean_obs']:.1f})")
-        print(f"   {result['units_with_all_periods']} units have all periods")
-    
+        logger.info("⚠️  Panel is UNBALANCED:")
+        logger.info(f"   {result['n_units']} units, {result['n_periods']} periods")
+        logger.info(
+            f"   Observations per unit: {result['min_obs']}-{result['max_obs']} (mean: {result['mean_obs']:.1f})"
+        )
+        logger.info(f"   {result['units_with_all_periods']} units have all periods")
+
     return result
 
 
@@ -62,42 +70,42 @@ def create_lags(
     df: pd.DataFrame,
     variables: list[str],
     lags: list[int] = [1],
-    id_var: str = 'iso3',
-    time_var: str = 'year'
+    id_var: str = "iso3",
+    time_var: str = "year",
 ) -> pd.DataFrame:
     """
     Create lagged variables for panel data.
-    
+
     Args:
-        df: Panel DataFrame  
+        df: Panel DataFrame
         variables: List of variables to lag
         lags: List of lag periods (default: [1])
         id_var: Panel identifier
         time_var: Time identifier
-        
+
     Returns:
         DataFrame with lagged variables added
-        
+
     Example:
         >>> # Create 1-year and 2-year lags of GDP
         >>> df_with_lags = create_lags(master, ['ln_gdppc'], lags=[1, 2])
         >>> # Creates: ln_gdppc_lag1, ln_gdppc_lag2
     """
     result = df.copy()
-    
+
     # Sort by id and time
     result = result.sort_values([id_var, time_var])
-    
+
     for var in variables:
         if var not in df.columns:
-            print(f"⚠️  Warning: Variable '{var}' not found, skipping")
+            logger.info(f"⚠️  Warning: Variable '{var}' not found, skipping")
             continue
-            
+
         for lag in lags:
             lag_col = f"{var}_lag{lag}"
             result[lag_col] = result.groupby(id_var)[var].shift(lag)
-            print(f"✅ Created {lag_col}")
-    
+            logger.info(f"✅ Created {lag_col}")
+
     return result
 
 
@@ -105,141 +113,140 @@ def create_leads(
     df: pd.DataFrame,
     variables: list[str],
     leads: list[int] = [1],
-    id_var: str = 'iso3',
-    time_var: str = 'year'
+    id_var: str = "iso3",
+    time_var: str = "year",
 ) -> pd.DataFrame:
     """
     Create lead variables for panel data (future values).
-    
+
     Args:
         df: Panel DataFrame
         variables: List of variables to lead
         leads: List of lead periods (default: [1])
         id_var: Panel identifier
         time_var: Time identifier
-        
+
     Returns:
         DataFrame with lead variables added
     """
     result = df.copy()
     result = result.sort_values([id_var, time_var])
-    
+
     for var in variables:
         if var not in df.columns:
-            print(f"⚠️  Warning: Variable '{var}' not found, skipping")
+            logger.info(f"⚠️  Warning: Variable '{var}' not found, skipping")
             continue
-            
+
         for lead in leads:
             lead_col = f"{var}_lead{lead}"
             result[lead_col] = result.groupby(id_var)[var].shift(-lead)
-            print(f"✅ Created {lead_col}")
-    
+            logger.info(f"✅ Created {lead_col}")
+
     return result
 
 
 def create_differences(
-    df: pd.DataFrame,
-    variables: list[str],
-    id_var: str = 'iso3',
-    time_var: str = 'year'
+    df: pd.DataFrame, variables: list[str], id_var: str = "iso3", time_var: str = "year"
 ) -> pd.DataFrame:
     """
     Create first differences for panel data.
-    
+
     Args:
         df: Panel DataFrame
         variables: List of variables to difference
         id_var: Panel identifier
         time_var: Time identifier
-        
+
     Returns:
         DataFrame with differenced variables added
-        
+
     Example:
         >>> df_with_diffs = create_differences(master, ['ln_gdppc'])
         >>> # Creates: d_ln_gdppc (first difference)
     """
     result = df.copy()
     result = result.sort_values([id_var, time_var])
-    
+
     for var in variables:
         if var not in df.columns:
-            print(f"⚠️  Warning: Variable '{var}' not found, skipping")
+            logger.info(f"⚠️  Warning: Variable '{var}' not found, skipping")
             continue
-            
+
         diff_col = f"d_{var}"
         result[diff_col] = result.groupby(id_var)[var].diff()
-        print(f"✅ Created {diff_col}")
-    
+        logger.info(f"✅ Created {diff_col}")
+
     return result
 
 
 def fill_panel_gaps(
     df: pd.DataFrame,
-    method: str = 'linear',
-    id_var: str = 'iso3',
-    time_var: str = 'year',
-    limit: int = None
+    method: str = "linear",
+    id_var: str = "iso3",
+    time_var: str = "year",
+    limit: int = None,
 ) -> pd.DataFrame:
     """
     Fill missing years in panel data with interpolation.
-    
+
     Args:
         df: Panel DataFrame
         method: Interpolation method ('linear', 'forward', 'backward')
         id_var: Panel identifier
         time_var: Time identifier
         limit: Maximum number of consecutive NaNs to fill
-        
+
     Returns:
         DataFrame with filled gaps
     """
     result = df.copy()
     result = result.sort_values([id_var, time_var])
-    
-    if method == 'forward':
+
+    if method == "forward":
         result = result.groupby(id_var).ffill(limit=limit)
-    elif method == 'backward':
+    elif method == "backward":
         result = result.groupby(id_var).bfill(limit=limit)
     else:  # linear or other pandas methods
-        result = result.groupby(id_var).apply(
-            lambda x: x.interpolate(method=method, limit=limit)
-        ).reset_index(drop=True)
-    
-    print(f"✅ Filled gaps using {method} interpolation")
+        result = (
+            result.groupby(id_var)
+            .apply(lambda x: x.interpolate(method=method, limit=limit))
+            .reset_index(drop=True)
+        )
+
+    logger.info(f"✅ Filled gaps using {method} interpolation")
     return result
 
 
-def add_welfare_regimes(df: pd.DataFrame, id_var: str = 'iso3') -> pd.DataFrame:
+def add_welfare_regimes(df: pd.DataFrame, id_var: str = "iso3") -> pd.DataFrame:
     """
     Categorize countries into welfare regimes and create indicator dummies.
-    
+
     Welfare regimes included:
     - Liberal
     - Conservative (Corporatist)
     - Social Democrat
     - Mediterranean
     - Post-Communist
-    
+
     Args:
         df: Panel DataFrame
         id_var: Country identifier (ISO3)
-        
+
     Returns:
         DataFrame with indicator columns and 'welfare_regime' categorical column.
     """
     from .constants import WELFARE_REGIME_MAP
-    
+
     result = df.copy()
-    
+
     # 1. Create individual indicator columns (dummies)
-    # Note: A country can belong to multiple regimes (e.g., Mediterranean countries 
+    # Note: A country can belong to multiple regimes (e.g., Mediterranean countries
     # are often also in the Conservative list)
     for regime, list_iso3 in WELFARE_REGIME_MAP.items():
         col_name = f"regime_{regime.lower().replace(' ', '_').replace('-', '_')}"
         result[col_name] = result[id_var].isin(list_iso3).astype(int)
-        print(f"✅ Created indicator: {col_name}")
-        
+        logger.info(f"✅ Created indicator: {col_name}")
+
     # 2. Create a single 'welfare_regime' categorical column
     # We apply prioritizing logic for overlaps
     def get_regime(iso3):
@@ -258,6 +265,6 @@ def add_welfare_regimes(df: pd.DataFrame, id_var: str = 'iso3') -> pd.DataFrame:
         return "Other"
 
     result["welfare_regime"] = result[id_var].apply(get_regime)
-    print("✅ Created categorical column: welfare_regime")
-    
+    logger.info("✅ Created categorical column: welfare_regime")
+
     return result

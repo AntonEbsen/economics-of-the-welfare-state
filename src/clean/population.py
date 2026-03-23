@@ -1,13 +1,13 @@
 # src/clean/population.py
 from __future__ import annotations
 
+import re
 from dataclasses import dataclass
 from pathlib import Path
 from typing import Optional, Union
 
 import numpy as np
 import pandas as pd
-import re
 
 # Import from centralized constants
 from .constants import TARGET_ISO3_32
@@ -43,11 +43,15 @@ def read_population_excel(
         sheet_name = xls.sheet_names[0]
 
     if isinstance(sheet_name, str) and sheet_name not in xls.sheet_names:
-        raise ValueError(f"Worksheet named '{sheet_name}' not found. Available sheets: {xls.sheet_names}")
+        raise ValueError(
+            f"Worksheet named '{sheet_name}' not found. Available sheets: {xls.sheet_names}"
+        )
 
     if isinstance(sheet_name, int):
         if sheet_name < 0 or sheet_name >= len(xls.sheet_names):
-            raise ValueError(f"Worksheet index {sheet_name} out of range. Available sheets: {xls.sheet_names}")
+            raise ValueError(
+                f"Worksheet index {sheet_name} out of range. Available sheets: {xls.sheet_names}"
+            )
 
     return pd.read_excel(xls, sheet_name=sheet_name, header=header)
 
@@ -66,9 +70,7 @@ def standardize_worldbank_population_to_long(df_raw: pd.DataFrame) -> pd.DataFra
     required = {"Country Code"}
     missing = required - set(df.columns)
     if missing:
-        raise ValueError(
-            f"Missing required columns: {missing}. Found columns: {list(df.columns)}"
-        )
+        raise ValueError(f"Missing required columns: {missing}. Found columns: {list(df.columns)}")
 
     # Year columns look like "1980 [YR1980]"
     year_pat = re.compile(r"^(\d{4})\s*\[YR\d{4}\]\s*$")
@@ -84,18 +86,11 @@ def standardize_worldbank_population_to_long(df_raw: pd.DataFrame) -> pd.DataFra
     id_cols = [c for c in ["Country Code"] if c in df.columns]
 
     long = df.melt(
-        id_vars=id_cols,
-        value_vars=year_cols,
-        var_name="year_col",
-        value_name="population"
+        id_vars=id_cols, value_vars=year_cols, var_name="year_col", value_name="population"
     )
 
     # Extract year
-    long["year"] = (
-        long["year_col"]
-        .astype(str)
-        .str.extract(r"^(\d{4})", expand=False)
-    )
+    long["year"] = long["year_col"].astype(str).str.extract(r"^(\d{4})", expand=False)
     long["year"] = pd.to_numeric(long["year"], errors="coerce").astype("Int64")
 
     # Clean population values (WB sometimes uses "..")
@@ -111,7 +106,9 @@ def standardize_worldbank_population_to_long(df_raw: pd.DataFrame) -> pd.DataFra
     return long
 
 
-def filter_32_and_log(long_pop: pd.DataFrame, cfg: PopulationConfig = PopulationConfig()) -> pd.DataFrame:
+def filter_32_and_log(
+    long_pop: pd.DataFrame, cfg: PopulationConfig = PopulationConfig()
+) -> pd.DataFrame:
     """
     Filter to 32 countries, year range, compute ln(population).
     Returns ONLY: iso3, year, ln_population

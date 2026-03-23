@@ -5,10 +5,38 @@ Contains the canonical 32-country sample and country name mappings.
 
 # --- Target sample (the 32 OECD countries) ---
 TARGET_ISO3_32 = {
-    "AUS", "AUT", "BEL", "BGR", "CAN", "CZE", "DNK", "EST", "FIN", "FRA", 
-    "DEU", "GRC", "HUN", "ISL", "IRL", "ITA", "JPN", "LVA", "LTU", "LUX", 
-    "NLD", "NZL", "NOR", "POL", "PRT", "SVK", "SVN", "ESP", "SWE", "CHE", 
-    "GBR", "USA"
+    "AUS",
+    "AUT",
+    "BEL",
+    "BGR",
+    "CAN",
+    "CZE",
+    "DNK",
+    "EST",
+    "FIN",
+    "FRA",
+    "DEU",
+    "GRC",
+    "HUN",
+    "ISL",
+    "IRL",
+    "ITA",
+    "JPN",
+    "LVA",
+    "LTU",
+    "LUX",
+    "NLD",
+    "NZL",
+    "NOR",
+    "POL",
+    "PRT",
+    "SVK",
+    "SVN",
+    "ESP",
+    "SWE",
+    "CHE",
+    "GBR",
+    "USA",
 }
 
 # Country name to ISO3 mapping
@@ -66,5 +94,18 @@ WELFARE_REGIME_MAP = {
     "Conservative": ["AUT", "BEL", "FRA", "DEU", "GRC", "ITA", "LUX", "NLD", "PRT", "ESP", "CHE"],
     "Social Democrat": ["DNK", "FIN", "NOR", "SWE"],
     "Mediterranean": ["GRC", "ITA", "PRT", "ESP"],
-    "Post-Communist": ["BGR", "HRV", "CZE", "EST", "HUN", "LVA", "LTU", "POL", "ROU", "SVK", "SVN", "UKR"]
+    "Post-Communist": [
+        "BGR",
+        "HRV",
+        "CZE",
+        "EST",
+        "HUN",
+        "LVA",
+        "LTU",
+        "POL",
+        "ROU",
+        "SVK",
+        "SVN",
+        "UKR",
+    ],
 }

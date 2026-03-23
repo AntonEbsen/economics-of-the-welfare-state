@@ -20,7 +20,7 @@ This study utilizes panel data from multiple sources:
 
 ## Sample
 
-The analysis covers **32 countries** over the period **1980–2023**, yielding **1,408 country-year observations**.
+The analysis covers **32 countries** over the period **1980â€“2023**, yielding **1,408 country-year observations**.
 
 
 **Countries included:**
@@ -75,4 +75,4 @@ The empirical analysis employs panel data methods with fixed effects to control 
 
 
 ---
-*Generated: 2026-03-11 14:05*
+*Generated: 2026-03-23 13:02*

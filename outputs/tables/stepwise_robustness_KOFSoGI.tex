@@ -1,0 +1,41 @@
+\begin{center}
+\begin{tabular}{lccccccc}
+\toprule
+                                   & \textbf{Baseline} & \textbf{+ ln\_gdppc} & \textbf{+ inflation\_cpi} & \textbf{+ deficit} & \textbf{+ debt} & \textbf{+ ln\_population} & \textbf{+ dependency\_ratio}  \\
+\midrule
+\textbf{Dep. Variable}             &       sstran      &        sstran        &           sstran          &       sstran       &      sstran     &           sstran          &            sstran             \\
+\textbf{Estimator}                 &      PanelOLS     &       PanelOLS       &          PanelOLS         &      PanelOLS      &     PanelOLS    &          PanelOLS         &           PanelOLS            \\
+\textbf{No. Observations}          &        1243       &         1239         &            1232           &        1209        &       1187      &            1187           &             996               \\
+\textbf{Cov. Est.}                 &     Clustered     &      Clustered       &         Clustered         &     Clustered      &    Clustered    &         Clustered         &          Clustered            \\
+\textbf{R-squared}                 &       0.0175      &        0.2064        &           0.2110          &       0.2892       &      0.3837     &           0.3892          &            0.3706             \\
+\textbf{R-Squared (Within)}        &      -0.0448      &       -0.2354        &          -0.2092          &       0.1122       &      0.1745     &           0.2893          &            0.3174             \\
+\textbf{R-Squared (Between)}       &      -0.0547      &       -1.0397        &          -1.0837          &      -0.8595       &     -0.2925     &          -2.6779          &           -4.4064             \\
+\textbf{R-Squared (Overall)}       &      -0.0567      &       -0.6732        &          -0.6769          &      -0.4687       &     -0.1331     &          -1.7655          &           -3.2069             \\
+\textbf{F-statistic}               &       20.790      &        151.28        &           102.97          &       115.03       &      137.94     &           117.54          &            77.807             \\
+\textbf{P-value (F-stat)}          &       0.0000      &        0.0000        &           0.0000          &       0.0000       &      0.0000     &           0.0000          &            0.0000             \\
+\textbf{=======================}   &    ===========    &     ============     &        ============       &    ============    &   ============  &        ============       &         ============          \\
+\textbf{Constant}                     &       5.1607      &      28.660***       &         30.443***         &     27.991***      &    20.943***    &           69.540          &           90.013**            \\
+\textbf{ }                         &      (0.9984)     &       (4.5736)       &          (4.8333)         &      (4.4363)      &     (3.1825)    &          (1.3730)         &           (2.0539)            \\
+\textbf{Globalization (Social)$_{t-1}$}             &       0.1146      &      0.2977***       &         0.2858***         &     0.2480***      &    0.1614***    &         0.1419***         &          0.1288***            \\
+\textbf{ }                         &      (1.6216)     &       (4.1620)       &          (3.8633)         &      (3.3749)      &     (3.1120)    &          (2.8726)         &           (2.6324)            \\
+\textbf{log GDP per capita$_{t-1}$}           &                   &      -7.9231***      &         -8.1088***        &     -7.1126***     &    -4.6631***   &         -5.0357***        &          -4.9845***           \\
+\textbf{ }                         &                   &      (-6.4514)       &         (-6.7888)         &     (-5.3516)      &    (-3.6016)    &         (-3.9209)         &          (-4.0949)            \\
+\textbf{Inflation$_{t-1}$}      &                   &                      &          -0.0021*         &      -0.0016*      &    -0.0038***   &         -0.0034***        &          -0.0027***           \\
+\textbf{ }                         &                   &                      &         (-1.7236)         &     (-1.6489)      &    (-3.7715)    &         (-2.8714)         &          (-3.1766)            \\
+\textbf{Deficit$_{t-1}$}             &                   &                      &                           &     -0.1873***     &    -0.1400***   &         -0.1512***        &          -0.1449***           \\
+\textbf{ }                         &                   &                      &                           &     (-4.3099)      &    (-3.3750)    &         (-3.8206)         &          (-5.4279)            \\
+\textbf{Debt$_{t-1}$}                &                   &                      &                           &                    &    0.0322***    &         0.0298***         &          0.0283***            \\
+\textbf{ }                         &                   &                      &                           &                    &     (3.5395)    &          (2.9138)         &           (3.2685)            \\
+\textbf{log Population$_{t-1}$}      &                   &                      &                           &                    &                 &          -2.7876          &           -3.9673*            \\
+\textbf{ }                         &                   &                      &                           &                    &                 &         (-0.9928)         &          (-1.6663)            \\
+\textbf{Dependency Ratio$_{t-1}$}   &                   &                      &                           &                    &                 &                           &           -0.0202             \\
+\textbf{ }                         &                   &                      &                           &                    &                 &                           &          (-0.4394)            \\
+\textbf{=========================} &   =============   &    ==============    &       ==============      &   ==============   &  ============== &       ==============      &        ==============         \\
+\textbf{Effects}                   &       Entity      &        Entity        &           Entity          &       Entity       &      Entity     &           Entity          &            Entity             \\
+\textbf{}                          &        Time       &         Time         &            Time           &        Time        &       Time      &            Time           &             Time              \\
+\bottomrule
+\end{tabular}
+%\caption{Model Comparison}
+\end{center}
+
+T-stats reported in parentheses
