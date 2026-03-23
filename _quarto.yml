@@ -1,0 +1,22 @@
+project:
+  type: website
+  output-dir: _site
+
+website:
+  title: "Economics of the Welfare State"
+  navbar:
+    left:
+      - href: index.qmd
+        text: Overview
+      - href: notebooks/02_modern_pipeline.ipynb
+        text: Analysis
+
+format:
+  html:
+    theme: cosmo
+    toc: true
+    toc-depth: 3
+    number-sections: true
+    code-fold: true
+    code-tools: true
+    embed-resources: true

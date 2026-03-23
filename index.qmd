@@ -1,0 +1,32 @@
+---
+title: "Economics of the Welfare State"
+subtitle: "Does globalization reduce social security spending?"
+author: "Anton Ebsen"
+date: today
+format:
+  html:
+    toc: true
+    theme: cosmo
+    code-fold: true
+---
+
+## Research Question
+
+This project investigates whether globalization reduces social security transfers across OECD welfare states, and whether this effect differs across welfare state regime types.
+
+## Data
+
+- **Countries:** 30+ OECD nations
+- **Time period:** 1980–2022
+- **Globalization measure:** [KOF Globalization Index](https://kof.ethz.ch/) (Overall, Economic, Social, Political)
+- **Outcome:** Social security transfers as % of GDP (CPDS)
+
+## Analysis
+
+The main regression analysis is presented in the [Analysis Notebook](notebooks/02_modern_pipeline.ipynb).
+
+Key results including stepwise robustness checks, specification curves, and marginal effects by welfare regime are documented there.
+
+## Outputs
+
+Regression tables are saved to `outputs/tables/` and specification curve figures to `outputs/figures/`.

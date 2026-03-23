@@ -6,6 +6,7 @@ from .regression_utils import (
     generate_marginal_effects,
     plot_coefficients,
     prepare_regression_data,
+    run_hausman_test,
     run_panel_ols,
     run_placebo_test,
 )
@@ -18,6 +19,7 @@ __all__ = [
     "plot_coefficients",
     "adjust_pvalues",
     "run_placebo_test",
+    "run_hausman_test",
     "inject_tables_into_tex",
     "format_latex_table",
     "export_stepwise_robustness_tables",

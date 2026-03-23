@@ -113,6 +113,72 @@ def run_panel_ols(
     return results
 
 
+def run_hausman_test(
+    ols_data: pd.DataFrame,
+    dep_var: str,
+    exog_vars: list[str],
+) -> pd.DataFrame:
+    """
+    Perform the Hausman specification test (Fixed Effects vs. Random Effects).
+
+    The null hypothesis is that Random Effects (RE) is consistent and efficient.
+    Rejecting H0 (low p-value) means FE is preferred.
+
+    Args:
+        ols_data: Cleaned DataFrame with MultiIndex (entity, time).
+        dep_var: Dependent variable name.
+        exog_vars: List of independent variable names.
+
+    Returns:
+        DataFrame summarising the Hausman test statistic, p-value, and verdict.
+    """
+    import numpy as np
+    from linearmodels.panel import RandomEffects
+    from scipy import stats
+
+    exog = sm.add_constant(ols_data[exog_vars])
+    exog = exog.loc[:, ~exog.columns.duplicated()]
+
+    # Estimate FE (within) and RE models
+    fe_res = PanelOLS(ols_data[dep_var], exog, entity_effects=True, time_effects=False).fit(
+        cov_type="unadjusted"
+    )
+    re_res = RandomEffects(ols_data[dep_var], exog).fit(cov_type="unadjusted")
+
+    # Shared coefficients (exclude constant, which is absent in FE)
+    shared = [v for v in fe_res.params.index if v in re_res.params.index and v != "const"]
+
+    b_fe = fe_res.params[shared].values
+    b_re = re_res.params[shared].values
+
+    diff = b_fe - b_re
+    cov_fe = fe_res.cov.loc[shared, shared].values
+    cov_re = re_res.cov.loc[shared, shared].values
+
+    cov_diff = cov_fe - cov_re
+
+    # Use pseudo-inverse for numerical stability
+    cov_inv = np.linalg.pinv(cov_diff)
+    h_stat = float(diff @ cov_inv @ diff)
+    df = len(shared)
+    p_value = 1 - stats.chi2.cdf(h_stat, df)
+
+    verdict = (
+        "Reject H₀ → Fixed Effects preferred"
+        if p_value < 0.05
+        else "Fail to reject H₀ → Random Effects consistent"
+    )
+
+    return pd.DataFrame(
+        {
+            "Hausman Statistic": [round(h_stat, 4)],
+            "Degrees of Freedom": [df],
+            "P-Value": [round(p_value, 4)],
+            "Verdict (α=0.05)": [verdict],
+        }
+    )
+
+
 def generate_marginal_effects(results, g_var: str) -> pd.DataFrame:
     """
     Given regression results model fitted with interactions, generate Marginal Effects Table.

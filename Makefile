@@ -19,3 +19,11 @@ all: env format data paper
 # Compile the LaTeX paper to PDF
 paper:
 	cd paper && latexmk -pdf main.tex -interaction=nonstopmode || pdflatex main.tex
+
+# Render the analysis notebook to a self-contained HTML report (requires Quarto)
+report:
+	quarto render
+	@echo "HTML report saved to _site/"
+
+# Full pipeline: install, format, clean data, compile paper, render report
+all: env format data paper report
