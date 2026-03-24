@@ -149,8 +149,8 @@ def process_all_datasets(
     logger.info("\n📈 Processing Inflation CPI...")
     try:
         from .inflation import filter_32_countries as filter_inflation_32
-        from .inflation import map_country_to_iso3 as map_inflation_to_iso3
         from .inflation import read_inflation_excel, save_inflation, standardize_inflation_to_long
+        from .utils import map_country_to_iso3 as map_inflation_to_iso3
 
         df_inf_raw = read_inflation_excel(raw_path / "Inflation_cpi.xlsx")
         df_inf_long = standardize_inflation_to_long(df_inf_raw)
@@ -185,12 +185,12 @@ def process_all_datasets(
     logger.info("\n👶👴 Processing Dependency Ratio...")
     try:
         from .dependency_ratio import filter_32_countries as filter_dep_32
-        from .dependency_ratio import map_country_to_iso3 as map_dep_to_iso3
         from .dependency_ratio import (
             read_dependency_excel,
             save_dependency,
             standardize_dependency_to_long,
         )
+        from .utils import map_country_to_iso3 as map_dep_to_iso3
 
         df_dep_raw = read_dependency_excel(raw_path / "Dependency_ratio.xlsx")
         df_dep_long = standardize_dependency_to_long(df_dep_raw)
