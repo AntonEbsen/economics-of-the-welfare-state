@@ -1,0 +1,342 @@
+{
+  "KOFGI": [
+    {
+      "name": "Baseline",
+      "coefficient": 0.1457,
+      "lower_ci": 0.0061,
+      "upper_ci": 0.2852,
+      "significant": true,
+      "controls": []
+    },
+    {
+      "name": "+ ln_gdppc",
+      "coefficient": 0.2945,
+      "lower_ci": 0.1542,
+      "upper_ci": 0.4349,
+      "significant": true,
+      "controls": [
+        "ln_gdppc"
+      ]
+    },
+    {
+      "name": "+ inflation_cpi",
+      "coefficient": 0.2835,
+      "lower_ci": 0.1414,
+      "upper_ci": 0.4255,
+      "significant": true,
+      "controls": [
+        "ln_gdppc",
+        "inflation_cpi"
+      ]
+    },
+    {
+      "name": "+ deficit",
+      "coefficient": 0.2573,
+      "lower_ci": 0.1046,
+      "upper_ci": 0.41,
+      "significant": true,
+      "controls": [
+        "ln_gdppc",
+        "inflation_cpi",
+        "deficit"
+      ]
+    },
+    {
+      "name": "+ debt",
+      "coefficient": 0.1365,
+      "lower_ci": -0.0003,
+      "upper_ci": 0.2734,
+      "significant": false,
+      "controls": [
+        "ln_gdppc",
+        "inflation_cpi",
+        "deficit",
+        "debt"
+      ]
+    },
+    {
+      "name": "+ ln_population",
+      "coefficient": 0.1165,
+      "lower_ci": -0.0179,
+      "upper_ci": 0.2509,
+      "significant": false,
+      "controls": [
+        "ln_gdppc",
+        "inflation_cpi",
+        "deficit",
+        "debt",
+        "ln_population"
+      ]
+    },
+    {
+      "name": "+ dependency_ratio",
+      "coefficient": 0.0882,
+      "lower_ci": -0.0361,
+      "upper_ci": 0.2125,
+      "significant": false,
+      "controls": [
+        "ln_gdppc",
+        "inflation_cpi",
+        "deficit",
+        "debt",
+        "ln_population",
+        "dependency_ratio"
+      ]
+    }
+  ],
+  "KOFEcGI": [
+    {
+      "name": "Baseline",
+      "coefficient": 0.1096,
+      "lower_ci": 0.0034,
+      "upper_ci": 0.2158,
+      "significant": true,
+      "controls": []
+    },
+    {
+      "name": "+ ln_gdppc",
+      "coefficient": 0.144,
+      "lower_ci": 0.0587,
+      "upper_ci": 0.2292,
+      "significant": true,
+      "controls": [
+        "ln_gdppc"
+      ]
+    },
+    {
+      "name": "+ inflation_cpi",
+      "coefficient": 0.1405,
+      "lower_ci": 0.0562,
+      "upper_ci": 0.2247,
+      "significant": true,
+      "controls": [
+        "ln_gdppc",
+        "inflation_cpi"
+      ]
+    },
+    {
+      "name": "+ deficit",
+      "coefficient": 0.1216,
+      "lower_ci": 0.0342,
+      "upper_ci": 0.209,
+      "significant": true,
+      "controls": [
+        "ln_gdppc",
+        "inflation_cpi",
+        "deficit"
+      ]
+    },
+    {
+      "name": "+ debt",
+      "coefficient": 0.045,
+      "lower_ci": -0.0412,
+      "upper_ci": 0.1311,
+      "significant": false,
+      "controls": [
+        "ln_gdppc",
+        "inflation_cpi",
+        "deficit",
+        "debt"
+      ]
+    },
+    {
+      "name": "+ ln_population",
+      "coefficient": 0.0312,
+      "lower_ci": -0.0566,
+      "upper_ci": 0.119,
+      "significant": false,
+      "controls": [
+        "ln_gdppc",
+        "inflation_cpi",
+        "deficit",
+        "debt",
+        "ln_population"
+      ]
+    },
+    {
+      "name": "+ dependency_ratio",
+      "coefficient": -0.0199,
+      "lower_ci": -0.1008,
+      "upper_ci": 0.061,
+      "significant": false,
+      "controls": [
+        "ln_gdppc",
+        "inflation_cpi",
+        "deficit",
+        "debt",
+        "ln_population",
+        "dependency_ratio"
+      ]
+    }
+  ],
+  "KOFSoGI": [
+    {
+      "name": "Baseline",
+      "coefficient": 0.1146,
+      "lower_ci": -0.0239,
+      "upper_ci": 0.2531,
+      "significant": false,
+      "controls": []
+    },
+    {
+      "name": "+ ln_gdppc",
+      "coefficient": 0.2977,
+      "lower_ci": 0.1575,
+      "upper_ci": 0.4379,
+      "significant": true,
+      "controls": [
+        "ln_gdppc"
+      ]
+    },
+    {
+      "name": "+ inflation_cpi",
+      "coefficient": 0.2858,
+      "lower_ci": 0.1408,
+      "upper_ci": 0.4308,
+      "significant": true,
+      "controls": [
+        "ln_gdppc",
+        "inflation_cpi"
+      ]
+    },
+    {
+      "name": "+ deficit",
+      "coefficient": 0.248,
+      "lower_ci": 0.104,
+      "upper_ci": 0.392,
+      "significant": true,
+      "controls": [
+        "ln_gdppc",
+        "inflation_cpi",
+        "deficit"
+      ]
+    },
+    {
+      "name": "+ debt",
+      "coefficient": 0.1614,
+      "lower_ci": 0.0597,
+      "upper_ci": 0.2631,
+      "significant": true,
+      "controls": [
+        "ln_gdppc",
+        "inflation_cpi",
+        "deficit",
+        "debt"
+      ]
+    },
+    {
+      "name": "+ ln_population",
+      "coefficient": 0.1419,
+      "lower_ci": 0.0451,
+      "upper_ci": 0.2388,
+      "significant": true,
+      "controls": [
+        "ln_gdppc",
+        "inflation_cpi",
+        "deficit",
+        "debt",
+        "ln_population"
+      ]
+    },
+    {
+      "name": "+ dependency_ratio",
+      "coefficient": 0.1288,
+      "lower_ci": 0.0329,
+      "upper_ci": 0.2247,
+      "significant": true,
+      "controls": [
+        "ln_gdppc",
+        "inflation_cpi",
+        "deficit",
+        "debt",
+        "ln_population",
+        "dependency_ratio"
+      ]
+    }
+  ],
+  "KOFPoGI": [
+    {
+      "name": "Baseline",
+      "coefficient": 0.0485,
+      "lower_ci": -0.0314,
+      "upper_ci": 0.1284,
+      "significant": false,
+      "controls": []
+    },
+    {
+      "name": "+ ln_gdppc",
+      "coefficient": 0.1153,
+      "lower_ci": 0.0211,
+      "upper_ci": 0.2094,
+      "significant": true,
+      "controls": [
+        "ln_gdppc"
+      ]
+    },
+    {
+      "name": "+ inflation_cpi",
+      "coefficient": 0.1092,
+      "lower_ci": 0.013,
+      "upper_ci": 0.2054,
+      "significant": true,
+      "controls": [
+        "ln_gdppc",
+        "inflation_cpi"
+      ]
+    },
+    {
+      "name": "+ deficit",
+      "coefficient": 0.1104,
+      "lower_ci": 0.0139,
+      "upper_ci": 0.2069,
+      "significant": true,
+      "controls": [
+        "ln_gdppc",
+        "inflation_cpi",
+        "deficit"
+      ]
+    },
+    {
+      "name": "+ debt",
+      "coefficient": 0.0457,
+      "lower_ci": -0.0282,
+      "upper_ci": 0.1197,
+      "significant": false,
+      "controls": [
+        "ln_gdppc",
+        "inflation_cpi",
+        "deficit",
+        "debt"
+      ]
+    },
+    {
+      "name": "+ ln_population",
+      "coefficient": 0.0413,
+      "lower_ci": -0.0284,
+      "upper_ci": 0.1111,
+      "significant": false,
+      "controls": [
+        "ln_gdppc",
+        "inflation_cpi",
+        "deficit",
+        "debt",
+        "ln_population"
+      ]
+    },
+    {
+      "name": "+ dependency_ratio",
+      "coefficient": 0.0458,
+      "lower_ci": -0.0185,
+      "upper_ci": 0.1101,
+      "significant": false,
+      "controls": [
+        "ln_gdppc",
+        "inflation_cpi",
+        "deficit",
+        "debt",
+        "ln_population",
+        "dependency_ratio"
+      ]
+    }
+  ]
+}

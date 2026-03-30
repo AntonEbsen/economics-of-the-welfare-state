@@ -1,0 +1,248 @@
+---
+import Layout from '../layouts/Layout.astro';
+const base = import.meta.env.BASE_URL;
+---
+
+<Layout title="Analysis | Interactive Specification Curves">
+	<div class="analysis-header container">
+		<h1>Econometric Analysis</h1>
+		<p class="subtitle">
+			Interactive results showing effect stability and model diagnostics across different specifications.
+		</p>
+	</div>
+
+	<section class="results-dashboard container">
+		<!-- Main Specs Curve Section -->
+		<div class="card spec-curve-container">
+			<div class="card-header">
+				<h2>Specification Curve</h2>
+				<div class="controls">
+					<select id="index-select" class="styled-select">
+						<option value="KOFGI">Overall Globalization (KOFGI)</option>
+						<option value="KOFEcGI">Economic Globalization (KOFEcGI)</option>
+						<option value="KOFSoGI">Social Globalization (KOFSoGI)</option>
+						<option value="KOFPoGI">Political Globalization (KOFPoGI)</option>
+					</select>
+				</div>
+			</div>
+			
+			<div id="plotly-chart" style="width:100%;height:450px;"></div>
+			
+			<div class="chart-legend">
+				<p><small>* Shaded area represents 95% Confidence Interval. Dots show the point estimate for each incremental control specification.</small></p>
+			</div>
+		</div>
+
+		<!-- Diagnostic Pulse Grid -->
+		<div class="diagnostic-grid">
+			<div class="card diagnostic-card">
+				<h3>Model Health Index</h3>
+				<div id="diagnostics-list" class="diag-list">
+					<!-- Populated by JS -->
+					<div class="loading">Loading diagnostic data...</div>
+				</div>
+			</div>
+			
+			<div class="card summary-card">
+				<h3>Quick Interpretation</h3>
+				<div class="insight-pill">
+					<span class="icon">✅</span>
+					<div class="text">
+						<strong>Robustness:</strong> Globalization effects remain positive and significant across most specifications.
+					</div>
+				</div>
+				<div class="insight-pill">
+					<span class="icon">🔬</span>
+					<div class="text">
+						<strong>Cointegration:</strong> Long-run equilibrium is validated by Kao tests for all indices.
+					</div>
+				</div>
+			</div>
+		</div>
+	</section>
+
+	<!-- Plotly.js CDN -->
+	<script is:inline src="https://cdn.plot.ly/plotly-2.27.0.min.js"></script>
+
+	<script is:inline define:vars={{ base }}>
+		async function init() {
+			const specRes = await fetch(`${base}/data/spec_curves.json`);
+			const diagRes = await fetch(`${base}/data/diagnostics.json`);
+			const specData = await specRes.json();
+			const diagData = await diagRes.json();
+
+			const select = document.getElementById('index-select');
+			const diagList = document.getElementById('diagnostics-list');
+
+			function updateChart(indexName) {
+				const data = specData[indexName];
+				const x = data.map((_, i) => i);
+				const y = data.map(d => d.coefficient);
+				const lower = data.map(d => d.lower_ci);
+				const upper = data.map(d => d.upper_ci);
+				const labels = data.map(d => d.name);
+
+				const trace = {
+					x: x,
+					y: y,
+					mode: 'lines+markers',
+					name: 'Coefficient',
+					line: { color: '#3b82f6', width: 3 },
+					marker: { size: 10, color: '#fff', line: { width: 3, color: '#3b82f6' } },
+					text: labels,
+					hovertemplate: '<b>%{text}</b><br>Coef: %{y:.3f}<extra></extra>'
+				};
+
+				const ciTrace = {
+					x: x.concat(x.slice().reverse()),
+					y: upper.concat(lower.slice().reverse()),
+					fill: 'toself',
+					fillcolor: 'rgba(59, 130, 246, 0.2)',
+					line: { color: 'transparent' },
+					name: '95% CI',
+					hoverinfo: 'skip'
+				};
+
+				const layout = {
+					paper_bgcolor: 'rgba(0,0,0,0)',
+					plot_bgcolor: 'rgba(0,0,0,0)',
+					font: { color: '#f9fafb', family: 'Inter, sans-serif' },
+					margin: { t: 40, r: 20, l: 40, b: 60 },
+					xaxis: { 
+						title: 'Model Specification',
+						ticktext: labels,
+						tickvals: x,
+						tickangle: 25,
+						gridcolor: '#374151'
+					},
+					yaxis: { title: 'Effect Size', gridcolor: '#374151', zerolinecolor: '#ef4444' }
+				};
+
+				Plotly.newPlot('plotly-chart', [ciTrace, trace], layout, { responsive: true, displayModeBar: false });
+			}
+
+			function updateDiagnostics(indexName) {
+				const diag = diagData.find(d => d.model === indexName);
+				if (!diag) return;
+
+				diagList.innerHTML = `
+					<div class="diag-item">
+						<span>Hausman Test (p < 0.05 → FE)</span>
+						<span class="badge ${diag.hausman_p < 0.05 ? 'badge-success' : 'badge-warning'}">${diag.hausman_preferred} (p=${diag.hausman_p})</span>
+					</div>
+					<div class="diag-item">
+						<span>Serial Correlation (Ljung-Box)</span>
+						<span class="badge ${diag.serial_corr_status === 'Clean' ? 'badge-success' : 'badge-error'}">${diag.serial_corr_status}</span>
+					</div>
+					<div class="diag-item">
+						<span>Observations</span>
+						<span class="badge badge-success">${diag.nobs}</span>
+					</div>
+					<div class="diag-item">
+						<span>R-squared</span>
+						<span class="badge badge-success">${diag.rsquared}</span>
+					</div>
+				`;
+			}
+
+			select.addEventListener('change', (e) => {
+				updateChart(e.target.value);
+				updateDiagnostics(e.target.value);
+			});
+
+			// Initial Load
+			updateChart('KOFGI');
+			updateDiagnostics('KOFGI');
+		}
+
+		init();
+	</script>
+</Layout>
+
+<style>
+	.analysis-header {
+		padding: var(--spacing-xl) var(--spacing-lg);
+		text-align: left;
+	}
+
+	.results-dashboard {
+		display: flex;
+		flex-direction: column;
+		gap: 2rem;
+		padding-bottom: var(--spacing-xl);
+	}
+
+	.card-header {
+		display: flex;
+		justify-content: space-between;
+		align-items: center;
+		margin-bottom: 2rem;
+		border-bottom: 1px solid var(--card-border);
+		padding-bottom: 1rem;
+	}
+
+	.styled-select {
+		background: var(--bg-secondary);
+		color: #fff;
+		border: 1px solid var(--card-border);
+		padding: 0.5rem 1rem;
+		border-radius: 8px;
+		font-family: inherit;
+		cursor: pointer;
+	}
+
+	.chart-legend {
+		margin-top: 1rem;
+		color: var(--text-muted);
+		text-align: center;
+	}
+
+	.diagnostic-grid {
+		display: grid;
+		grid-template-columns: 3fr 2fr;
+		gap: 2rem;
+	}
+
+	.diag-list {
+		display: flex;
+		flex-direction: column;
+		gap: 1rem;
+		margin-top: 1rem;
+	}
+
+	.diag-item {
+		display: flex;
+		justify-content: space-between;
+		align-items: center;
+		padding: 0.75rem;
+		background: rgba(255, 255, 255, 0.03);
+		border-radius: 8px;
+		font-size: 0.875rem;
+	}
+
+	.insight-pill {
+		display: flex;
+		gap: 1rem;
+		margin-top: 1.5rem;
+		padding: 1rem;
+		background: rgba(59, 130, 246, 0.05);
+		border-radius: 12px;
+		border: 1px solid rgba(59, 130, 246, 0.1);
+	}
+
+	.insight-pill .icon {
+		font-size: 1.5rem;
+	}
+
+	.insight-pill strong {
+		color: var(--accent-primary);
+		display: block;
+		margin-bottom: 0.25rem;
+	}
+
+	@media (max-width: 900px) {
+		.diagnostic-grid {
+			grid-template-columns: 1fr;
+		}
+	}
+</style>

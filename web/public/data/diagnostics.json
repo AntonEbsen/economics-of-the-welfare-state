@@ -1,0 +1,38 @@
+[
+  {
+    "model": "KOFGI",
+    "hausman_p": 1.0,
+    "hausman_preferred": "RE",
+    "serial_corr_p": 0.0,
+    "serial_corr_status": "Detected",
+    "nobs": 996,
+    "rsquared": 0.358
+  },
+  {
+    "model": "KOFEcGI",
+    "hausman_p": 0.004,
+    "hausman_preferred": "FE",
+    "serial_corr_p": 0.0,
+    "serial_corr_status": "Detected",
+    "nobs": 996,
+    "rsquared": 0.352
+  },
+  {
+    "model": "KOFSoGI",
+    "hausman_p": 0.0,
+    "hausman_preferred": "FE",
+    "serial_corr_p": 0.0,
+    "serial_corr_status": "Detected",
+    "nobs": 996,
+    "rsquared": 0.371
+  },
+  {
+    "model": "KOFPoGI",
+    "hausman_p": 1.0,
+    "hausman_preferred": "RE",
+    "serial_corr_p": 0.0,
+    "serial_corr_status": "Detected",
+    "nobs": 996,
+    "rsquared": 0.358
+  }
+]

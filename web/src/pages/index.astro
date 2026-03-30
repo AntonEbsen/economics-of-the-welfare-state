@@ -1,0 +1,207 @@
+---
+import Layout from '../layouts/Layout.astro';
+const base = import.meta.env.BASE_URL;
+---
+
+<Layout title="Globalization & Welfare State | Overview">
+	<div class="hero">
+		<h1 class="animate-in">Does Globalization Erode the Welfare State?</h1>
+		<p class="subtitle animate-in" style="animation-delay: 0.1s">
+			A panel data analysis of 32 OECD countries exploring the long-run relationship between 
+			KOF Globalization indices and Social Security Transfers.
+		</p>
+		
+		<div class="stats-row animate-in" style="animation-delay: 0.2s">
+			<div class="stat-card card">
+				<span class="label">Time Span</span>
+				<span class="value">1980 – 2022</span>
+			</div>
+			<div class="stat-card card">
+				<span class="label">Countries</span>
+				<span class="value">32 OECD</span>
+			</div>
+			<div class="stat-card card">
+				<span class="label">Observations</span>
+				<span class="value">~1,200</span>
+			</div>
+		</div>
+	</div>
+
+	<section class="overview-grid container">
+		<div class="card research-question">
+			<h2>The Big Question</h2>
+			<p>
+				The "Efficiency Hypothesis" suggests that globalization forces states to retrench 
+				welfare spending to remain competitive. Conversely, the "Compensation Hypothesis" 
+				argues that states must expand welfare to protect citizens from international shocks.
+			</p>
+			<a href={`${base}/analysis`} class="cta-button">Explore Results →</a>
+		</div>
+
+		<div class="card key-finding">
+			<h2>Key Finding</h2>
+			<div class="finding-badge">Cointegrated Long-Run Equilibrium</div>
+			<p>
+				Our Kao Panel Cointegration tests confirm a robust, stable long-run relationship 
+				between Social Globalization and Welfare spending, suggesting that the "retrenchment" 
+				narrative may be overly simplistic.
+			</p>
+		</div>
+	</section>
+
+	<section class="methodology-preview container">
+		<div class="glass-box card">
+			<h2>Methodological Rigor</h2>
+			<div class="method-steps">
+				<div class="step">
+					<span class="step-num">01</span>
+					<h3>Advanced Panel FE</h3>
+					<p>Controlling for country-specific intercepts and macroeconomic shocks.</p>
+				</div>
+				<div class="step">
+					<span class="step-num">02</span>
+					<h3>Dynamic Specs</h3>
+					<p>Using lagged variables and stepwise robustness to ensure stability.</p>
+				</div>
+				<div class="step">
+					<span class="step-num">03</span>
+					<h3>Validation Suite</h3>
+					<p>Hausman, RESET, and Granger tests to defend against endogeneity.</p>
+				</div>
+			</div>
+		</div>
+	</section>
+</Layout>
+
+<style>
+	.hero {
+		padding: 6rem 4rem;
+		text-align: center;
+		background: radial-gradient(circle at center, rgba(59, 130, 246, 0.15) 0%, transparent 70%);
+	}
+
+	.hero h1 {
+		font-family: 'Outfit', sans-serif;
+		font-weight: 800;
+		max-width: 900px;
+		margin-left: auto;
+		margin-right: auto;
+		background: linear-gradient(to bottom right, #fff 50%, rgba(255, 255, 255, 0.5));
+		-webkit-background-clip: text;
+		-webkit-text-fill-color: transparent;
+	}
+
+	.subtitle {
+		font-size: 1.25rem;
+		color: var(--text-secondary);
+		max-width: 700px;
+		margin: 0 auto 3rem;
+	}
+
+	.stats-row {
+		display: flex;
+		gap: 2rem;
+		justify-content: center;
+		flex-wrap: wrap;
+	}
+
+	.stat-card {
+		padding: 1.5rem 2.5rem;
+		min-width: 200px;
+	}
+
+	.stat-card .label {
+		display: block;
+		font-size: 0.875rem;
+		color: var(--accent-primary);
+		font-weight: 600;
+		text-transform: uppercase;
+		margin-bottom: 0.5rem;
+	}
+
+	.stat-card .value {
+		font-family: 'Outfit', sans-serif;
+		font-size: 1.5rem;
+		font-weight: 700;
+	}
+
+	.overview-grid {
+		display: grid;
+		grid-template-columns: 1fr 1fr;
+		gap: 2rem;
+		margin-top: -4rem;
+	}
+
+	.overview-grid h2 {
+		font-family: 'Outfit', sans-serif;
+		margin-bottom: 1.5rem;
+	}
+
+	.cta-button {
+		display: inline-block;
+		margin-top: 2rem;
+		padding: 0.75rem 1.5rem;
+		background: var(--accent-primary);
+		color: #fff;
+		border-radius: 8px;
+		font-weight: 600;
+		transition: all 0.3s;
+	}
+
+	.cta-button:hover {
+		background: var(--accent-secondary);
+		transform: scale(1.05);
+	}
+
+	.finding-badge {
+		background: rgba(16, 185, 129, 0.1);
+		color: var(--success);
+		padding: 0.5rem 1rem;
+		border-radius: 6px;
+		display: inline-block;
+		font-weight: 700;
+		margin-bottom: 1rem;
+		border: 1px solid var(--success);
+	}
+
+	.method-steps {
+		display: grid;
+		grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+		gap: 3rem;
+		margin-top: 2rem;
+	}
+
+	.step-num {
+		font-family: 'Outfit', sans-serif;
+		font-size: 2.5rem;
+		font-weight: 900;
+		color: rgba(255, 255, 255, 0.05);
+		line-height: 1;
+		margin-bottom: -1rem;
+		display: block;
+	}
+
+	.animate-in {
+		opacity: 0;
+		transform: translateY(20px);
+		animation: slide-up 0.8s cubic-bezier(0.16, 1, 0.3, 1) forwards;
+	}
+
+	@keyframes slide-up {
+		to {
+			opacity: 1;
+			transform: translateY(0);
+		}
+	}
+
+	@media (max-width: 900px) {
+		.overview-grid {
+			grid-template-columns: 1fr;
+			margin-top: 2rem;
+		}
+		.hero {
+			padding: 4rem 1rem;
+		}
+		.hero h1 { font-size: 2rem; }
+	}
+</style>

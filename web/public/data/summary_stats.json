@@ -1,0 +1,79 @@
+{
+  "sstran": {
+    "count": 1266.0,
+    "mean": 13.53,
+    "std": 3.7,
+    "min": 4.34,
+    "max": 23.9
+  },
+  "KOFGI": {
+    "count": 1340.0,
+    "mean": 75.1,
+    "std": 9.3,
+    "min": 41.34,
+    "max": 89.19
+  },
+  "KOFEcGI": {
+    "count": 1340.0,
+    "mean": 70.42,
+    "std": 12.19,
+    "min": 35.18,
+    "max": 93.01
+  },
+  "KOFSoGI": {
+    "count": 1340.0,
+    "mean": 72.28,
+    "std": 8.79,
+    "min": 40.05,
+    "max": 90.54
+  },
+  "KOFPoGI": {
+    "count": 1340.0,
+    "mean": 82.6,
+    "std": 13.37,
+    "min": 24.71,
+    "max": 98.06
+  },
+  "ln_gdppc": {
+    "count": 1292.0,
+    "mean": 4.65,
+    "std": 0.38,
+    "min": 3.36,
+    "max": 5.69
+  },
+  "inflation_cpi": {
+    "count": 1311.0,
+    "mean": 10.16,
+    "std": 67.44,
+    "min": -4.45,
+    "max": 1281.44
+  },
+  "deficit": {
+    "count": 1251.0,
+    "mean": -2.58,
+    "std": 4.38,
+    "min": -32.15,
+    "max": 25.45
+  },
+  "debt": {
+    "count": 1228.0,
+    "mean": 67.26,
+    "std": 39.29,
+    "min": 6.8,
+    "max": 240.82
+  },
+  "ln_population": {
+    "count": 1408.0,
+    "mean": 16.13,
+    "std": 1.51,
+    "min": 12.34,
+    "max": 19.64
+  },
+  "dependency_ratio": {
+    "count": 1088.0,
+    "mean": 50.61,
+    "std": 4.64,
+    "min": 38.54,
+    "max": 70.26
+  }
+}
