@@ -56,6 +56,20 @@ const base = import.meta.env.BASE_URL;
 				<slot />
 			</main>
 		</div>
+
+		<script is:inline>
+			// Active nav highlighting
+			const navItems = document.querySelectorAll('.nav-item');
+			const currentPath = window.location.pathname;
+			navItems.forEach(item => {
+				const href = item.getAttribute('href');
+				// Exact match for home, prefix match for sub-pages
+				if (href === currentPath || href + '/' === currentPath ||
+				    (href !== '/' && currentPath.startsWith(href))) {
+					item.classList.add('active');
+				}
+			});
+		</script>
 	</body>
 </html>
 
@@ -96,6 +110,12 @@ const base = import.meta.env.BASE_URL;
 		margin-bottom: 1rem;
 		color: #fff;
 		box-shadow: 0 0 20px rgba(59, 130, 246, 0.5);
+		animation: logo-breathe 4s ease-in-out infinite;
+	}
+
+	@keyframes logo-breathe {
+		0%, 100% { box-shadow: 0 0 20px rgba(59, 130, 246, 0.5); }
+		50% { box-shadow: 0 0 35px rgba(59, 130, 246, 0.8); }
 	}
 
 	.project-title {
@@ -127,6 +147,7 @@ const base = import.meta.env.BASE_URL;
 	.nav-item:hover, .nav-item.active {
 		background: rgba(59, 130, 246, 0.1);
 		color: var(--accent-primary);
+		box-shadow: inset 3px 0 0 var(--accent-primary);
 	}
 
 	.nav-icon {
