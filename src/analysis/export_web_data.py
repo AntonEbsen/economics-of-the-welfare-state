@@ -2,6 +2,7 @@
 Data Bridge: Export econometric results to JSON for the Research Portal.
 """
 
+import itertools
 import json
 import logging
 from pathlib import Path
@@ -38,42 +39,52 @@ def export_all_web_data(master: pd.DataFrame, config: dict, out_dir: str | Path)
 
     for idx in indices:
         idx_models = []
-        current_ctrls = []
 
-        # Stepwise models
-        for step in range(len(controls) + 1):
-            if step > 0:
-                current_ctrls.append(controls[step - 1])
+        # All subsets models (Vibration of Effects)
+        for r in range(len(controls) + 1):
+            for current_ctrls_tuple in itertools.combinations(controls, r):
+                current_ctrls = list(current_ctrls_tuple)
 
-            all_vars = [idx] + current_ctrls
-            reg_data = create_lags(master, all_vars, lags=[1])
+                all_vars = [idx] + current_ctrls
+                reg_data = create_lags(master, all_vars, lags=[1])
 
-            g_var = f"{idx}_lag1"
-            lagged_ctrls = [f"{v}_lag1" for v in current_ctrls]
+                g_var = f"{idx}_lag1"
+                lagged_ctrls = [f"{v}_lag1" for v in current_ctrls]
 
-            ols_data, exog_vars = prepare_regression_data(
-                reg_data, dep_var, g_var, lagged_ctrls, interactions=False
-            )
+                ols_data, exog_vars = prepare_regression_data(
+                    reg_data, dep_var, g_var, lagged_ctrls, interactions=False
+                )
 
-            res = run_panel_ols(ols_data, dep_var, exog_vars)
+                res = run_panel_ols(ols_data, dep_var, exog_vars)
 
-            # Extract point estimate and CI for the main index
-            coef = float(res.params[g_var])
-            se = float(res.std_errors[g_var])
+                # Extract point estimate and CI for the main index
+                coef = float(res.params[g_var])
+                se = float(res.std_errors[g_var])
 
-            model_entry = {
-                "name": "Baseline" if step == 0 else f"+ {controls[step - 1]}",
-                "coefficient": round(coef, 4),
-                "lower_ci": round(coef - 1.96 * se, 4),
-                "upper_ci": round(coef + 1.96 * se, 4),
-                "significant": bool(res.pvalues[g_var] < 0.05),
-                "controls": [LATEX_LABEL_MAP.get(f"{c}_lag1", c) for c in current_ctrls],
-            }
-            idx_models.append(model_entry)
+                model_entry = {
+                    "name": f"Subset ({len(current_ctrls)} controls)",
+                    "coefficient": round(coef, 4),
+                    "lower_ci": round(coef - 1.96 * se, 4),
+                    "upper_ci": round(coef + 1.96 * se, 4),
+                    "significant": bool(res.pvalues[g_var] < 0.05),
+                    "controls": current_ctrls,  # Keep bare variable names for easy matching
+                    "included_controls": [
+                        LATEX_LABEL_MAP.get(f"{c}_lag1", c).replace("$_{t-1}$", "")
+                        for c in current_ctrls
+                    ],
+                }
+                idx_models.append(model_entry)
 
-            if step == len(controls):
-                final_models[idx] = res
-                final_model_data[idx] = (ols_data, exog_vars)
+                if len(current_ctrls) == len(controls):
+                    final_models[idx] = res
+                    final_model_data[idx] = (ols_data, exog_vars)
+
+        # Sort the specification curve by coefficient size
+        idx_models.sort(key=lambda x: x["coefficient"])
+
+        # Re-assign rank as the name for the tooltip
+        for rank, m in enumerate(idx_models):
+            m["rank"] = rank + 1
 
         spec_data[idx] = idx_models
 

@@ -26,7 +26,7 @@ const base = import.meta.env.BASE_URL;
 				</div>
 			</div>
 			
-			<div id="plotly-chart" style="width:100%;height:450px;"></div>
+			<div id="plotly-chart" style="width:100%;height:600px;"></div>
 			
 			<div class="chart-legend">
 				<p><small>* Shaded area represents 95% Confidence Interval. Dots show the point estimate for each incremental control specification.</small></p>
@@ -169,17 +169,25 @@ const base = import.meta.env.BASE_URL;
 				const y = data.map(d => d.coefficient);
 				const lower = data.map(d => d.lower_ci);
 				const upper = data.map(d => d.upper_ci);
-				const labels = data.map(d => d.name);
+				
+				// Generate detailed hover labels
+				const labels = data.map((d, i) => {
+					let ctrlStr = d.included_controls.join(', ');
+					if (ctrlStr === "") ctrlStr = "None";
+					return `<b>Rank ${i+1}</b><br>Coef: ${d.coefficient.toFixed(4)}<br>Controls: ${ctrlStr}`;
+				});
 
 				const trace = {
 					x: x,
 					y: y,
 					mode: 'lines+markers',
 					name: 'Coefficient',
-					line: { color: '#3b82f6', width: 3 },
-					marker: { size: 10, color: '#fff', line: { width: 3, color: '#3b82f6' } },
+					line: { color: '#3b82f6', width: 2 },
+					marker: { size: 4, color: '#fff', line: { width: 1, color: '#3b82f6' } },
 					text: labels,
-					hovertemplate: '<b>%{text}</b><br>Coef: %{y:.3f}<extra></extra>'
+					hovertemplate: '%{text}<extra></extra>',
+					xaxis: 'x',
+					yaxis: 'y'
 				};
 
 				const ciTrace = {
@@ -189,25 +197,76 @@ const base = import.meta.env.BASE_URL;
 					fillcolor: 'rgba(59, 130, 246, 0.2)',
 					line: { color: 'transparent' },
 					name: '95% CI',
-					hoverinfo: 'skip'
+					hoverinfo: 'skip',
+					xaxis: 'x',
+					yaxis: 'y'
+				};
+
+				// Bottom Grid: Control Variables Inclusion
+				const controlLabels = {
+					'ln_gdppc': 'GDP per Capita',
+					'inflation_cpi': 'Inflation',
+					'deficit': 'Deficit',
+					'debt': 'Debt',
+					'ln_population': 'Population',
+					'dependency_ratio': 'Dependency Ratio'
+				};
+				const allControls = Object.keys(controlLabels);
+				
+				const gridX = [];
+				const gridY = [];
+				
+				data.forEach((d, i) => {
+					allControls.forEach(c => {
+						if (d.controls.includes(c)) {
+							gridX.push(i);
+							gridY.push(controlLabels[c]);
+						}
+					});
+				});
+
+				const gridTrace = {
+					x: gridX,
+					y: gridY,
+					mode: 'markers',
+					marker: { symbol: 'square', size: 6, color: '#94a3b8' },
+					hoverinfo: 'skip',
+					xaxis: 'x',
+					yaxis: 'y2'
 				};
 
 				const layout = {
 					paper_bgcolor: 'rgba(0,0,0,0)',
 					plot_bgcolor: 'rgba(0,0,0,0)',
 					font: { color: '#f9fafb', family: 'Inter, sans-serif' },
-					margin: { t: 40, r: 20, l: 40, b: 60 },
+					margin: { t: 40, r: 20, l: 150, b: 20 },
+					showlegend: false,
 					xaxis: { 
-						title: 'Model Specification',
-						ticktext: labels,
-						tickvals: x,
-						tickangle: 25,
-						gridcolor: '#374151'
+						showticklabels: false,
+						zeroline: false,
+						showgrid: false,
+						fixedrange: true
 					},
-					yaxis: { title: 'Effect Size', gridcolor: '#374151', zerolinecolor: '#ef4444' }
+					yaxis: { 
+						title: 'Effect Size', 
+						gridcolor: '#374151', 
+						zerolinecolor: '#ef4444',
+						domain: [0.45, 1],
+						fixedrange: true
+					},
+					yaxis2: {
+						domain: [0, 0.40],
+						gridcolor: 'rgba(255,255,255,0.05)',
+						tickfont: { size: 11, color: '#94a3b8' },
+						fixedrange: true,
+						// Force categorical order alphabetically or fixed
+						categoryorder: 'array',
+						categoryarray: Object.values(controlLabels).reverse()
+					}
 				};
 
-				Plotly.newPlot('plotly-chart', [ciTrace, trace], layout, { responsive: true, displayModeBar: false });
+				const config = { responsive: true, displayModeBar: false };
+				Plotly.newPlot('plotly-chart', [ciTrace, trace, gridTrace], layout, config);
 			}
 
 			function updateImportanceChart(indexName) {
