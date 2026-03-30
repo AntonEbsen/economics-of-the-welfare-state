@@ -27,25 +27,45 @@ const base = import.meta.env.BASE_URL;
 		</div>
 	</div>
 
-	<section class="overview-grid container">
-		<div class="card research-question">
-			<h2>The Big Question</h2>
-			<p>
-				The "Efficiency Hypothesis" suggests that globalization forces states to retrench 
-				welfare spending to remain competitive. Conversely, the "Compensation Hypothesis" 
-				argues that states must expand welfare to protect citizens from international shocks.
-			</p>
-			<a href={`${base}/analysis`} class="cta-button">Explore Results →</a>
+	<!-- Scrollytelling Section -->
+	<section class="scrolly-section relative min-h-[300vh] w-full mt-24 mb-32">
+		<!-- The Sticky Visual Background Area -->
+		<div class="scrolly-visual sticky top-0 h-screen w-full flex items-center justify-center p-4 lg:p-8 bg-transparent pointer-events-none z-0">
+			<!-- Visual Container -->
+			<div id="visual-container" class="relative w-full max-w-2xl lg:max-w-4xl aspect-[4/3] lg:aspect-video border border-gray-700/30 rounded-3xl bg-gray-900/60 backdrop-blur-md overflow-hidden flex items-center justify-center transition-all duration-1000 ease-[cubic-bezier(0.25,1,0.5,1)]">
+				<!-- Dynamic Content injected by JS based on step -->
+				<div id="vis-content" class="text-center opacity-100 transition-opacity duration-500 flex items-center justify-center w-full h-full">
+					<span class="text-gray-500 font-mono text-xl md:text-2xl tracking-widest animate-pulse">Scroll to explore...</span>
+				</div>
+			</div>
 		</div>
 
-		<div class="card key-finding">
-			<h2>Key Finding</h2>
-			<div class="finding-badge">Cointegrated Long-Run Equilibrium</div>
-			<p>
-				Our Kao Panel Cointegration tests confirm a robust, stable long-run relationship 
-				between Social Globalization and Welfare spending, suggesting that the "retrenchment" 
-				narrative may be overly simplistic.
-			</p>
+		<!-- The Scrollable Text Steps -->
+		<div class="scrolly-text w-full max-w-2xl mx-auto -mt-[100vh] relative z-10 pb-[50vh]">
+			<!-- Step 1 -->
+			<article class="step p-8 my-[80vh] bg-navy-900/90 backdrop-blur-xl rounded-2xl border border-blue-500/30 shadow-2xl transition-all duration-500 opacity-40" data-step="1">
+				<h2 class="text-3xl md:text-4xl font-bold font-['Outfit'] text-blue-400 mb-4">Scene 1: The Globalization Shock</h2>
+				<p class="text-lg md:text-xl text-gray-300 leading-relaxed">
+					In the early 1990s, the KOF Globalization Index began an unprecedented parabolic ascent. Capital controls collapsed, trade barriers plummeted, and Western welfare democracies were suddenly exposed to the raw volatility of the global market.
+				</p>
+			</article>
+			
+			<!-- Step 2 -->
+			<article class="step p-8 my-[80vh] bg-navy-900/90 backdrop-blur-xl rounded-2xl border border-red-500/30 shadow-2xl transition-all duration-500 opacity-40" data-step="2">
+				<h2 class="text-3xl md:text-4xl font-bold font-['Outfit'] text-white mb-4">Scene 2: The Ideological Divergence</h2>
+				<p class="text-lg md:text-xl text-gray-300 leading-relaxed">
+					Academics were split. The <strong class="text-red-400">Efficiency Hypothesis</strong> claimed countries would race to the bottom, slashing social security transfers to remain competitive. The <strong class="text-green-400">Compensation Hypothesis</strong> argued the exact opposite—that states must shield their citizens, expanding welfare to buy domestic peace.
+				</p>
+			</article>
+
+			<!-- Step 3 -->
+			<article class="step p-8 my-[80vh] bg-navy-900/90 backdrop-blur-xl rounded-2xl border border-indigo-400/30 shadow-2xl transition-all duration-500 opacity-40" data-step="3">
+				<h2 class="text-3xl md:text-4xl font-bold font-['Outfit'] text-indigo-400 mb-4">Scene 3: The Empirical Reality</h2>
+				<p class="text-lg md:text-xl text-gray-300 leading-relaxed">
+					Our advanced panel Error Correction Models (ECM) reveal the truth: a robust, <strong class="text-indigo-400 font-bold">cointegrated long-run equilibrium</strong>. Social globalization and welfare spending are inextricably linked. There is no simple race to the bottom—the welfare state actively evolves to absorb external shocks.
+				</p>
+				<a href={`${base}/analysis`} class="cta-button w-full text-center mt-6">Explore Findings & Data &rarr;</a>
+			</article>
 		</div>
 	</section>
 
@@ -72,6 +92,109 @@ const base = import.meta.env.BASE_URL;
 		</div>
 	</section>
 </Layout>
+
+<script is:inline>
+    const steps = document.querySelectorAll('.step');
+    const visualBox = document.getElementById('visual-container');
+    const visContent = document.getElementById('vis-content');
+
+    const visuals = {
+        1: {
+            color: 'rgba(59, 130, 246, 0.4)',
+            border: '#3b82f6',
+            html: `
+                <div class="flex flex-col items-center justify-center w-full h-full relative p-4">
+                    <h3 class="text-4xl font-bold text-blue-400 mb-12 absolute top-12 font-['Outfit']">KOFGI Breakout (1990s)</h3>
+                    <!-- A CSS exponential curve simulation -->
+                    <div class="w-2/3 h-1/2 border-b-2 border-l-2 border-slate-600 flex items-end justify-start relative px-4 mt-16">
+                        <div class="absolute bottom-[-6px] left-[3px] w-3 h-3 bg-blue-500 rounded-full animate-[ping_2s_infinite]"></div>
+                        <!-- Curve line using clip-path or SVG -->
+                        <svg class="w-full h-full overflow-visible" viewBox="0 0 100 100" preserveAspectRatio="none">
+                            <path class="path-anim" d="M 0,100 C 50,100 60,30 100,0" fill="none" stroke="#3b82f6" stroke-width="4" stroke-dasharray="250" stroke-dashoffset="250" stroke-linecap="round"/>
+                        </svg>
+						<span class="absolute bottom-[-30px] left-0 text-slate-500 font-mono">1980</span>
+						<span class="absolute bottom-[-30px] right-0 text-blue-400 font-mono font-bold">2000+</span>
+                    </div>
+                </div>
+            `
+        },
+        2: {
+            color: 'rgba(239, 68, 68, 0.2)',
+            border: '#ef4444',
+            html: `
+                <div class="flex flex-col items-center justify-center w-full h-full relative">
+                    <h3 class="text-4xl font-bold text-gray-300 mb-16 font-['Outfit'] absolute top-12">The Dual Response</h3>
+                    <div class="flex w-full items-center justify-around translate-y-8 px-4">
+                        <div class="flex flex-col items-center text-red-500 gap-6 animate-[slide-down_1.5s_ease-out_forwards]">
+                            <svg width="60" height="150" viewBox="0 0 24 100" class="drop-shadow-lg filter drop-shadow-[0_0_15px_rgba(239,68,68,0.5)]"><path d="M12 100L24 80H16V0H8V0H8V80H0L12 100Z" fill="currentColor"/></svg>
+                            <span class="font-bold text-2xl font-mono uppercase tracking-widest text-center">Efficiency<br>(Retrench)</span>
+                        </div>
+                        <div class="flex flex-col items-center text-green-500 gap-6 animate-[slide-up_1.5s_ease-out_forwards]">
+                            <span class="font-bold text-2xl font-mono uppercase tracking-widest text-center">Compensation<br>(Expand)</span>
+                            <svg width="60" height="150" viewBox="0 0 24 100" class="drop-shadow-lg filter drop-shadow-[0_0_15px_rgba(34,197,94,0.5)]"><path d="M12 0L24 20H16V100H8V100H8V20H0L12 0Z" fill="currentColor"/></svg>
+                        </div>
+                    </div>
+                </div>
+            `
+        },
+        3: {
+            color: 'rgba(99, 102, 241, 0.4)',
+            border: '#818cf8',
+            html: `
+                <div class="flex flex-col items-center justify-center w-full h-full relative">
+                    <h3 class="text-4xl font-bold text-indigo-400 mb-8 absolute top-12 font-['Outfit']">Stable Long-Run Equilibrium</h3>
+                    <div class="relative w-64 h-64 flex items-center justify-center mt-12">
+                        <div class="absolute inset-0 border-[6px] border-indigo-500 rounded-full animate-[ping_4s_ease-in-out_infinite] opacity-75"></div>
+                        <div class="absolute inset-4 border-[6px] border-blue-400 rounded-full animate-[ping_4s_ease-in-out_infinite_delay-1000] opacity-75"></div>
+                        <div class="absolute inset-8 border-[6px] border-emerald-400 rounded-full animate-[ping_4s_ease-in-out_infinite_delay-2000] opacity-75"></div>
+                        <div class="text-white font-bold text-2xl lg:text-3xl z-10 text-center font-['Outfit'] drop-shadow-md">Cointegrated<br>Dynamics</div>
+                    </div>
+                </div>
+            `
+        }
+    };
+
+    const observer = new IntersectionObserver((entries) => {
+        entries.forEach(entry => {
+            if (entry.isIntersecting) {
+                const step = entry.target.dataset.step;
+                
+                // Dim all steps
+                steps.forEach(s => s.classList.replace('opacity-100', 'opacity-40'));
+                // Highlight active step
+                entry.target.classList.replace('opacity-40', 'opacity-100');
+				entry.target.classList.add('scale-[1.02]');
+				
+				// Revert others scaling
+				steps.forEach(s => {
+					if(s !== entry.target) s.classList.remove('scale-[1.02]');
+				});
+
+                // Update Visual 
+                const visData = visuals[step];
+                if (visData) {
+                    visContent.style.opacity = '0'; // Fade out
+                    
+                    setTimeout(() => {
+                        visualBox.style.boxShadow = `0 0 120px ${visData.color}`;
+                        visualBox.style.borderColor = visData.border;
+                        visContent.innerHTML = visData.html;
+                        visContent.style.opacity = '1'; // Fade in
+                    }, 400); // Wait for fade out
+                }
+            }
+        });
+    }, {
+        root: null, // viewport
+        rootMargin: '-40% 0px -40% 0px', // Trigger when step is exactly in center
+        threshold: 0
+    });
+
+    // Start observer
+    setTimeout(() => {
+        steps.forEach(step => observer.observe(step));
+    }, 500);
+</script>
 
 <style>
 	.hero {
@@ -194,6 +317,27 @@ const base = import.meta.env.BASE_URL;
 		}
 	}
 
+	@keyframes slide-down {
+		0% { transform: translateY(-50px); opacity: 0; }
+		100% { transform: translateY(0); opacity: 1; }
+	}
+	
+	@keyframes slide-up {
+		0% { transform: translateY(50px); opacity: 0; }
+		100% { transform: translateY(0); opacity: 1; }
+	}
+	
+	.path-anim {
+		animation: draw-path 3s ease-out forwards;
+	}
+	
+	@keyframes draw-path {
+		to { stroke-dashoffset: 0; }
+	}
+
+	.opacity-40 { transition: opacity 0.7s ease-in-out, transform 0.5s ease; opacity: 0.3; filter: grayscale(50%) blur(2px); }
+	.opacity-100 { transition: opacity 0.7s ease-in-out, transform 0.5s ease; opacity: 1; filter: grayscale(0%) blur(0px); }
+
 	@media (max-width: 900px) {
 		.overview-grid {
 			grid-template-columns: 1fr;
@@ -203,5 +347,14 @@ const base = import.meta.env.BASE_URL;
 			padding: 4rem 1rem;
 		}
 		.hero h1 { font-size: 2rem; }
+		
+		.scrolly-visual {
+			position: relative;
+			height: 50vh;
+			top: auto;
+			padding: 0;
+			margin-bottom: -50vh;
+			z-index: 0;
+		}
 	}
 </style>
