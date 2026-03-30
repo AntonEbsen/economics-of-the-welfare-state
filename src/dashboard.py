@@ -11,12 +11,10 @@ from analysis.regression_utils import LATEX_LABEL_MAP
 st.set_page_config(page_title="Welfare State & Globalization Dashboard", layout="wide")
 
 st.title("🌐 Globalization & The Welfare State")
-st.markdown(
-    """
+st.markdown("""
 This dashboard provides an interactive look at the relationship between different dimensions of globalization
 and social security transfers across OECD countries.
-"""
-)
+""")
 
 # Load Config
 with open("config.yaml", "r") as f:
