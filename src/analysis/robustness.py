@@ -11,6 +11,8 @@ import matplotlib.ticker as mticker
 import numpy as np
 import pandas as pd
 import seaborn as sns
+from linearmodels.panel import compare
+
 from clean.panel_utils import create_lags
 from clean.stats import (
     build_latex_appendix,
@@ -20,7 +22,6 @@ from clean.stats import (
     export_model_diagnostics_latex,
     export_reset_test_latex,
 )
-from linearmodels.panel import compare
 
 from .regression_utils import LATEX_LABEL_MAP, prepare_regression_data, run_panel_ols
 
