@@ -130,17 +130,26 @@ def save_html_report(report: dict, df: pd.DataFrame, output_path: str):
     <body>
         <h1>Data Quality Report</h1>
         <p>Generated: {pd.Timestamp.now()}</p>
-        
+
         <h2>Dataset Overview</h2>
-        <p>Rows: {report['n_rows']:,} | Columns: {report['n_columns']} | Memory: {report['memory_usage_mb']:.2f} MB</p>
-        
+        <p>Rows: {report["n_rows"]:,} | Columns: {report["n_columns"]} | Memory: {
+        report["memory_usage_mb"]:.2f} MB</p>
+
         <h2>Missing Values</h2>
-        {pd.DataFrame({
-            'Variable': list(report['missing_values'].keys()),
-            'Count': list(report['missing_values'].values()),
-            'Percentage': [f"{report['missing_pct'][v]:.1f}%" for v in report['missing_values'].keys()]
-        }).to_html(index=False) if report['missing_values'] else '<p class="good">✅ No missing values</p>'}
-        
+        {
+        pd.DataFrame(
+            {
+                "Variable": list(report["missing_values"].keys()),
+                "Count": list(report["missing_values"].values()),
+                "Percentage": [
+                    f"{report['missing_pct'][v]:.1f}%" for v in report["missing_values"].keys()
+                ],
+            }
+        ).to_html(index=False)
+        if report["missing_values"]
+        else '<p class="good">✅ No missing values</p>'
+    }
+
         <h2>Summary Statistics</h2>
         {df.describe().to_html()}
     </body>

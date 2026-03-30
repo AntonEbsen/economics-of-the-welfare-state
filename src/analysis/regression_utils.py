@@ -4,6 +4,7 @@ Regression utilities for panel data analysis.
 
 from __future__ import annotations
 
+import numpy as np
 import pandas as pd
 import statsmodels.api as sm
 from linearmodels.panel import PanelOLS

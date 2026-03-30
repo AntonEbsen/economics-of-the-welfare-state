@@ -22,13 +22,25 @@ from .panel_utils import (
 from .pipeline import process_all_datasets
 from .quality import check_time_series_breaks, generate_quality_report
 from .stats import (
+    build_latex_appendix,
     correlation_matrix,
     create_publication_table,
+    export_cointegration_latex,
+    export_granger_causality_latex,
+    export_hausman_latex,
+    export_model_diagnostics_latex,
+    export_reset_test_latex,
     export_stata_labels,
+    export_vif_latex,
     generate_summary_stats,
 )
 from .subsets import COUNTRY_GROUPS, filter_by_region, list_regions
-from .tests import test_normality, test_stationarity
+from .tests import (
+    export_diagnostics_latex,
+    generate_diagnostic_report,
+    test_normality,
+    test_stationarity,
+)
 
 # Shared utilities
 from .utils import (
@@ -80,6 +92,23 @@ __all__ = [
     "correlation_matrix",
     "export_stata_labels",
     "create_publication_table",
+    "export_vif_latex",
+    "export_model_diagnostics_latex",
+    "export_hausman_latex",
+    "export_reset_test_latex",
+    "export_granger_causality_latex",
+    "export_cointegration_latex",
+    "build_latex_appendix",
+    # Shared utilities
+    "filter_to_target_countries",
+    "filter_to_year_range",
+    "load_config",
+    "map_country_to_iso3",
+    "save_dataframe",
+    "setup_logging",
+    # Validation
+    "validate_master_data",
+    "WorldBankProcessor",
     # Visualization
     "plot_time_series",
     "plot_correlation_matrix",
@@ -87,10 +116,12 @@ __all__ = [
     "plot_distribution",
     # Quality
     "generate_quality_report",
+    "generate_diagnostic_report",
     "check_time_series_breaks",
     # Tests
     "test_stationarity",
     "test_normality",
+    "export_diagnostics_latex",
     # Documentation
     "generate_methods_section",
     "generate_data_appendix",

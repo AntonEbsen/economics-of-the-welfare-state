@@ -47,7 +47,7 @@ def filter_by_region(df, region: str):
         >>> # Returns data for DNK, FIN, ISL, NOR, SWE
     """
     if region not in COUNTRY_GROUPS:
-        raise ValueError(f"Unknown region: {region}. " f"Available: {list(COUNTRY_GROUPS.keys())}")
+        raise ValueError(f"Unknown region: {region}. Available: {list(COUNTRY_GROUPS.keys())}")
 
     countries = COUNTRY_GROUPS[region]
     filtered = df[df["iso3"].isin(countries)].copy()

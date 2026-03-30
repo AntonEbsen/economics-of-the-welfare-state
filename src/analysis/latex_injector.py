@@ -31,11 +31,6 @@ def inject_latex_results(tex_path: str, results_dict: dict, output_path: str = N
 
 # Example usage function for the pipeline
 def update_paper_stats(main_effect: float, p_value: float):
-    stats = {
-        "MAIN_BETA": f"{main_effect:.3f}",
-        "MAIN_PVAL": f"{p_value:.3f}",
-        "SIGNIFICANCE": "significant" if p_value < 0.05 else "not significant",
-    }
     # This would target a file like: paper/results_section.tex
     # inject_latex_results('paper/manuscript.tex', stats)
     pass

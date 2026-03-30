@@ -208,7 +208,7 @@ def export_to_stata_script(
     for var in df.columns:
         info = get_variable_info(var)
         if "error" not in info:
-            script.append(f"label variable {var} \"{info['label']}\"")
+            script.append(f'label variable {var} "{info["label"]}"')
     script.append("")
 
     # Declare panel

@@ -1,13 +1,15 @@
-"""
-Statistical tests for panel data and time series analysis.
-"""
-
-from __future__ import annotations
-
+import os
+from pathlib import Path
 from typing import Literal
 
 import numpy as np
 import pandas as pd
+from scipy.stats import jarque_bera, norm
+from statsmodels.regression.linear_model import OLS
+from statsmodels.stats.diagnostic import acorr_ljungbox
+from statsmodels.stats.sandwich_covariance import cov_hac
+from statsmodels.tsa.adfvalues import mackinnonp
+from statsmodels.tsa.stattools import adfuller, kpss
 
 # ---------------------------------------------------------------------------
 # Internal helper: Phillips-Perron test
@@ -26,9 +28,6 @@ def _phillips_perron(series: np.ndarray) -> tuple[float, float]:
     -------
     (stat, p_value) : the PP tau statistic and its MacKinnon (1994) p-value.
     """
-    from statsmodels.regression.linear_model import OLS
-    from statsmodels.stats.sandwich_covariance import cov_hac
-    from statsmodels.tsa.adfvalues import mackinnonp
 
     y = np.asarray(series, dtype=float)
     n = len(y)
@@ -126,7 +125,6 @@ def test_stationarity(
         )
         print(results[['variable', 'consensus']])
     """
-    from statsmodels.tsa.stattools import adfuller, kpss
 
     tests_to_run: list[str] = ["adf", "kpss", "pp"] if test == "all" else [test]
 
@@ -260,7 +258,7 @@ def panel_unit_root_test(
     Panel unit root tests (requires linearmodels package).
 
     Args:
-        df: Panel DataFrame
+        df: Panel DataFrame (levels, not diffed)
         variable: Variable to test
         test: 'ips' (Im-Pesaran-Shin), 'llc' (Levin-Lin-Chu), or 'breitung'
         id_var: Panel identifier column
@@ -270,22 +268,116 @@ def panel_unit_root_test(
         Dictionary with test results
     """
     try:
-        from linearmodels.panel.unit_root import IPS
+        from linearmodels.panel.unit_root import IPS, LLC, Breitung
     except ImportError:
         print("⚠️  linearmodels package required: pip install linearmodels")
         return None
 
+    # Linearmodels requires a 2-level MultiIndex (entity, time)
     df_sorted = df.sort_values([id_var, time_var]).set_index([id_var, time_var])
-    result = IPS(df_sorted[[variable]], trend="c")
+    data = df_sorted[[variable]].dropna()
+
+    if test == "ips":
+        result = IPS(data, trend="c")
+    elif test == "llc":
+        result = LLC(data, trend="c")
+    elif test == "breitung":
+        result = Breitung(data, trend="c")
+    else:
+        raise ValueError(f"Unknown test type: {test}")
 
     return {
         "variable": variable,
         "test": test.upper(),
-        "statistic": result.stat,
-        "p_value": result.pvalue,
+        "statistic": round(float(result.stat), 4),
+        "p_value": round(float(result.pvalue), 4),
         "stationary": result.pvalue < 0.05,
-        "lags": result.lags,
     }
+
+
+def generate_diagnostic_report(
+    df: pd.DataFrame,
+    variables: list[str],
+    id_var: str = "iso3",
+    time_var: str = "year",
+) -> pd.DataFrame:
+    """
+    Generate a research-grade diagnostic report for key variables.
+
+    Aggregates:
+    - Stationarity (IPS Panel Unit Root)
+    - Normality (Jarque-Bera)
+    - Basic missingness information
+
+    Args:
+        df: Merged panel DataFrame
+        variables: Key variables to analyze
+        id_var: Identifier for countries
+        time_var: Identifier for years
+
+    Returns:
+        Summary DataFrame
+    """
+    print("\n" + "=" * 60)
+    print("📊 GENERATING RESEARCH DIAGNOSTIC REPORT")
+    print("=" * 60)
+
+    summary_records = []
+
+    for var in variables:
+        if var not in df.columns:
+            continue
+
+        # 1. Missingness
+        n_missing = df[var].isnull().sum()
+        pct_missing = (n_missing / len(df)) * 100
+
+        # 2. Stationarity (ADF Panel Test, aggregated Fisher-style)
+        try:
+            # Returns a DataFrame with 'pct_stationary', 'mean_p_value', 'interpretation'
+            st_df = test_stationarity(
+                df, [var], test="adf", id_var=id_var, time_var=time_var, verbose=False
+            )
+
+            if not st_df.empty:
+                is_stat = st_df.iloc[0]["interpretation"] == "Stationary"
+                st_status = "I(0) ✅" if is_stat else "I(1) ⚠️ "
+                st_p = st_df.iloc[0]["mean_p_value"]
+            else:
+                st_status = "Fail"
+                st_p = None
+        except Exception:
+            st_status = "Fail"
+            st_p = None
+
+        # 3. Normality (Jarque-Bera)
+        try:
+            data = df[var].dropna()
+            _, jb_p = jarque_bera(data)
+            norm_status = "Normal ✅" if jb_p > 0.05 else "Skewed ⚠️ "
+        except Exception:
+            norm_status = "Fail"
+
+        summary_records.append(
+            {
+                "Variable": var,
+                "Missing (%)": round(pct_missing, 1),
+                "Stationarity": st_status,
+                "ADF mean p-value": st_p,
+                "Normality": norm_status,
+            }
+        )
+
+    summary_df = pd.DataFrame(summary_records)
+
+    # Print results to console
+    print(summary_df.to_string(index=False))
+    print("-" * 60)
+    print("Interpretation: I(0) = Stationary, I(1) = Non-stationary (Unit Root)")
+    print("Normal: p > 0.05 (H0: Series is normal)")
+    print("=" * 60 + "\n")
+
+    return summary_df
 
 
 def test_normality(df: pd.DataFrame, variables: list[str]) -> pd.DataFrame:
@@ -299,8 +391,6 @@ def test_normality(df: pd.DataFrame, variables: list[str]) -> pd.DataFrame:
     Returns:
         DataFrame with normality test results
     """
-    from scipy.stats import jarque_bera
-
     results = []
     for var in variables:
         if var not in df.columns:
@@ -324,3 +414,158 @@ def test_normality(df: pd.DataFrame, variables: list[str]) -> pd.DataFrame:
         print(f"{status} {r['variable']}: p={r['p_value']:.4f}")
 
     return pd.DataFrame(results)
+
+
+def test_pesaran_cd(
+    df: pd.DataFrame, var: str, id_var: str = "iso3", time_var: str = "year"
+) -> tuple[float, float]:
+    """
+    Computes the Pesaran CD test for cross-sectional dependence on unbalanced panels.
+    null: Cross-Sectional Independence (residuals or variable is uncorrelated across entities).
+    p < 0.05 implies presence of cross-sectional dependence.
+    """
+
+    # Pivot to wide format: rows=years, cols=countries
+    df_wide = df.pivot_table(index=time_var, columns=id_var, values=var)
+
+    # Calculate pairwise correlation over overlapping non-null periods
+    corr_matrix = df_wide.corr(method="pearson").values
+
+    # Calculate pairwise number of non-null overlapping observations (T_ij)
+    not_nulls = (~df_wide.isna()).astype(int)
+    T_ij_matrix = not_nulls.T.dot(not_nulls).values
+
+    N = df_wide.shape[1]
+
+    cd_stat = 0.0
+    valid_pairs = 0
+
+    for i in range(N - 1):
+        for j in range(i + 1, N):
+            T_ij = T_ij_matrix[i, j]
+            rho_ij = corr_matrix[i, j]
+
+            # Only include if they have at least 3 overlapping periods to compute correlation reliably
+            if T_ij >= 3 and not np.isnan(rho_ij):
+                cd_stat += np.sqrt(T_ij) * rho_ij
+                valid_pairs += 1
+
+    if valid_pairs == 0:
+        return np.nan, np.nan
+
+    # Scale by the square root of the number of valid pairs to handle highly unbalanced panels
+    cd_stat = cd_stat * np.sqrt(1.0 / valid_pairs)
+    p_value = 2 * (1 - norm.cdf(abs(cd_stat)))
+
+    return cd_stat, p_value
+
+
+def export_diagnostics_latex(
+    df: pd.DataFrame,
+    variables: list[str],
+    out_dir: str,
+    id_var: str = "iso3",
+    time_var: str = "year",
+) -> None:
+    """
+    Generate and export a LaTeX table with Stationarity, Normality,
+    Serial Correlation, and Cross-Sectional Dependence (Pesaran CD) test
+    statistics for individual variables.
+    """
+    records = []
+
+    for var in variables:
+        if var not in df.columns:
+            continue
+
+        row = {"Variable": var}
+        data_clean = df[var].dropna()
+
+        # 1. Stationarity (ADF Panel mean test stat / mean p-value)
+        try:
+            st_df = test_stationarity(
+                df, [var], test="adf", id_var=id_var, time_var=time_var, verbose=False
+            )
+            if not st_df.empty:
+                adf_stat, adf_p, _, _, _, _ = adfuller(data_clean, autolag="AIC")
+
+                row["ADF Stat"] = f"{adf_stat:.3f}"
+                row["ADF p-val"] = f"{adf_p:.3f}"
+            else:
+                row["ADF Stat"] = "-"
+                row["ADF p-val"] = "-"
+        except Exception:
+            row["ADF Stat"] = "-"
+            row["ADF p-val"] = "-"
+
+        # 2. Normality (Jarque-Bera)
+        try:
+            jb_stat, jb_p = jarque_bera(data_clean)
+            row["JB Stat"] = f"{jb_stat:.3f}"
+            row["JB p-val"] = f"{jb_p:.3f}"
+        except Exception:
+            row["JB Stat"] = "-"
+            row["JB p-val"] = "-"
+
+        # 3. Serial Correlation (Ljung-Box lag 1)
+        try:
+            # Sort by panel logic (country, then year) to avoid mixing boundaries too much
+            data_sc = df.sort_values([id_var, time_var])[var].dropna()
+            lb_res = acorr_ljungbox(data_sc, lags=[1], return_df=True)
+            lb_stat = lb_res["lb_stat"].iloc[0]
+            lb_p = lb_res["lb_pvalue"].iloc[0]
+            row["LB Stat"] = f"{lb_stat:.3f}"
+            row["LB p-val"] = f"{lb_p:.3f}"
+        except Exception:
+            row["LB Stat"] = "-"
+            row["LB p-val"] = "-"
+
+        # 4. Cross-Sectional Dependence (Pesaran CD)
+        try:
+            cd_stat, cd_p = test_pesaran_cd(df, var, id_var=id_var, time_var=time_var)
+            if np.isnan(cd_stat):
+                row["CD Stat"] = "-"
+                row["CD p-val"] = "-"
+            else:
+                row["CD Stat"] = f"{cd_stat:.3f}"
+                row["CD p-val"] = f"{cd_p:.3f}"
+        except Exception:
+            row["CD Stat"] = "-"
+            row["CD p-val"] = "-"
+
+        records.append(row)
+
+    table_df = pd.DataFrame(records)
+
+    # Format the LaTeX
+    latex_str = table_df.to_latex(
+        index=False,
+        escape=False,
+        column_format="lcccccccc",
+        caption="Pre-Estimation Diagnostics: Stationarity, Normality, Serial Correlation, and Cross-Sectional Dependence",
+        label="tab:diagnostics",
+    )
+
+    # Import map for nice labels if present
+    try:
+        from analysis.regression_utils import LATEX_LABEL_MAP
+
+        for old, new in LATEX_LABEL_MAP.items():
+            latex_str = latex_str.replace(old, new)
+    except ImportError:
+        pass
+
+    # Beautify LaTeX table
+    latex_str = latex_str.replace(
+        "\\toprule",
+        "\\toprule\n& \\multicolumn{2}{c}{Stationarity (ADF)} & \\multicolumn{2}{c}{Normality (JB)} & \\multicolumn{2}{c}{Serial Corr. (LB)} & \\multicolumn{2}{c}{Cross-Sectional Dep. (CD)} \\\\\n\\cmidrule(lr){2-3} \\cmidrule(lr){4-5} \\cmidrule(lr){6-7} \\cmidrule(lr){8-9}",
+    )
+
+    out_dir = Path(out_dir)
+    os.makedirs(out_dir, exist_ok=True)
+    out_file = out_dir / "diagnostics_table.tex"
+
+    with open(out_file, "w", encoding="utf-8") as f:
+        f.write(latex_str)
+
+    print(f"✅ Exported diagnostics LaTeX table to: {out_file}")
