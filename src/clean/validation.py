@@ -1,6 +1,6 @@
 import pandas as pd
-import pandera as pa
-from pandera import Check, Column, DataFrameSchema, Index
+import pandera.pandas as pa
+from pandera.pandas import Check, Column, DataFrameSchema, Index
 
 # Master Dataset Schema
 # This ensures that our master dataset has the expected columns and types

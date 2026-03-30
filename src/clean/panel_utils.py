@@ -199,21 +199,33 @@ def fill_panel_gaps(
     Returns:
         DataFrame with filled gaps
     """
-    result = df.copy()
+    # 1. Create a complete MultiIndex (all units x all periods)
+    units = df[id_var].unique()
+    times = range(df[time_var].min(), df[time_var].max() + 1)
+    full_index = pd.MultiIndex.from_product([units, times], names=[id_var, time_var])
+
+    # 2. Reindex the data
+    result = df.set_index([id_var, time_var]).reindex(full_index).reset_index()
     result = result.sort_values([id_var, time_var])
 
+    # 3. Fill gaps within each ID group
     if method == "forward":
-        result = result.groupby(id_var).ffill(limit=limit)
+        # ffill within groups, staying within each unit
+        cols_to_fill = [c for c in result.columns if c not in [id_var, time_var]]
+        result[cols_to_fill] = result.groupby(id_var)[cols_to_fill].ffill(limit=limit)
     elif method == "backward":
-        result = result.groupby(id_var).bfill(limit=limit)
+        cols_to_fill = [c for c in result.columns if c not in [id_var, time_var]]
+        result[cols_to_fill] = result.groupby(id_var)[cols_to_fill].bfill(limit=limit)
     else:  # linear or other pandas methods
-        result = (
-            result.groupby(id_var)
+        # interpolate requires a numeric index or being applied per group
+        cols_to_fill = [c for c in result.columns if c not in [id_var, time_var]]
+        result[cols_to_fill] = (
+            result.groupby(id_var)[cols_to_fill]
             .apply(lambda x: x.interpolate(method=method, limit=limit))
             .reset_index(drop=True)
         )
 
-    logger.info(f"✅ Filled gaps using {method} interpolation")
+    logger.info(f"✅ Filled gaps using {method} interpolation (reindexed to full panel)")
     return result
 
 
