@@ -8,13 +8,13 @@ from pathlib import Path
 
 import numpy as np
 import pandas as pd
+from clean.panel_utils import create_lags
+from clean.utils import load_config
 from linearmodels.panel import PanelOLS, RandomEffects
 from scipy import stats
 from statsmodels.stats.diagnostic import acorr_ljungbox
 
 from analysis.regression_utils import LATEX_LABEL_MAP, prepare_regression_data, run_panel_ols
-from clean.panel_utils import create_lags
-from clean.utils import load_config
 
 logger = logging.getLogger(__name__)
 
@@ -135,7 +135,155 @@ def export_all_web_data(master: pd.DataFrame, config: dict, out_dir: str | Path)
     with open(out_dir / "summary_stats.json", "w") as f:
         json.dump(formatted_summary, f, indent=2)
 
+    # 4. Export Map Data (1980-2023)
+    logger.info("🗺️ Exporting Map Data (1980-2023)...")
+    # We only need a subset of variables to keep the file size manageable
+    map_vars = ["iso3", "year", dep_var] + indices
+    map_df = master[(master["year"] >= 1980) & (master["year"] <= 2023)][map_vars].dropna()
+
+    # Convert to list of dicts for JSON
+    map_data = map_df.to_dict(orient="records")
+
+    with open(out_dir / "map_data.json", "w") as f:
+        json.dump(map_data, f, indent=2)
+
+    # 5. Export Simulator Parameters
+    logger.info("🎛️ Exporting Simulator Parameters...")
+    # Get 2023 baselines for each country
+    latest_data = master[master["year"] == 2023][["iso3", dep_var] + indices].dropna()
+    baselines = latest_data.set_index("iso3").to_dict(orient="index")
+
+    # Get coefficients from the final models (the ones with all controls)
+    sim_coefs = {}
+    for idx, res in final_models.items():
+        g_var = f"{idx}_lag1"
+        sim_coefs[idx] = {
+            "coef": round(float(res.params[g_var]), 5),
+            "se": round(float(res.std_errors[g_var]), 5),
+        }
+
+    simulator_data = {"baselines": baselines, "coefficients": sim_coefs, "indices": indices}
+
+    with open(out_dir / "simulator.json", "w") as f:
+        json.dump(simulator_data, f, indent=2)
+
+    # 6. Export Variance Decomposition (Partial R-squared)
+    logger.info("📊 Exporting Variance Decomposition...")
+    importance_data = {}
+
+    for idx, (ols_data, exog_vars) in final_model_data.items():
+        base_res = final_models[idx]
+        base_r2 = base_res.rsquared
+
+        # Calculate partial R-squared for each var (excluding constant)
+        var_importance = []
+        for var in exog_vars:
+            if var == "const":
+                continue
+
+            # Reduced model without the target variable
+            reduced_exog = [v for v in exog_vars if v != var]
+            from statsmodels.api import add_constant
+
+            reduced_X = add_constant(ols_data[reduced_exog])
+            reduced_X = reduced_X.loc[:, ~reduced_X.columns.duplicated()]
+
+            try:
+                mod_red = PanelOLS(ols_data[dep_var], reduced_X, entity_effects=True)
+                res_red = mod_red.fit(cov_type="unadjusted")
+                red_r2 = res_red.rsquared
+
+                # Partial R-squared formula
+                if (1 - red_r2) > 0:
+                    partial_r2 = (base_r2 - red_r2) / (1 - red_r2)
+                    partial_r2 = max(0, partial_r2)  # prevent tiny negative numerical drift
+                else:
+                    partial_r2 = 0
+            except Exception:
+                partial_r2 = 0
+
+            label = LATEX_LABEL_MAP.get(var, var).replace("$_{t-1}$", "").replace("log ", "")
+            var_importance.append(
+                {
+                    "variable": var,
+                    "label": label,
+                    "partial_r2": round(float(partial_r2) * 100, 2),  # As percentage
+                }
+            )
+
+        # Sort by importance
+        var_importance.sort(key=lambda x: x["partial_r2"], reverse=True)
+        importance_data[idx] = var_importance
+
+    with open(out_dir / "importance.json", "w") as f:
+        json.dump(importance_data, f, indent=2)
+
+    # 7. Export Interactive Regression Table Data (Clustered vs Driscoll-Kraay)
+    logger.info("📑 Exporting Interactive Regression Table...")
+    master_table = {}
+
+    for idx, (ols_data, exog_vars) in final_model_data.items():
+        # Re-run models to get both SE types
+        from statsmodels.api import add_constant
+
+        X = add_constant(ols_data[exog_vars])
+        X = X.loc[:, ~X.columns.duplicated()]
+
+        mod = PanelOLS(ols_data[dep_var], X, entity_effects=True)
+        res_clust = mod.fit(cov_type="clustered", cluster_entity=True)
+        res_dk = mod.fit(cov_type="kernel")
+
+        # Merge results for each variable
+        idx_results = []
+        # Sort variables to put index first, then remaining controls
+        g_var = f"{idx}_lag1"
+        sorted_vars = [g_var] + [v for v in exog_vars if v != g_var and v != "const"]
+
+        for var in sorted_vars:
+            if var not in res_clust.params:
+                continue
+
+            coef = float(res_clust.params[var])
+            label = LATEX_LABEL_MAP.get(var, var).replace("$_{t-1}$", "")
+
+            idx_results.append(
+                {
+                    "variable": var,
+                    "label": label,
+                    "coef": round(coef, 4),
+                    "clustered": {
+                        "se": round(float(res_clust.std_errors[var]), 4),
+                        "pval": round(float(res_clust.pvalues[var]), 4),
+                        "stars": _get_stars(res_clust.pvalues[var]),
+                    },
+                    "dk": {
+                        "se": round(float(res_dk.std_errors[var]), 4),
+                        "pval": round(float(res_dk.pvalues[var]), 4),
+                        "stars": _get_stars(res_dk.pvalues[var]),
+                    },
+                }
+            )
+
+        master_table[idx] = {
+            "nobs": int(res_clust.nobs),
+            "rsquared": round(float(res_clust.rsquared), 3),
+            "variables": idx_results,
+        }
+
+    with open(out_dir / "master_table.json", "w") as f:
+        json.dump(master_table, f, indent=2)
+
     logger.info(f"✅ Web data sync complete! Files saved to {out_dir}")
+
+
+def _get_stars(pval):
+    if pval < 0.01:
+        return "***"
+    if pval < 0.05:
+        return "**"
+    if pval < 0.10:
+        return "*"
+    return ""
 
 
 if __name__ == "__main__":

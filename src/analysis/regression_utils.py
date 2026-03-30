@@ -93,16 +93,11 @@ def run_panel_ols(
     exog_vars: list[str],
     entity_effects: bool = True,
     time_effects: bool = True,
+    cov_type: str = "kernel",
 ):
     """
-    Execute standard PanelOLS with clustered standard errors.
-
-    Args:
-        ols_data: Cleaned DataFrame with a MultiIndex.
-        dep_var: Dependent Variable.
-        exog_vars: Independent Variables to feed into model.
-        entity_effects: Whether to include fixed entity effects.
-        time_effects: Whether to include fixed time effects.
+    Execute standard PanelOLS with robust standard errors.
+    Driscoll-Kraay (kernel) is the default choice for OECD panels.
     """
     exog = sm.add_constant(ols_data[exog_vars])
     exog = exog.loc[:, ~exog.columns.duplicated()]
@@ -110,7 +105,7 @@ def run_panel_ols(
     model = PanelOLS(
         ols_data[dep_var], exog, entity_effects=entity_effects, time_effects=time_effects
     )
-    results = model.fit(cov_type="clustered", cluster_entity=True)
+    results = model.fit(cov_type=cov_type)
     return results
 
 

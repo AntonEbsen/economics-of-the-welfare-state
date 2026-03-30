@@ -1,0 +1,10 @@
+[31m[1m17.23.52[22m [ERROR] [vite][39m [31m✗[39m Build failed in 611ms
+Unexpected "try"
+  [1mLocation:[22m
+    [4mC:/Users/Anton/economics-of-the-welfare-state/web/src/pages/appendix.astro:39:32[24m
+  [1mStack trace:[22m
+[2m    at failureErrorWithLog (c:\Users\Anton\economics-of-the-welfare-state\web\node_modules\esbuild\lib\main.js:1748:15)
+    at responseCallbacks.<computed> (c:\Users\Anton\economics-of-the-welfare-state\web\node_modules\esbuild\lib\main.js:884:9)
+    at Socket.readFromStdout (c:\Users\Anton\economics-of-the-welfare-state\web\node_modules\esbuild\lib\main.js:862:7)
+    at addChunk (node:internal/streams/readable:559:12)
+    at Readable.push (node:internal/streams/readable:390:5)[22m

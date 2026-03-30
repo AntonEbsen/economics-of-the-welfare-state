@@ -1,0 +1,446 @@
+{
+  "KOFGI": {
+    "nobs": 996,
+    "rsquared": 0.339,
+    "variables": [
+      {
+        "variable": "KOFGI_lag1",
+        "label": "KOFGI_lag1",
+        "coef": 0.0317,
+        "clustered": {
+          "se": 0.044,
+          "pval": 0.4716,
+          "stars": ""
+        },
+        "dk": {
+          "se": 0.042,
+          "pval": 0.4508,
+          "stars": ""
+        }
+      },
+      {
+        "variable": "ln_gdppc_lag1",
+        "label": "ln_gdppc_lag1",
+        "coef": -2.935,
+        "clustered": {
+          "se": 1.4471,
+          "pval": 0.0428,
+          "stars": "**"
+        },
+        "dk": {
+          "se": 0.8029,
+          "pval": 0.0003,
+          "stars": "***"
+        }
+      },
+      {
+        "variable": "inflation_cpi_lag1",
+        "label": "inflation_cpi_lag1",
+        "coef": -0.0035,
+        "clustered": {
+          "se": 0.0007,
+          "pval": 0.0,
+          "stars": "***"
+        },
+        "dk": {
+          "se": 0.0007,
+          "pval": 0.0,
+          "stars": "***"
+        }
+      },
+      {
+        "variable": "deficit_lag1",
+        "label": "deficit_lag1",
+        "coef": -0.1658,
+        "clustered": {
+          "se": 0.0222,
+          "pval": 0.0,
+          "stars": "***"
+        },
+        "dk": {
+          "se": 0.0309,
+          "pval": 0.0,
+          "stars": "***"
+        }
+      },
+      {
+        "variable": "debt_lag1",
+        "label": "debt_lag1",
+        "coef": 0.0292,
+        "clustered": {
+          "se": 0.0086,
+          "pval": 0.0007,
+          "stars": "***"
+        },
+        "dk": {
+          "se": 0.0047,
+          "pval": 0.0,
+          "stars": "***"
+        }
+      },
+      {
+        "variable": "ln_population_lag1",
+        "label": "ln_population_lag1",
+        "coef": -3.6779,
+        "clustered": {
+          "se": 1.7103,
+          "pval": 0.0318,
+          "stars": "**"
+        },
+        "dk": {
+          "se": 1.1795,
+          "pval": 0.0019,
+          "stars": "***"
+        }
+      },
+      {
+        "variable": "dependency_ratio_lag1",
+        "label": "dependency_ratio_lag1",
+        "coef": 0.0103,
+        "clustered": {
+          "se": 0.0386,
+          "pval": 0.7904,
+          "stars": ""
+        },
+        "dk": {
+          "se": 0.0249,
+          "pval": 0.6801,
+          "stars": ""
+        }
+      }
+    ]
+  },
+  "KOFEcGI": {
+    "nobs": 996,
+    "rsquared": 0.337,
+    "variables": [
+      {
+        "variable": "KOFEcGI_lag1",
+        "label": "KOFEcGI_lag1",
+        "coef": -0.0114,
+        "clustered": {
+          "se": 0.033,
+          "pval": 0.729,
+          "stars": ""
+        },
+        "dk": {
+          "se": 0.0328,
+          "pval": 0.7272,
+          "stars": ""
+        }
+      },
+      {
+        "variable": "ln_gdppc_lag1",
+        "label": "ln_gdppc_lag1",
+        "coef": -2.0286,
+        "clustered": {
+          "se": 1.4049,
+          "pval": 0.1491,
+          "stars": ""
+        },
+        "dk": {
+          "se": 0.6928,
+          "pval": 0.0035,
+          "stars": "***"
+        }
+      },
+      {
+        "variable": "inflation_cpi_lag1",
+        "label": "inflation_cpi_lag1",
+        "coef": -0.0042,
+        "clustered": {
+          "se": 0.0006,
+          "pval": 0.0,
+          "stars": "***"
+        },
+        "dk": {
+          "se": 0.0007,
+          "pval": 0.0,
+          "stars": "***"
+        }
+      },
+      {
+        "variable": "deficit_lag1",
+        "label": "deficit_lag1",
+        "coef": -0.1497,
+        "clustered": {
+          "se": 0.0242,
+          "pval": 0.0,
+          "stars": "***"
+        },
+        "dk": {
+          "se": 0.0342,
+          "pval": 0.0,
+          "stars": "***"
+        }
+      },
+      {
+        "variable": "debt_lag1",
+        "label": "debt_lag1",
+        "coef": 0.0334,
+        "clustered": {
+          "se": 0.0085,
+          "pval": 0.0001,
+          "stars": "***"
+        },
+        "dk": {
+          "se": 0.0054,
+          "pval": 0.0,
+          "stars": "***"
+        }
+      },
+      {
+        "variable": "ln_population_lag1",
+        "label": "ln_population_lag1",
+        "coef": -2.8336,
+        "clustered": {
+          "se": 1.7037,
+          "pval": 0.0966,
+          "stars": "*"
+        },
+        "dk": {
+          "se": 1.1945,
+          "pval": 0.0179,
+          "stars": "**"
+        }
+      },
+      {
+        "variable": "dependency_ratio_lag1",
+        "label": "dependency_ratio_lag1",
+        "coef": 0.0154,
+        "clustered": {
+          "se": 0.0392,
+          "pval": 0.694,
+          "stars": ""
+        },
+        "dk": {
+          "se": 0.0241,
+          "pval": 0.5221,
+          "stars": ""
+        }
+      }
+    ]
+  },
+  "KOFSoGI": {
+    "nobs": 996,
+    "rsquared": 0.347,
+    "variables": [
+      {
+        "variable": "KOFSoGI_lag1",
+        "label": "KOFSoGI_lag1",
+        "coef": 0.064,
+        "clustered": {
+          "se": 0.0397,
+          "pval": 0.1074,
+          "stars": ""
+        },
+        "dk": {
+          "se": 0.024,
+          "pval": 0.0077,
+          "stars": "***"
+        }
+      },
+      {
+        "variable": "ln_gdppc_lag1",
+        "label": "ln_gdppc_lag1",
+        "coef": -3.6228,
+        "clustered": {
+          "se": 1.308,
+          "pval": 0.0057,
+          "stars": "***"
+        },
+        "dk": {
+          "se": 0.769,
+          "pval": 0.0,
+          "stars": "***"
+        }
+      },
+      {
+        "variable": "inflation_cpi_lag1",
+        "label": "inflation_cpi_lag1",
+        "coef": -0.0028,
+        "clustered": {
+          "se": 0.0008,
+          "pval": 0.0004,
+          "stars": "***"
+        },
+        "dk": {
+          "se": 0.0004,
+          "pval": 0.0,
+          "stars": "***"
+        }
+      },
+      {
+        "variable": "deficit_lag1",
+        "label": "deficit_lag1",
+        "coef": -0.1722,
+        "clustered": {
+          "se": 0.0232,
+          "pval": 0.0,
+          "stars": "***"
+        },
+        "dk": {
+          "se": 0.029,
+          "pval": 0.0,
+          "stars": "***"
+        }
+      },
+      {
+        "variable": "debt_lag1",
+        "label": "debt_lag1",
+        "coef": 0.0277,
+        "clustered": {
+          "se": 0.0074,
+          "pval": 0.0002,
+          "stars": "***"
+        },
+        "dk": {
+          "se": 0.0026,
+          "pval": 0.0,
+          "stars": "***"
+        }
+      },
+      {
+        "variable": "ln_population_lag1",
+        "label": "ln_population_lag1",
+        "coef": -4.6214,
+        "clustered": {
+          "se": 1.7553,
+          "pval": 0.0086,
+          "stars": "***"
+        },
+        "dk": {
+          "se": 1.3066,
+          "pval": 0.0004,
+          "stars": "***"
+        }
+      },
+      {
+        "variable": "dependency_ratio_lag1",
+        "label": "dependency_ratio_lag1",
+        "coef": -0.0013,
+        "clustered": {
+          "se": 0.0381,
+          "pval": 0.9726,
+          "stars": ""
+        },
+        "dk": {
+          "se": 0.0266,
+          "pval": 0.9607,
+          "stars": ""
+        }
+      }
+    ]
+  },
+  "KOFPoGI": {
+    "nobs": 996,
+    "rsquared": 0.34,
+    "variables": [
+      {
+        "variable": "KOFPoGI_lag1",
+        "label": "KOFPoGI_lag1",
+        "coef": 0.0291,
+        "clustered": {
+          "se": 0.0275,
+          "pval": 0.2899,
+          "stars": ""
+        },
+        "dk": {
+          "se": 0.0251,
+          "pval": 0.2459,
+          "stars": ""
+        }
+      },
+      {
+        "variable": "ln_gdppc_lag1",
+        "label": "ln_gdppc_lag1",
+        "coef": -2.8819,
+        "clustered": {
+          "se": 1.2331,
+          "pval": 0.0196,
+          "stars": "**"
+        },
+        "dk": {
+          "se": 0.6017,
+          "pval": 0.0,
+          "stars": "***"
+        }
+      },
+      {
+        "variable": "inflation_cpi_lag1",
+        "label": "inflation_cpi_lag1",
+        "coef": -0.0037,
+        "clustered": {
+          "se": 0.0006,
+          "pval": 0.0,
+          "stars": "***"
+        },
+        "dk": {
+          "se": 0.0008,
+          "pval": 0.0,
+          "stars": "***"
+        }
+      },
+      {
+        "variable": "deficit_lag1",
+        "label": "deficit_lag1",
+        "coef": -0.1597,
+        "clustered": {
+          "se": 0.022,
+          "pval": 0.0,
+          "stars": "***"
+        },
+        "dk": {
+          "se": 0.0321,
+          "pval": 0.0,
+          "stars": "***"
+        }
+      },
+      {
+        "variable": "debt_lag1",
+        "label": "debt_lag1",
+        "coef": 0.0295,
+        "clustered": {
+          "se": 0.0078,
+          "pval": 0.0002,
+          "stars": "***"
+        },
+        "dk": {
+          "se": 0.0044,
+          "pval": 0.0,
+          "stars": "***"
+        }
+      },
+      {
+        "variable": "ln_population_lag1",
+        "label": "ln_population_lag1",
+        "coef": -3.4744,
+        "clustered": {
+          "se": 1.7427,
+          "pval": 0.0465,
+          "stars": "**"
+        },
+        "dk": {
+          "se": 1.4929,
+          "pval": 0.0202,
+          "stars": "**"
+        }
+      },
+      {
+        "variable": "dependency_ratio_lag1",
+        "label": "dependency_ratio_lag1",
+        "coef": 0.0141,
+        "clustered": {
+          "se": 0.0395,
+          "pval": 0.7217,
+          "stars": ""
+        },
+        "dk": {
+          "se": 0.023,
+          "pval": 0.5406,
+          "stars": ""
+        }
+      }
+    ]
+  }
+}

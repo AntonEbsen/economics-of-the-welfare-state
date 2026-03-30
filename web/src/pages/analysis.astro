@@ -59,6 +59,73 @@ const base = import.meta.env.BASE_URL;
 				</div>
 			</div>
 		</div>
+
+		<!-- Driver Analysis Section -->
+		<div class="card driver-container mt-8">
+			<div class="card-header">
+				<h2>Driver Analysis (Variance Decomposition)</h2>
+				<span class="badge badge-accent">Partial R² Contribution</span>
+			</div>
+			<div class="grid md:grid-cols-3 gap-6">
+				<div class="md:col-span-2">
+					<div id="importance-chart" style="width:100%;height:350px;"></div>
+				</div>
+				<div class="flex flex-col justify-center gap-4">
+					<div class="insight-pill mt-0">
+						<span class="icon">🔍</span>
+						<div class="text">
+							<strong>What drives welfare spending?</strong><br>
+							This chart shows the <span class="text-blue-400">Partial R-squared</span> percentage. 
+							It isolates how much unique variation in welfare spending is explained by each variable independently.
+						</div>
+					</div>
+				</div>
+			</div>
+		</div>
+	</section>
+
+	<section class="simulator-section container">
+		<div class="card simulator-card">
+			<div class="card-header">
+				<h2>Counterfactual Simulator</h2>
+				<span class="badge badge-accent">Predictive Insight</span>
+			</div>
+			
+			<div class="simulator-grid">
+				<div class="sim-controls">
+					<div class="control-group">
+						<label for="country-sim-select">Target Country (Baseline 2023)</label>
+						<select id="country-sim-select" class="styled-select w-full">
+							<!-- Populated by JS -->
+						</select>
+					</div>
+
+					<div class="control-group mt-4">
+						<label for="shift-slider" class="flex justify-between">
+							<span>Globalization Shift (Δ KOF)</span>
+							<span id="shift-value" class="text-blue-400 font-mono">+5.0</span>
+						</label>
+						<input type="range" id="shift-slider" min="-15" max="15" step="0.5" value="5" class="w-full h-2 bg-navy-700 rounded-lg appearance-none cursor-pointer accent-blue-500">
+						<div class="flex justify-between text-xs text-gray-500 mt-2">
+							<span>-15 pts</span>
+							<span>Baseline</span>
+							<span>+15 pts</span>
+						</div>
+					</div>
+				</div>
+
+				<div class="sim-output">
+					<div class="prediction-box">
+						<span class="label">Predicted Impact on Welfare Spending</span>
+						<div id="prediction-result" class="value text-green-400">+1.24%</div>
+						<p id="prediction-desc" class="text-sm text-gray-400 mt-2">
+							Based on the Driscoll-Kraay robust coefficients, a 5-point increase in globalization 
+							is predicted to shift spending for <span class="country-name font-bold text-white">Denmark</span>.
+						</p>
+					</div>
+				</div>
+			</div>
+		</div>
 	</section>
 
 	<!-- Plotly.js CDN -->
@@ -68,11 +135,33 @@ const base = import.meta.env.BASE_URL;
 		async function init() {
 			const specRes = await fetch(`${base}/data/spec_curves.json`);
 			const diagRes = await fetch(`${base}/data/diagnostics.json`);
+			const simRes = await fetch(`${base}/data/simulator.json`);
+			const impRes = await fetch(`${base}/data/importance.json`);
+			
 			const specData = await specRes.json();
 			const diagData = await diagRes.json();
+			const simData = await simRes.json();
+			const impData = await impRes.json();
 
 			const select = document.getElementById('index-select');
 			const diagList = document.getElementById('diagnostics-list');
+			
+			// Simulator Elements
+			const countrySelect = document.getElementById('country-sim-select');
+			const shiftSlider = document.getElementById('shift-slider');
+			const shiftValue = document.getElementById('shift-value');
+			const predictionResult = document.getElementById('prediction-result');
+			const predictionDesc = document.getElementById('prediction-desc');
+
+			// Populate Country Selector
+			const countries = Object.keys(simData.baselines).sort();
+			countries.forEach(iso3 => {
+				const opt = document.createElement('option');
+				opt.value = iso3;
+				opt.textContent = iso3;
+				if (iso3 === 'DNK') opt.selected = true; // High impact example
+				countrySelect.appendChild(opt);
+			});
 
 			function updateChart(indexName) {
 				const data = specData[indexName];
@@ -121,6 +210,48 @@ const base = import.meta.env.BASE_URL;
 				Plotly.newPlot('plotly-chart', [ciTrace, trace], layout, { responsive: true, displayModeBar: false });
 			}
 
+			function updateImportanceChart(indexName) {
+				const data = impData[indexName];
+				if (!data) return;
+
+				// Reverse data so the largest bar is at the top in horizontal view
+				const sortedData = [...data].reverse();
+				
+				const x = sortedData.map(d => d.partial_r2);
+				const y = sortedData.map(d => d.label);
+
+				// Highlight the globalization index
+				const colors = sortedData.map(d => 
+					d.variable.includes(indexName) ? '#3b82f6' : '#475569'
+				);
+
+				const trace = {
+					type: 'bar',
+					x: x,
+					y: y,
+					orientation: 'h',
+					marker: { color: colors, border: { color: 'rgba(255,255,255,0.1)', width: 1 } },
+					hovertemplate: '<b>%{y}</b><br>Partial R²: %{x:.2f}%<extra></extra>'
+				};
+
+				const layout = {
+					paper_bgcolor: 'rgba(0,0,0,0)',
+					plot_bgcolor: 'rgba(0,0,0,0)',
+					font: { color: '#f9fafb', family: 'Inter, sans-serif' },
+					margin: { t: 20, r: 20, l: 150, b: 40 },
+					xaxis: { 
+						title: 'Partial R² Contribution (%)',
+						gridcolor: '#374151',
+						ticksuffix: '%'
+					},
+					yaxis: { 
+						gridcolor: 'transparent'
+					}
+				};
+
+				Plotly.newPlot('importance-chart', [trace], layout, { responsive: true, displayModeBar: false });
+			}
+
 			function updateDiagnostics(indexName) {
 				const diag = diagData.find(d => d.model === indexName);
 				if (!diag) return;
@@ -145,14 +276,46 @@ const base = import.meta.env.BASE_URL;
 				`;
 			}
 
+			function updateSimulator() {
+				const iso3 = countrySelect.value;
+				const idx = select.value;
+				const deltaG = parseFloat(shiftSlider.value);
+				
+				const baselineWelfare = simData.baselines[iso3].sstran;
+				const beta = simData.coefficients[idx].coef;
+				
+				// Delta % = (beta * deltaG / baseline_welfare) * 100
+				const deltaPct = (beta * deltaG / baselineWelfare) * 100;
+				
+				shiftValue.textContent = (deltaG > 0 ? "+" : "") + deltaG.toFixed(1);
+				
+				const colorClass = deltaPct > 0 ? 'text-green-400' : (deltaPct < 0 ? 'text-red-400' : 'text-gray-400');
+				predictionResult.className = `value ${colorClass} text-4xl font-bold font-mono`;
+				predictionResult.textContent = (deltaPct > 0 ? "+" : "") + deltaPct.toFixed(2) + "%";
+				
+				predictionDesc.innerHTML = `
+					Based on the <span class="text-blue-400">Driscoll-Kraay</span> coefficients, a ${Math.abs(deltaG)} point 
+					${deltaG >= 0 ? "increase" : "decrease"} in globalization (${idx}) is predicted to 
+					${deltaPct >= 0 ? "expand" : "reduce"} relative welfare spending for 
+					<span class="text-white font-bold">${iso3}</span> by ${Math.abs(deltaPct).toFixed(2)}%.
+				`;
+			}
+
 			select.addEventListener('change', (e) => {
 				updateChart(e.target.value);
 				updateDiagnostics(e.target.value);
+				updateImportanceChart(e.target.value);
+				updateSimulator();
 			});
+
+			countrySelect.addEventListener('change', updateSimulator);
+			shiftSlider.addEventListener('input', updateSimulator);
 
 			// Initial Load
 			updateChart('KOFGI');
 			updateDiagnostics('KOFGI');
+			updateImportanceChart('KOFGI');
+			updateSimulator();
 		}
 
 		init();
@@ -243,6 +406,51 @@ const base = import.meta.env.BASE_URL;
 	@media (max-width: 900px) {
 		.diagnostic-grid {
 			grid-template-columns: 1fr;
+		}
+	}
+
+	/* Simulator Styles */
+	.simulator-section {
+		margin-top: 2rem;
+		padding-bottom: 4rem;
+	}
+
+	.simulator-grid {
+		display: grid;
+		grid-template-columns: 1fr 1fr;
+		gap: 3rem;
+		align-items: center;
+	}
+
+	.control-group label {
+		display: block;
+		margin-bottom: 0.75rem;
+		color: #94a3b8;
+		font-size: 0.9rem;
+		font-weight: 500;
+	}
+
+	.prediction-box {
+		background: rgba(59, 130, 246, 0.05);
+		border: 1px solid rgba(59, 130, 246, 0.2);
+		border-radius: 20px;
+		padding: 2rem;
+		text-align: center;
+	}
+
+	.prediction-box .label {
+		color: #94a3b8;
+		font-size: 0.8rem;
+		text-transform: uppercase;
+		letter-spacing: 0.05em;
+		margin-bottom: 1rem;
+		display: block;
+	}
+
+	@media (max-width: 800px) {
+		.simulator-grid {
+			grid-template-columns: 1fr;
+			gap: 2rem;
 		}
 	}
 </style>

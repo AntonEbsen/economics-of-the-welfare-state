@@ -1,0 +1,150 @@
+{
+  "KOFGI": [
+    {
+      "variable": "deficit_lag1",
+      "label": "deficit_lag1",
+      "partial_r2": 13.77
+    },
+    {
+      "variable": "debt_lag1",
+      "label": "debt_lag1",
+      "partial_r2": 11.53
+    },
+    {
+      "variable": "ln_gdppc_lag1",
+      "label": "ln_gdppc_lag1",
+      "partial_r2": 6.0
+    },
+    {
+      "variable": "ln_population_lag1",
+      "label": "ln_population_lag1",
+      "partial_r2": 5.41
+    },
+    {
+      "variable": "inflation_cpi_lag1",
+      "label": "inflation_cpi_lag1",
+      "partial_r2": 3.61
+    },
+    {
+      "variable": "KOFGI_lag1",
+      "label": "KOFGI_lag1",
+      "partial_r2": 3.35
+    },
+    {
+      "variable": "dependency_ratio_lag1",
+      "label": "dependency_ratio_lag1",
+      "partial_r2": 3.02
+    }
+  ],
+  "KOFEcGI": [
+    {
+      "variable": "debt_lag1",
+      "label": "debt_lag1",
+      "partial_r2": 13.76
+    },
+    {
+      "variable": "deficit_lag1",
+      "label": "deficit_lag1",
+      "partial_r2": 10.87
+    },
+    {
+      "variable": "ln_gdppc_lag1",
+      "label": "ln_gdppc_lag1",
+      "partial_r2": 4.23
+    },
+    {
+      "variable": "ln_population_lag1",
+      "label": "ln_population_lag1",
+      "partial_r2": 3.96
+    },
+    {
+      "variable": "inflation_cpi_lag1",
+      "label": "inflation_cpi_lag1",
+      "partial_r2": 3.24
+    },
+    {
+      "variable": "KOFEcGI_lag1",
+      "label": "KOFEcGI_lag1",
+      "partial_r2": 2.44
+    },
+    {
+      "variable": "dependency_ratio_lag1",
+      "label": "dependency_ratio_lag1",
+      "partial_r2": 2.44
+    }
+  ],
+  "KOFSoGI": [
+    {
+      "variable": "deficit_lag1",
+      "label": "deficit_lag1",
+      "partial_r2": 15.65
+    },
+    {
+      "variable": "debt_lag1",
+      "label": "debt_lag1",
+      "partial_r2": 12.36
+    },
+    {
+      "variable": "ln_gdppc_lag1",
+      "label": "ln_gdppc_lag1",
+      "partial_r2": 8.28
+    },
+    {
+      "variable": "ln_population_lag1",
+      "label": "ln_population_lag1",
+      "partial_r2": 7.09
+    },
+    {
+      "variable": "KOFSoGI_lag1",
+      "label": "KOFSoGI_lag1",
+      "partial_r2": 5.2
+    },
+    {
+      "variable": "inflation_cpi_lag1",
+      "label": "inflation_cpi_lag1",
+      "partial_r2": 3.94
+    },
+    {
+      "variable": "dependency_ratio_lag1",
+      "label": "dependency_ratio_lag1",
+      "partial_r2": 3.55
+    }
+  ],
+  "KOFPoGI": [
+    {
+      "variable": "deficit_lag1",
+      "label": "deficit_lag1",
+      "partial_r2": 13.95
+    },
+    {
+      "variable": "debt_lag1",
+      "label": "debt_lag1",
+      "partial_r2": 12.46
+    },
+    {
+      "variable": "ln_gdppc_lag1",
+      "label": "ln_gdppc_lag1",
+      "partial_r2": 6.28
+    },
+    {
+      "variable": "ln_population_lag1",
+      "label": "ln_population_lag1",
+      "partial_r2": 5.28
+    },
+    {
+      "variable": "inflation_cpi_lag1",
+      "label": "inflation_cpi_lag1",
+      "partial_r2": 3.51
+    },
+    {
+      "variable": "KOFPoGI_lag1",
+      "label": "KOFPoGI_lag1",
+      "partial_r2": 3.29
+    },
+    {
+      "variable": "dependency_ratio_lag1",
+      "label": "dependency_ratio_lag1",
+      "partial_r2": 2.87
+    }
+  ]
+}

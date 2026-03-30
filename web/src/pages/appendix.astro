@@ -22,8 +22,7 @@ const base = import.meta.env.BASE_URL;
 			<div class="table-nav">
 				<a href="#summary-stats" class="pill">Summary Stats</a>
 				<a href="#vif-results" class="pill">VIF (Multicollinearity)</a>
-				<a href="#diagnostics" class="pill">Pre-Estimation</a>
-				<a href="#cointegration" class="pill">Cointegration</a>
+				<a href="#regression-results" class="pill text-blue-400 border-blue-400">Dynamic Regression Table</a>
 			</div>
 		</div>
 
@@ -79,7 +78,41 @@ const base = import.meta.env.BASE_URL;
 				</table>
 			</div>
 			<div class="table-footer">
-				<p>Note: VIF < 5 indicates no severe multicollinearity concerns.</p>
+				<p>Note: VIF &lt; 5 indicates no severe multicollinearity concerns.</p>
+			</div>
+		</div>
+
+		<!-- Dynamic Master Regression Table -->
+		<div id="regression-results" class="card table-card">
+			<div class="card-header flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
+				<h2>Table A3: Interactive Regression Results</h2>
+				<div class="flex bg-navy-900/50 p-1 rounded-lg border border-white/5">
+					<button id="btn-clustered" class="px-4 py-2 rounded-md bg-blue-600 text-white font-medium text-sm transition-all shadow-lg active">
+						Standard Clustered SE
+					</button>
+					<button id="btn-dk" class="px-4 py-2 rounded-md text-gray-400 hover:text-white text-sm transition-all">
+						Driscoll-Kraay Robust SE
+					</button>
+				</div>
+			</div>
+			<div class="table-responsive" style="margin-top: 0;">
+				<table class="premium-table regression-table flex-table">
+					<thead>
+						<tr>
+							<th style="width: 25%">Variable</th>
+							<th>(1)<br/>Overall</th>
+							<th>(2)<br/>Economic</th>
+							<th>(3)<br/>Social</th>
+							<th>(4)<br/>Political</th>
+						</tr>
+					</thead>
+					<tbody id="regression-body">
+						<tr><td colspan="5" class="text-center py-8">Loading regression data...</td></tr>
+					</tbody>
+				</table>
+			</div>
+			<div class="table-footer mt-4">
+				<p>Significance levels: * p&lt;0.10, ** p&lt;0.05, *** p&lt;0.01. Standard errors in parentheses.</p>
 			</div>
 		</div>
 	</section>
@@ -103,6 +136,112 @@ const base = import.meta.env.BASE_URL;
 				`).join('');
 			} catch (err) {
 				console.error("Failed to load summary stats:", err);
+			}
+
+			try {
+				const regRes = await fetch(`${base}/data/master_table.json`);
+				const regData = await regRes.json();
+				
+				let currentSeType = 'clustered'; // 'clustered' or 'dk'
+				const models = ['KOFGI', 'KOFEcGI', 'KOFSoGI', 'KOFPoGI'];
+				
+				// Extract all unique variables
+				const allVarsMap = new Map();
+				models.forEach(model => {
+					if (regData[model] && regData[model].variables) {
+						regData[model].variables.forEach(v => {
+							allVarsMap.set(v.variable, v.label);
+						});
+					}
+				});
+				
+				// Sort to put indices first, then controls, then constant
+				const uniqueVars = Array.from(allVarsMap.keys()).sort((a, b) => {
+					if (a.includes('KOF')) return -1;
+					if (b.includes('KOF')) return 1;
+					if (a === 'const') return 1;
+					if (b === 'const') return -1;
+					return 0;
+				});
+
+				const renderRegressionTable = () => {
+					const tbody = document.getElementById('regression-body');
+					let html = '';
+					
+					// Main Coefficients
+					uniqueVars.forEach(vName => {
+						const label = allVarsMap.get(vName);
+						
+						// Coef row
+						html += `<tr><td><strong>${label}</strong></td>`;
+						models.forEach(model => {
+							const vData = regData[model]?.variables.find(v => v.variable === vName);
+							if (vData) {
+								const stars = vData[currentSeType].stars;
+								html += `<td>${vData.coef.toFixed(3)}${stars}</td>`;
+							} else {
+								html += `<td></td>`;
+							}
+						});
+						html += `</tr>`;
+						
+						// SE row
+						html += `<tr class="se-row"><td class="text-sm"></td>`;
+						models.forEach(model => {
+							const vData = regData[model]?.variables.find(v => v.variable === vName);
+							if (vData) {
+								html += `<td class="text-sm text-gray-400">(${vData[currentSeType].se.toFixed(3)})</td>`;
+							} else {
+								html += `<td></td>`;
+							}
+						});
+						html += `</tr>`;
+					});
+					
+					// Observations
+					html += `<tr class="border-t border-gray-700 mt-2"><td><strong>N</strong></td>`;
+					models.forEach(model => {
+						html += `<td>${regData[model]?.nobs || ''}</td>`;
+					});
+					html += `</tr>`;
+
+					// R-squared
+					html += `<tr><td><strong>R-squared</strong></td>`;
+					models.forEach(model => {
+						html += `<td>${regData[model]?.rsquared.toFixed(3) || ''}</td>`;
+					});
+					html += `</tr>`;
+
+					tbody.innerHTML = html;
+				};
+
+				// Toggle Logic
+				const btnClustered = document.getElementById('btn-clustered');
+				const btnDk = document.getElementById('btn-dk');
+				
+				btnClustered.addEventListener('click', () => {
+					currentSeType = 'clustered';
+					btnClustered.classList.add('bg-blue-600', 'text-white', 'shadow-lg');
+					btnClustered.classList.remove('text-gray-400');
+					btnDk.classList.remove('bg-blue-600', 'text-white', 'shadow-lg');
+					btnDk.classList.add('text-gray-400');
+					renderRegressionTable();
+				});
+				
+				btnDk.addEventListener('click', () => {
+					currentSeType = 'dk';
+					btnDk.classList.add('bg-blue-600', 'text-white', 'shadow-lg');
+					btnDk.classList.remove('text-gray-400');
+					btnClustered.classList.remove('bg-blue-600', 'text-white', 'shadow-lg');
+					btnClustered.classList.add('text-gray-400');
+					renderRegressionTable();
+				});
+
+				renderRegressionTable();
+				
+			} catch (err) {
+				console.error("Failed to load regression table data:", err);
+				document.getElementById('regression-body').innerHTML = `<tr><td colspan="5" class="text-red-400">Error loading table data. Please re-run the Python export script.</td></tr>`;
 			}
 		}
 
@@ -193,5 +332,24 @@ const base = import.meta.env.BASE_URL;
 	.card-header h2 {
 		font-family: 'Outfit', sans-serif;
 		font-size: 1.5rem;
+	}
+
+	/* Dynamic Table Specifics */
+	.regression-table th, .regression-table td {
+		text-align: center;
+	}
+	.regression-table th:first-child, .regression-table td:first-child {
+		text-align: left;
+	}
+	.se-row td {
+		padding-top: 0;
+		border-bottom: 1px solid var(--card-border);
+	}
+	.se-row:last-of-type td {
+		border-bottom: 2px solid var(--card-border); /* Thicker line before stats */
+	}
+	tr:not(.se-row) td {
+		border-bottom: none;
+		padding-bottom: 0.25rem;
 	}
 </style>

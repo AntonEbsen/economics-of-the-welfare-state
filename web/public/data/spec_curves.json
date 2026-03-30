@@ -3,16 +3,16 @@
     {
       "name": "Baseline",
       "coefficient": 0.1457,
-      "lower_ci": 0.0061,
-      "upper_ci": 0.2852,
+      "lower_ci": 0.0243,
+      "upper_ci": 0.2671,
       "significant": true,
       "controls": []
     },
     {
       "name": "+ ln_gdppc",
       "coefficient": 0.2945,
-      "lower_ci": 0.1542,
-      "upper_ci": 0.4349,
+      "lower_ci": 0.2127,
+      "upper_ci": 0.3763,
       "significant": true,
       "controls": [
         "ln_gdppc"
@@ -21,8 +21,8 @@
     {
       "name": "+ inflation_cpi",
       "coefficient": 0.2835,
-      "lower_ci": 0.1414,
-      "upper_ci": 0.4255,
+      "lower_ci": 0.2011,
+      "upper_ci": 0.3659,
       "significant": true,
       "controls": [
         "ln_gdppc",
@@ -32,8 +32,8 @@
     {
       "name": "+ deficit",
       "coefficient": 0.2573,
-      "lower_ci": 0.1046,
-      "upper_ci": 0.41,
+      "lower_ci": 0.1781,
+      "upper_ci": 0.3365,
       "significant": true,
       "controls": [
         "ln_gdppc",
@@ -44,9 +44,9 @@
     {
       "name": "+ debt",
       "coefficient": 0.1365,
-      "lower_ci": -0.0003,
-      "upper_ci": 0.2734,
-      "significant": false,
+      "lower_ci": 0.0727,
+      "upper_ci": 0.2004,
+      "significant": true,
       "controls": [
         "ln_gdppc",
         "inflation_cpi",
@@ -57,9 +57,9 @@
     {
       "name": "+ ln_population",
       "coefficient": 0.1165,
-      "lower_ci": -0.0179,
-      "upper_ci": 0.2509,
-      "significant": false,
+      "lower_ci": 0.0504,
+      "upper_ci": 0.1826,
+      "significant": true,
       "controls": [
         "ln_gdppc",
         "inflation_cpi",
@@ -71,9 +71,9 @@
     {
       "name": "+ dependency_ratio",
       "coefficient": 0.0882,
-      "lower_ci": -0.0361,
-      "upper_ci": 0.2125,
-      "significant": false,
+      "lower_ci": 0.0247,
+      "upper_ci": 0.1517,
+      "significant": true,
       "controls": [
         "ln_gdppc",
         "inflation_cpi",
@@ -88,16 +88,16 @@
     {
       "name": "Baseline",
       "coefficient": 0.1096,
-      "lower_ci": 0.0034,
-      "upper_ci": 0.2158,
-      "significant": true,
+      "lower_ci": -0.0039,
+      "upper_ci": 0.2231,
+      "significant": false,
       "controls": []
     },
     {
       "name": "+ ln_gdppc",
       "coefficient": 0.144,
-      "lower_ci": 0.0587,
-      "upper_ci": 0.2292,
+      "lower_ci": 0.0566,
+      "upper_ci": 0.2313,
       "significant": true,
       "controls": [
         "ln_gdppc"
@@ -106,8 +106,8 @@
     {
       "name": "+ inflation_cpi",
       "coefficient": 0.1405,
-      "lower_ci": 0.0562,
-      "upper_ci": 0.2247,
+      "lower_ci": 0.0543,
+      "upper_ci": 0.2267,
       "significant": true,
       "controls": [
         "ln_gdppc",
@@ -117,8 +117,8 @@
     {
       "name": "+ deficit",
       "coefficient": 0.1216,
-      "lower_ci": 0.0342,
-      "upper_ci": 0.209,
+      "lower_ci": 0.0581,
+      "upper_ci": 0.1852,
       "significant": true,
       "controls": [
         "ln_gdppc",
@@ -129,8 +129,8 @@
     {
       "name": "+ debt",
       "coefficient": 0.045,
-      "lower_ci": -0.0412,
-      "upper_ci": 0.1311,
+      "lower_ci": -0.0066,
+      "upper_ci": 0.0965,
       "significant": false,
       "controls": [
         "ln_gdppc",
@@ -142,8 +142,8 @@
     {
       "name": "+ ln_population",
       "coefficient": 0.0312,
-      "lower_ci": -0.0566,
-      "upper_ci": 0.119,
+      "lower_ci": -0.0244,
+      "upper_ci": 0.0868,
       "significant": false,
       "controls": [
         "ln_gdppc",
@@ -156,8 +156,8 @@
     {
       "name": "+ dependency_ratio",
       "coefficient": -0.0199,
-      "lower_ci": -0.1008,
-      "upper_ci": 0.061,
+      "lower_ci": -0.06,
+      "upper_ci": 0.0201,
       "significant": false,
       "controls": [
         "ln_gdppc",
@@ -173,16 +173,16 @@
     {
       "name": "Baseline",
       "coefficient": 0.1146,
-      "lower_ci": -0.0239,
-      "upper_ci": 0.2531,
-      "significant": false,
+      "lower_ci": 0.0196,
+      "upper_ci": 0.2096,
+      "significant": true,
       "controls": []
     },
     {
       "name": "+ ln_gdppc",
       "coefficient": 0.2977,
-      "lower_ci": 0.1575,
-      "upper_ci": 0.4379,
+      "lower_ci": 0.2117,
+      "upper_ci": 0.3837,
       "significant": true,
       "controls": [
         "ln_gdppc"
@@ -191,8 +191,8 @@
     {
       "name": "+ inflation_cpi",
       "coefficient": 0.2858,
-      "lower_ci": 0.1408,
-      "upper_ci": 0.4308,
+      "lower_ci": 0.2049,
+      "upper_ci": 0.3668,
       "significant": true,
       "controls": [
         "ln_gdppc",
@@ -202,8 +202,8 @@
     {
       "name": "+ deficit",
       "coefficient": 0.248,
-      "lower_ci": 0.104,
-      "upper_ci": 0.392,
+      "lower_ci": 0.1675,
+      "upper_ci": 0.3284,
       "significant": true,
       "controls": [
         "ln_gdppc",
@@ -214,8 +214,8 @@
     {
       "name": "+ debt",
       "coefficient": 0.1614,
-      "lower_ci": 0.0597,
-      "upper_ci": 0.2631,
+      "lower_ci": 0.1213,
+      "upper_ci": 0.2015,
       "significant": true,
       "controls": [
         "ln_gdppc",
@@ -227,8 +227,8 @@
     {
       "name": "+ ln_population",
       "coefficient": 0.1419,
-      "lower_ci": 0.0451,
-      "upper_ci": 0.2388,
+      "lower_ci": 0.0963,
+      "upper_ci": 0.1875,
       "significant": true,
       "controls": [
         "ln_gdppc",
@@ -241,8 +241,8 @@
     {
       "name": "+ dependency_ratio",
       "coefficient": 0.1288,
-      "lower_ci": 0.0329,
-      "upper_ci": 0.2247,
+      "lower_ci": 0.0714,
+      "upper_ci": 0.1861,
       "significant": true,
       "controls": [
         "ln_gdppc",
@@ -258,16 +258,16 @@
     {
       "name": "Baseline",
       "coefficient": 0.0485,
-      "lower_ci": -0.0314,
-      "upper_ci": 0.1284,
-      "significant": false,
+      "lower_ci": 0.0106,
+      "upper_ci": 0.0863,
+      "significant": true,
       "controls": []
     },
     {
       "name": "+ ln_gdppc",
       "coefficient": 0.1153,
-      "lower_ci": 0.0211,
-      "upper_ci": 0.2094,
+      "lower_ci": 0.0825,
+      "upper_ci": 0.1481,
       "significant": true,
       "controls": [
         "ln_gdppc"
@@ -276,8 +276,8 @@
     {
       "name": "+ inflation_cpi",
       "coefficient": 0.1092,
-      "lower_ci": 0.013,
-      "upper_ci": 0.2054,
+      "lower_ci": 0.075,
+      "upper_ci": 0.1435,
       "significant": true,
       "controls": [
         "ln_gdppc",
@@ -287,8 +287,8 @@
     {
       "name": "+ deficit",
       "coefficient": 0.1104,
-      "lower_ci": 0.0139,
-      "upper_ci": 0.2069,
+      "lower_ci": 0.0667,
+      "upper_ci": 0.1541,
       "significant": true,
       "controls": [
         "ln_gdppc",
@@ -299,9 +299,9 @@
     {
       "name": "+ debt",
       "coefficient": 0.0457,
-      "lower_ci": -0.0282,
-      "upper_ci": 0.1197,
-      "significant": false,
+      "lower_ci": 0.0103,
+      "upper_ci": 0.0811,
+      "significant": true,
       "controls": [
         "ln_gdppc",
         "inflation_cpi",
@@ -312,9 +312,9 @@
     {
       "name": "+ ln_population",
       "coefficient": 0.0413,
-      "lower_ci": -0.0284,
-      "upper_ci": 0.1111,
-      "significant": false,
+      "lower_ci": 0.0074,
+      "upper_ci": 0.0753,
+      "significant": true,
       "controls": [
         "ln_gdppc",
         "inflation_cpi",
@@ -326,9 +326,9 @@
     {
       "name": "+ dependency_ratio",
       "coefficient": 0.0458,
-      "lower_ci": -0.0185,
-      "upper_ci": 0.1101,
-      "significant": false,
+      "lower_ci": 0.0106,
+      "upper_ci": 0.0811,
+      "significant": true,
       "controls": [
         "ln_gdppc",
         "inflation_cpi",
