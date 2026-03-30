@@ -6,6 +6,7 @@ interface Props {
 const { title } = Astro.props;
 import '../styles/global.css';
 const base = import.meta.env.BASE_URL;
+const currentPath = Astro.url.pathname;
 ---
 
 <!doctype html>
@@ -23,7 +24,19 @@ const base = import.meta.env.BASE_URL;
 	</head>
 	<body>
 		<div class="app-layout">
-			<aside class="sidebar">
+			<!-- Mobile Top Bar -->
+			<header class="mobile-topbar">
+				<button id="menu-toggle" class="menu-btn" aria-label="Toggle navigation">
+					<span class="hamburger-line"></span>
+					<span class="hamburger-line"></span>
+					<span class="hamburger-line"></span>
+				</button>
+				<span class="mobile-title">EWS Research Portal</span>
+			</header>
+			<!-- Overlay for mobile -->
+			<div id="sidebar-overlay" class="sidebar-overlay"></div>
+
+			<aside id="sidebar" class="sidebar">
 				<div class="sidebar-header">
 					<div class="logo">EWS</div>
 					<h2 class="project-title">Economics of<br/>the Welfare State</h2>
@@ -54,6 +67,34 @@ const base = import.meta.env.BASE_URL;
 			
 			<main class="content">
 				<slot />
+
+				<!-- Global Footer -->
+				<footer class="site-footer">
+					<div class="footer-inner">
+						<div class="footer-col">
+							<h4>Midnight Econometrics</h4>
+							<p>A research portal for exploring the relationship between globalization and welfare state dynamics across 32 OECD countries.</p>
+						</div>
+						<div class="footer-col">
+							<h4>Data Sources</h4>
+							<ul>
+								<li><a href="https://kof.ethz.ch/en/forecasts-and-indicators/indicators/kof-globalisation-index.html" target="_blank" rel="noopener">KOF Globalisation Index (ETH Zürich)</a></li>
+								<li><a href="https://www.oecd.org/social/expenditure.htm" target="_blank" rel="noopener">OECD Social Expenditure Database (SOCX)</a></li>
+								<li><a href="https://data.worldbank.org/" target="_blank" rel="noopener">World Bank Development Indicators</a></li>
+							</ul>
+						</div>
+						<div class="footer-col">
+							<h4>Links</h4>
+							<ul>
+								<li><a href="https://github.com/AntonEbsen/economics-of-the-welfare-state" target="_blank" rel="noopener">GitHub Repository</a></li>
+								<li><a href={`${base}/appendix`}>Full Appendix</a></li>
+							</ul>
+						</div>
+					</div>
+					<div class="footer-bottom">
+						<p>&copy; 2026 Anton Ebsen &middot; University of Copenhagen &middot; Built with Astro</p>
+					</div>
+				</footer>
 			</main>
 		</div>
 
@@ -63,12 +104,29 @@ const base = import.meta.env.BASE_URL;
 			const currentPath = window.location.pathname;
 			navItems.forEach(item => {
 				const href = item.getAttribute('href');
-				// Exact match for home, prefix match for sub-pages
 				if (href === currentPath || href + '/' === currentPath ||
 				    (href !== '/' && currentPath.startsWith(href))) {
 					item.classList.add('active');
 				}
 			});
+
+			// Mobile hamburger menu
+			const menuBtn = document.getElementById('menu-toggle');
+			const sidebar = document.getElementById('sidebar');
+			const overlay = document.getElementById('sidebar-overlay');
+			
+			if (menuBtn && sidebar && overlay) {
+				menuBtn.addEventListener('click', () => {
+					sidebar.classList.toggle('open');
+					overlay.classList.toggle('open');
+					menuBtn.classList.toggle('open');
+				});
+				overlay.addEventListener('click', () => {
+					sidebar.classList.remove('open');
+					overlay.classList.remove('open');
+					menuBtn.classList.remove('open');
+				});
+			}
 		</script>
 	</body>
 </html>
@@ -79,6 +137,75 @@ const base = import.meta.env.BASE_URL;
 		min-height: 100vh;
 	}
 
+	/* ===== MOBILE TOP BAR ===== */
+	.mobile-topbar {
+		display: none;
+		position: fixed;
+		top: 0;
+		left: 0;
+		right: 0;
+		height: 56px;
+		background: rgba(17, 24, 39, 0.95);
+		backdrop-filter: blur(12px);
+		border-bottom: 1px solid rgba(255,255,255,0.1);
+		z-index: 200;
+		align-items: center;
+		padding: 0 1rem;
+		gap: 1rem;
+	}
+
+	.mobile-title {
+		font-family: 'Outfit', sans-serif;
+		font-weight: 700;
+		font-size: 1rem;
+		color: #fff;
+	}
+
+	.menu-btn {
+		background: none;
+		border: none;
+		cursor: pointer;
+		display: flex;
+		flex-direction: column;
+		gap: 5px;
+		padding: 4px;
+	}
+
+	.hamburger-line {
+		display: block;
+		width: 24px;
+		height: 2px;
+		background: #fff;
+		border-radius: 2px;
+		transition: transform 0.3s ease, opacity 0.3s ease;
+	}
+
+	.menu-btn.open .hamburger-line:nth-child(1) {
+		transform: translateY(7px) rotate(45deg);
+	}
+	.menu-btn.open .hamburger-line:nth-child(2) {
+		opacity: 0;
+	}
+	.menu-btn.open .hamburger-line:nth-child(3) {
+		transform: translateY(-7px) rotate(-45deg);
+	}
+
+	.sidebar-overlay {
+		display: none;
+		position: fixed;
+		inset: 0;
+		background: rgba(0,0,0,0.6);
+		z-index: 99;
+		opacity: 0;
+		transition: opacity 0.3s ease;
+	}
+
+	.sidebar-overlay.open {
+		display: block;
+		opacity: 1;
+	}
+
+	/* ===== SIDEBAR ===== */
 	.sidebar {
 		width: 280px;
 		background: rgba(17, 24, 39, 0.8);
@@ -90,6 +217,7 @@ const base = import.meta.env.BASE_URL;
 		position: fixed;
 		height: 100vh;
 		z-index: 100;
+		transition: transform 0.3s ease;
 	}
 
 	.sidebar-header {
@@ -175,14 +303,93 @@ const base = import.meta.env.BASE_URL;
 		margin-left: 280px;
 		padding: 0;
 		background: radial-gradient(circle at top right, #1e3a8a 0%, #030712 40%);
+		display: flex;
+		flex-direction: column;
+		min-height: 100vh;
 	}
 
+	/* ===== FOOTER ===== */
+	.site-footer {
+		margin-top: auto;
+		border-top: 1px solid rgba(255, 255, 255, 0.08);
+		background: rgba(3, 7, 18, 0.6);
+		padding: 3rem 2rem 1.5rem;
+	}
+
+	.footer-inner {
+		max-width: 1200px;
+		margin: 0 auto;
+		display: grid;
+		grid-template-columns: 2fr 1.5fr 1fr;
+		gap: 3rem;
+	}
+
+	.footer-col h4 {
+		font-family: 'Outfit', sans-serif;
+		font-size: 1rem;
+		font-weight: 700;
+		color: #e5e7eb;
+		margin-bottom: 1rem;
+	}
+
+	.footer-col p {
+		font-size: 0.875rem;
+		color: #6b7280;
+		line-height: 1.6;
+	}
+
+	.footer-col ul {
+		list-style: none;
+		padding: 0;
+		margin: 0;
+		display: flex;
+		flex-direction: column;
+		gap: 0.5rem;
+	}
+
+	.footer-col ul li a {
+		font-size: 0.85rem;
+		color: #9ca3af;
+		transition: color 0.2s;
+	}
+
+	.footer-col ul li a:hover {
+		color: var(--accent-primary);
+	}
+
+	.footer-bottom {
+		margin-top: 2rem;
+		padding-top: 1.5rem;
+		border-top: 1px solid rgba(255,255,255,0.06);
+		text-align: center;
+	}
+
+	.footer-bottom p {
+		font-size: 0.8rem;
+		color: #4b5563;
+	}
+
+	/* ===== MOBILE ===== */
 	@media (max-width: 768px) {
-		.sidebar {
-			display: none; /* Mobile menu can be added later */
+		.mobile-topbar {
+			display: flex;
 		}
+
+		.sidebar {
+			transform: translateX(-100%);
+		}
+		.sidebar.open {
+			transform: translateX(0);
+		}
+
 		.content {
 			margin-left: 0;
+			padding-top: 56px;
+		}
+
+		.footer-inner {
+			grid-template-columns: 1fr;
+			gap: 2rem;
 		}
 	}
 </style>
