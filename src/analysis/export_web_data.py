@@ -4,18 +4,17 @@ Data Bridge: Export econometric results to JSON for the Research Portal.
 
 import json
 import logging
-import os
 from pathlib import Path
 
 import numpy as np
 import pandas as pd
-from analysis.regression_utils import LATEX_LABEL_MAP, prepare_regression_data, run_panel_ols
 from clean.panel_utils import create_lags
 from clean.utils import load_config
 from linearmodels.panel import PanelOLS, RandomEffects
 from scipy import stats
-from statsmodels.stats.diagnostic import acorr_ljungbox, het_breuschpagan
-from statsmodels.tsa.stattools import adfuller
+from statsmodels.stats.diagnostic import acorr_ljungbox
+
+from analysis.regression_utils import LATEX_LABEL_MAP, prepare_regression_data, run_panel_ols
 
 logger = logging.getLogger(__name__)
 
@@ -40,42 +39,42 @@ def export_all_web_data(master: pd.DataFrame, config: dict, out_dir: str | Path)
     for idx in indices:
         idx_models = []
         current_ctrls = []
-        
+
         # Stepwise models
         for step in range(len(controls) + 1):
             if step > 0:
-                current_ctrls.append(controls[step-1])
-            
+                current_ctrls.append(controls[step - 1])
+
             all_vars = [idx] + current_ctrls
             reg_data = create_lags(master, all_vars, lags=[1])
-            
+
             g_var = f"{idx}_lag1"
             lagged_ctrls = [f"{v}_lag1" for v in current_ctrls]
-            
+
             ols_data, exog_vars = prepare_regression_data(
                 reg_data, dep_var, g_var, lagged_ctrls, interactions=False
             )
-            
+
             res = run_panel_ols(ols_data, dep_var, exog_vars)
-            
+
             # Extract point estimate and CI for the main index
             coef = float(res.params[g_var])
             se = float(res.std_errors[g_var])
-            
+
             model_entry = {
-                "name": "Baseline" if step == 0 else f"+ {controls[step-1]}",
+                "name": "Baseline" if step == 0 else f"+ {controls[step - 1]}",
                 "coefficient": round(coef, 4),
                 "lower_ci": round(coef - 1.96 * se, 4),
                 "upper_ci": round(coef + 1.96 * se, 4),
                 "significant": bool(res.pvalues[g_var] < 0.05),
-                "controls": [LATEX_LABEL_MAP.get(f"{c}_lag1", c) for c in current_ctrls]
+                "controls": [LATEX_LABEL_MAP.get(f"{c}_lag1", c) for c in current_ctrls],
             }
             idx_models.append(model_entry)
-            
+
             if step == len(controls):
                 final_models[idx] = res
                 final_model_data[idx] = (ols_data, exog_vars)
-        
+
         spec_data[idx] = idx_models
 
     with open(out_dir / "spec_curves.json", "w") as f:
@@ -84,38 +83,40 @@ def export_all_web_data(master: pd.DataFrame, config: dict, out_dir: str | Path)
     # 2. Export Diagnostics (Hausman, RESET, etc.)
     logger.info("🩺 Exporting Model Diagnostics...")
     diag_results = []
-    
+
     for idx, (ols_data, exog_vars) in final_model_data.items():
         res = final_models[idx]
-        
+
         # Hausman
         import statsmodels.api as sm
+
         exog = sm.add_constant(ols_data[exog_vars])
-        fe = PanelOLS(ols_data[dep_var], exog, entity_effects=True).fit(cov_type='unadjusted')
-        re = RandomEffects(ols_data[dep_var], exog).fit(cov_type='unadjusted')
-        
-        shared = [v for v in fe.params.index if v in re.params.index and v != 'const']
+        fe = PanelOLS(ols_data[dep_var], exog, entity_effects=True).fit(cov_type="unadjusted")
+        re = RandomEffects(ols_data[dep_var], exog).fit(cov_type="unadjusted")
+
+        shared = [v for v in fe.params.index if v in re.params.index and v != "const"]
         b_diff = fe.params[shared].values - re.params[shared].values
         v_diff = fe.cov.loc[shared, shared].values - re.cov.loc[shared, shared].values
         h_stat = float(b_diff @ np.linalg.pinv(v_diff) @ b_diff)
         h_p = 1 - stats.chi2.cdf(h_stat, len(shared))
-        
+
         # RESET
-        fitted = res.fitted_values
         resids = res.resids
         # Simplified RESET for JSON
         lb_res = acorr_ljungbox(resids.dropna(), lags=[1], return_df=True)
-        lb_p = float(lb_res['lb_pvalue'].iloc[0])
-        
-        diag_results.append({
-            "model": idx,
-            "hausman_p": round(h_p, 3),
-            "hausman_preferred": "FE" if h_p < 0.05 else "RE",
-            "serial_corr_p": round(lb_p, 3),
-            "serial_corr_status": "Clean" if lb_p > 0.05 else "Detected",
-            "nobs": int(res.nobs),
-            "rsquared": round(float(res.rsquared), 3)
-        })
+        lb_p = float(lb_res["lb_pvalue"].iloc[0])
+
+        diag_results.append(
+            {
+                "model": idx,
+                "hausman_p": round(h_p, 3),
+                "hausman_preferred": "FE" if h_p < 0.05 else "RE",
+                "serial_corr_p": round(lb_p, 3),
+                "serial_corr_status": "Clean" if lb_p > 0.05 else "Detected",
+                "nobs": int(res.nobs),
+                "rsquared": round(float(res.rsquared), 3),
+            }
+        )
 
     with open(out_dir / "diagnostics.json", "w") as f:
         json.dump(diag_results, f, indent=2)
@@ -123,8 +124,8 @@ def export_all_web_data(master: pd.DataFrame, config: dict, out_dir: str | Path)
     # 3. Export Summary Stats
     logger.info("📉 Exporting Summary Stats...")
     summary = master[[dep_var] + indices + controls].describe().T
-    summary_json = summary[['count', 'mean', 'std', 'min', 'max']].to_dict(orient='index')
-    
+    summary_json = summary[["count", "mean", "std", "min", "max"]].to_dict(orient="index")
+
     # Format labels
     formatted_summary = {}
     for k, v in summary_json.items():
@@ -139,11 +140,12 @@ def export_all_web_data(master: pd.DataFrame, config: dict, out_dir: str | Path)
 
 if __name__ == "__main__":
     from clean.utils import setup_logging
+
     setup_logging()
-    
+
     config = load_config()
     master = pd.read_parquet("data/final/master_dataset.parquet")
-    
+
     # Save directly into Astro's public folder for easy access
     web_data_dir = Path("web/public/data")
     export_all_web_data(master, config, web_data_dir)
