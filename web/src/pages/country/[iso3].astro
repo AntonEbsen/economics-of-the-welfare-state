@@ -1,0 +1,150 @@
+---
+import Layout from '../../layouts/Layout.astro';
+import profiles from '../../../public/data/country_profiles.json';
+
+export async function getStaticPaths() {
+	// Generate a route for every ISO3 code
+	return Object.keys(profiles).map((iso3) => {
+		return {
+			params: { iso3 },
+			props: { profile: profiles[iso3] },
+		};
+	});
+}
+
+const { iso3 } = Astro.params;
+const { profile } = Astro.props;
+const baseUrl = import.meta.env.BASE_URL;
+
+// Compute some basic stats to display
+const latestWelfare = profile.sstran[profile.sstran.length - 1];
+const earliestWelfare = profile.sstran[0];
+const welfareChange = (latestWelfare - earliestWelfare).toFixed(2);
+const welfareChangeStr = welfareChange > 0 ? `+${welfareChange}` : welfareChange;
+
+const latestKOFGI = profile.KOFGI[profile.KOFGI.length - 1];
+const earliestKOFGI = profile.KOFGI[0];
+const kofgiChange = (latestKOFGI - earliestKOFGI).toFixed(2);
+const kofgiChangeStr = kofgiChange > 0 ? `+${kofgiChange}` : kofgiChange;
+---
+
+<Layout title={`${profile.name} | Welfare & Globalization Profile`}>
+	<div class="px-6 py-12 max-w-7xl mx-auto">
+		<div class="mb-10">
+			<a href={`${baseUrl}/map`} class="text-blue-400 hover:text-blue-300 transition-colors inline-flex items-center gap-2 mb-6">
+				&larr; Back to Interactive Map
+			</a>
+			<h1 class="text-5xl font-bold font-['Outfit'] mb-2">{profile.name}</h1>
+			<p class="text-gray-400 text-lg">Detailed Longitudinal Profile (1980 - 2022)</p>
+		</div>
+
+		<!-- Summary Cards -->
+		<div class="grid grid-cols-1 md:grid-cols-2 gap-6 mb-12">
+			<div class="bg-gray-800/50 rounded-xl p-6 border border-gray-700/50 backdrop-blur-sm">
+				<h3 class="text-gray-400 font-medium mb-4">Welfare Spending Trajectory</h3>
+				<div class="flex items-baseline gap-3">
+					<span class="text-4xl font-bold">{latestWelfare}%</span>
+					<span class={`text-sm font-medium px-2 py-1 rounded-full ${welfareChange > 0 ? 'bg-green-500/20 text-green-400' : 'bg-red-500/20 text-red-400'}`}>
+						{welfareChangeStr} pp since 1980
+					</span>
+				</div>
+			</div>
+			
+			<div class="bg-gray-800/50 rounded-xl p-6 border border-gray-700/50 backdrop-blur-sm">
+				<h3 class="text-gray-400 font-medium mb-4">Globalization Index (KOFGI)</h3>
+				<div class="flex items-baseline gap-3">
+					<span class="text-4xl font-bold">{latestKOFGI}</span>
+					<span class={`text-sm font-medium px-2 py-1 rounded-full ${kofgiChange > 0 ? 'bg-blue-500/20 text-blue-400' : 'bg-red-500/20 text-red-400'}`}>
+						{kofgiChangeStr} pts since 1980
+					</span>
+				</div>
+			</div>
+		</div>
+
+		<!-- Chart Section -->
+		<div class="bg-gray-800/30 rounded-2xl p-6 lg:p-8 border border-gray-700/30">
+			<h2 class="text-2xl font-bold font-['Outfit'] mb-6">Historical Dynamics vs OECD Average</h2>
+			<div id="country-chart" style="width:100%; height:500px;"></div>
+		</div>
+	</div>
+
+	<script is:inline src="https://cdn.plot.ly/plotly-2.27.0.min.js"></script>
+
+	<!-- Pass profile data to client script -->
+	<script is:inline define:vars={{ profile }}>
+		document.addEventListener('DOMContentLoaded', () => {
+			const years = profile.years;
+			
+			// Traces for Welfare Spending (Left Y-Axis)
+			const sstranTrace = {
+				x: years,
+				y: profile.sstran,
+				name: `${profile.name} Welfare`,
+				mode: 'lines',
+				line: { color: '#3b82f6', width: 3 },
+				yaxis: 'y1'
+			};
+			
+			const oecdSstranTrace = {
+				x: profile.oecd_avg.years,
+				y: profile.oecd_avg.sstran,
+				name: 'OECD Avg Welfare',
+				mode: 'lines',
+				line: { color: '#60a5fa', width: 2, dash: 'dash' },
+				yaxis: 'y1'
+			};
+
+			// Traces for Globalization (Right Y-Axis)
+			const kofgiTrace = {
+				x: years,
+				y: profile.KOFGI,
+				name: `${profile.name} KOFGI`,
+				mode: 'lines',
+				line: { color: '#10b981', width: 3 },
+				yaxis: 'y2'
+			};
+
+			const oecdKofgiTrace = {
+				x: profile.oecd_avg.years,
+				y: profile.oecd_avg.KOFGI,
+				name: 'OECD Avg KOFGI',
+				mode: 'lines',
+				line: { color: '#34d399', width: 2, dash: 'dash' },
+				yaxis: 'y2'
+			};
+
+			const layout = {
+				paper_bgcolor: 'rgba(0,0,0,0)',
+				plot_bgcolor: 'rgba(0,0,0,0)',
+				font: { color: '#f9fafb', family: 'Inter, sans-serif' },
+				margin: { t: 20, r: 60, l: 60, b: 40 },
+				legend: { orientation: 'h', y: -0.15, x: 0.5, xanchor: 'center' },
+				hovermode: 'x unified',
+				xaxis: {
+					gridcolor: '#374151',
+					title: 'Year'
+				},
+				yaxis: {
+					title: 'Welfare Spending (% GDP)',
+					titlefont: { color: '#3b82f6' },
+					tickfont: { color: '#3b82f6' },
+					gridcolor: '#374151',
+					zeroline: false
+				},
+				yaxis2: {
+					title: 'Globalization Index (0-100)',
+					titlefont: { color: '#10b981' },
+					tickfont: { color: '#10b981' },
+					overlaying: 'y',
+					side: 'right',
+					gridcolor: 'transparent',
+					zeroline: false
+				}
+			};
+
+			const config = { responsive: true, displayModeBar: false };
+			
+			Plotly.newPlot('country-chart', [sstranTrace, oecdSstranTrace, kofgiTrace, oecdKofgiTrace], layout, config);
+		});
+	</script>
+</Layout>

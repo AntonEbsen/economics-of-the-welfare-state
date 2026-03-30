@@ -284,6 +284,43 @@ def export_all_web_data(master: pd.DataFrame, config: dict, out_dir: str | Path)
     with open(out_dir / "master_table.json", "w") as f:
         json.dump(master_table, f, indent=2)
 
+    # 8. Export Country Profiles (for Dynamic Routing)
+    logger.info("🌍 Exporting Country Profiles...")
+    profiles = {}
+
+    def clean_series(series):
+        return [None if pd.isna(x) else round(float(x), 2) for x in series]
+
+    # Calculate OECD averages over time
+    oecd_avg = master.groupby("year")[["sstran"] + indices].mean().reset_index()
+    oecd_dict = {
+        "years": [int(x) for x in oecd_avg["year"]],
+        "sstran": clean_series(oecd_avg["sstran"]),
+    }
+    for idx in indices:
+        oecd_dict[idx] = clean_series(oecd_avg[idx])
+
+    for iso3, group in master.groupby("iso3"):
+        # Sort by year to ensure longitudinal sequence
+        group = group.sort_values("year")
+
+        country_name = group["country"].iloc[0] if "country" in group.columns else iso3
+
+        country_data = {
+            "name": country_name,
+            "years": [int(x) for x in group["year"]],
+            "sstran": clean_series(group["sstran"]),
+            "oecd_avg": oecd_dict,
+        }
+
+        for idx in indices:
+            country_data[idx] = clean_series(group[idx])
+
+        profiles[iso3] = country_data
+
+    with open(out_dir / "country_profiles.json", "w") as f:
+        json.dump(profiles, f, indent=2)
+
     logger.info(f"✅ Web data sync complete! Files saved to {out_dir}")
 
 

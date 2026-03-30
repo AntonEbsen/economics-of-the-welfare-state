@@ -1,10 +1,18 @@
-[31m[1m17.23.52[22m [ERROR] [vite][39m [31m✗[39m Build failed in 611ms
-Unexpected "try"
-  [1mLocation:[22m
-    [4mC:/Users/Anton/economics-of-the-welfare-state/web/src/pages/appendix.astro:39:32[24m
-  [1mStack trace:[22m
-[2m    at failureErrorWithLog (c:\Users\Anton\economics-of-the-welfare-state\web\node_modules\esbuild\lib\main.js:1748:15)
-    at responseCallbacks.<computed> (c:\Users\Anton\economics-of-the-welfare-state\web\node_modules\esbuild\lib\main.js:884:9)
-    at Socket.readFromStdout (c:\Users\Anton\economics-of-the-welfare-state\web\node_modules\esbuild\lib\main.js:862:7)
-    at addChunk (node:internal/streams/readable:559:12)
-    at Readable.push (node:internal/streams/readable:390:5)[22m
+
+> web@0.0.1 build
+> astro build
+
+[2m22.20.58[22m [34m[vite][39m Re-optimizing dependencies because vite config has changed
+[2m22.20.59[22m [34m[types][39m Generated [2m1.40s[22m
+[2m22.20.59[22m [34m[build][39m output: [34m"static"[39m
+[2m22.20.59[22m [34m[build][39m mode: [34m"static"[39m
+[2m22.20.59[22m [34m[build][39m directory: [34mC:\Users\Anton\economics-of-the-welfare-state\web\dist\[39m
+[2m22.20.59[22m [34m[build][39m Collecting build info...
+[2m22.20.59[22m [34m[build][39m [32m✓ Completed in 1.44s.[39m
+[2m22.20.59[22m [34m[build][39m Building static entrypoints...
+[33m[1m22.21.01[22m [WARN] [vite][39m [33m"matchHostname", "matchPathname", "matchPort" and "matchProtocol" are imported from external module "@astrojs/internal-helpers/remote" but never used in "node_modules/astro/dist/assets/utils/index.js".[39m
+[2m22.21.01[22m [34m[vite][39m [32m✓ built in 1.45s[39m
+[2m22.21.01[22m [34m[vite][39m [32m✓ built in 18ms[39m
+[2m22.21.01[22m [34m[build][39m Rearranging server assets...
+
+[42m[30m generating static routes [39m[49m
