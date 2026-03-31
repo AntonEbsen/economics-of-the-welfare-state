@@ -1,4 +1,6 @@
 ---
+import { ClientRouter } from 'astro:transitions';
+
 interface Props {
 	title: string;
 }
@@ -21,6 +23,14 @@ const currentPath = Astro.url.pathname;
 		<link rel="preconnect" href="https://fonts.googleapis.com">
 		<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 		<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700&family=Outfit:wght@500;700&display=swap" rel="stylesheet">
+		<!-- Prevent flash of wrong theme -->
+		<script is:inline>
+			(function() {
+				var t = localStorage.getItem('theme');
+				if (t === 'light') document.documentElement.classList.add('light');
+			})();
+		</script>
+		<ClientRouter />
 	</head>
 	<body>
 		<div class="app-layout">
@@ -60,6 +70,11 @@ const currentPath = Astro.url.pathname;
 					</a>
 				</nav>
 				<div class="sidebar-footer">
+					<button id="theme-toggle" class="theme-toggle" aria-label="Toggle theme">
+						<span class="theme-icon sun">☀️</span>
+						<span class="theme-icon moon">🌙</span>
+						<span class="theme-label">Light Mode</span>
+					</button>
 					<p class="author">By Anton Ebsen</p>
 					<p class="status">Seminar Project 2026</p>
 				</div>
@@ -125,6 +140,23 @@ const currentPath = Astro.url.pathname;
 					sidebar.classList.remove('open');
 					overlay.classList.remove('open');
 					menuBtn.classList.remove('open');
+				});
+			}
+
+			// Theme toggle
+			const themeBtn = document.getElementById('theme-toggle');
+			const themeLabel = themeBtn ? themeBtn.querySelector('.theme-label') : null;
+			function updateThemeUI() {
+				const isLight = document.documentElement.classList.contains('light');
+				if (themeLabel) themeLabel.textContent = isLight ? 'Dark Mode' : 'Light Mode';
+			}
+			updateThemeUI();
+			if (themeBtn) {
+				themeBtn.addEventListener('click', () => {
+					document.documentElement.classList.toggle('light');
+					const isLight = document.documentElement.classList.contains('light');
+					localStorage.setItem('theme', isLight ? 'light' : 'dark');
+					updateThemeUI();
 				});
 			}
 		</script>
@@ -288,6 +320,32 @@ const currentPath = Astro.url.pathname;
 		font-size: 0.875rem;
 	}
 
+	/* Theme Toggle */
+	.theme-toggle {
+		display: flex;
+		align-items: center;
+		gap: 0.5rem;
+		padding: 0.5rem 0.75rem;
+		margin-bottom: 1rem;
+		background: rgba(255,255,255,0.06);
+		border: 1px solid rgba(255,255,255,0.1);
+		border-radius: 8px;
+		cursor: pointer;
+		color: var(--text-secondary);
+		font-size: 0.85rem;
+		font-family: 'Inter', sans-serif;
+		transition: all 0.3s ease;
+		width: 100%;
+	}
+	.theme-toggle:hover {
+		background: rgba(59, 130, 246, 0.1);
+		color: var(--accent-primary);
+		border-color: var(--accent-primary);
+	}
+	.theme-icon { font-size: 1rem; }
+	:global(html.light) .theme-icon.sun { display: none; }
+	:global(html:not(.light)) .theme-icon.moon { display: none; }
+
 	.author {
 		color: #fff;
 		font-weight: 600;
@@ -306,6 +364,40 @@ const currentPath = Astro.url.pathname;
 		display: flex;
 		flex-direction: column;
 		min-height: 100vh;
+		transition: background 0.4s ease;
+	}
+
+	/* ===== LIGHT THEME OVERRIDES ===== */
+	:global(html.light) .sidebar {
+		background: rgba(241, 245, 249, 0.95);
+		border-right-color: rgba(0, 0, 0, 0.08);
+	}
+	:global(html.light) .project-title,
+	:global(html.light) .author {
+		color: #0f172a;
+	}
+	:global(html.light) .content {
+		background: radial-gradient(circle at top right, #dbeafe 0%, #f8fafc 40%);
+	}
+	:global(html.light) .mobile-topbar {
+		background: rgba(241, 245, 249, 0.95);
+		border-bottom-color: rgba(0, 0, 0, 0.08);
+	}
+	:global(html.light) .mobile-title {
+		color: #0f172a;
+	}
+	:global(html.light) .hamburger-line {
+		background: #0f172a;
+	}
+	:global(html.light) .site-footer {
+		background: rgba(241, 245, 249, 0.8);
+		border-top-color: rgba(0, 0, 0, 0.08);
+	}
+	:global(html.light) .footer-col h4 {
+		color: #1e293b;
+	}
+	:global(html.light) .footer-bottom p {
+		color: #94a3b8;
 	}
 
 	/* ===== FOOTER ===== */

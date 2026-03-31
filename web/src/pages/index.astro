@@ -14,15 +14,15 @@ const base = import.meta.env.BASE_URL;
 		<div class="stats-row animate-in" style="animation-delay: 0.2s">
 			<div class="stat-card card">
 				<span class="label">Time Span</span>
-				<span class="value">1980 – 2022</span>
+				<span class="value"><span class="counter" data-target="1980" data-suffix=" – 2022">0</span></span>
 			</div>
 			<div class="stat-card card">
 				<span class="label">Countries</span>
-				<span class="value">32 OECD</span>
+				<span class="value"><span class="counter" data-target="32" data-suffix=" OECD">0</span></span>
 			</div>
 			<div class="stat-card card">
 				<span class="label">Observations</span>
-				<span class="value">~1,200</span>
+				<span class="value">~<span class="counter" data-target="1200" data-separator="true">0</span></span>
 			</div>
 		</div>
 	</div>
@@ -95,6 +95,32 @@ const base = import.meta.env.BASE_URL;
 </Layout>
 
 <script is:inline>
+	// ===== ANIMATED COUNTERS =====
+	function animateCounters() {
+		const counters = document.querySelectorAll('.counter');
+		counters.forEach(counter => {
+			const target = parseInt(counter.dataset.target, 10);
+			const suffix = counter.dataset.suffix || '';
+			const useSep = counter.dataset.separator === 'true';
+			const duration = 1800;
+			const startTime = performance.now();
+
+			function easeOutQuart(t) { return 1 - Math.pow(1 - t, 4); }
+
+			function update(now) {
+				const elapsed = now - startTime;
+				const progress = Math.min(elapsed / duration, 1);
+				const current = Math.round(easeOutQuart(progress) * target);
+				let display = useSep ? current.toLocaleString() : String(current);
+				counter.textContent = display + suffix;
+				if (progress < 1) requestAnimationFrame(update);
+			}
+			requestAnimationFrame(update);
+		});
+	}
+	setTimeout(animateCounters, 400);
+
+	// ===== SCROLLYTELLING =====
 	const scrollySteps = document.querySelectorAll('.scrolly-step');
 	const visualBox = document.getElementById('visual-container');
 	const visContent = document.getElementById('vis-content');

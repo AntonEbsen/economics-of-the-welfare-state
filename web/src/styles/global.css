@@ -1,5 +1,6 @@
+/* ===== THEME SYSTEM ===== */
 :root {
-  /* Midnight Palette */
+  /* Midnight Palette (Dark = default) */
   --bg-primary: #030712;
   --bg-secondary: #111827;
   --card-bg: rgba(31, 41, 55, 0.5);
@@ -27,8 +28,26 @@
   /* Layout */
   --max-width: 1200px;
   --navbar-height: 4rem;
+
+  /* Scrollbar */
+  --scrollbar-track: #030712;
+  --scrollbar-thumb: #374151;
 }
 
+/* ===== LIGHT THEME ===== */
+html.light {
+  --bg-primary: #f8fafc;
+  --bg-secondary: #e2e8f0;
+  --card-bg: rgba(255, 255, 255, 0.7);
+  --card-border: rgba(0, 0, 0, 0.08);
+  --text-primary: #0f172a;
+  --text-secondary: #475569;
+  --text-muted: #94a3b8;
+  --scrollbar-track: #f1f5f9;
+  --scrollbar-thumb: #cbd5e1;
+}
+
+/* ===== RESET ===== */
 * {
   margin: 0;
   padding: 0;
@@ -46,6 +65,7 @@ body {
   line-height: 1.6;
   min-height: 100vh;
   overflow-x: hidden;
+  transition: background-color 0.4s ease, color 0.4s ease;
 }
 
 ::selection {
@@ -86,7 +106,7 @@ h2 { font-size: 2rem; margin-bottom: 1rem; color: var(--accent-primary); }
   border: 1px solid var(--card-border);
   border-radius: 1rem;
   padding: var(--spacing-lg);
-  transition: transform 0.3s ease, border-color 0.3s ease;
+  transition: transform 0.3s ease, border-color 0.3s ease, background 0.4s ease;
 }
 
 .card:hover {
@@ -112,8 +132,8 @@ h2 { font-size: 2rem; margin-bottom: 1rem; color: var(--accent-primary); }
 
 /* Custom Scrollbar */
 ::-webkit-scrollbar { width: 8px; }
-::-webkit-scrollbar-track { background: var(--bg-primary); }
-::-webkit-scrollbar-thumb { background: #374151; border-radius: 4px; }
+::-webkit-scrollbar-track { background: var(--scrollbar-track); }
+::-webkit-scrollbar-thumb { background: var(--scrollbar-thumb); border-radius: 4px; }
 ::-webkit-scrollbar-thumb:hover { background: var(--accent-primary); }
 
 /* Smooth page-enter animation */
