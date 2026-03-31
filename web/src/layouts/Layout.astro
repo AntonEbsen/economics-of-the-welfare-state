@@ -35,7 +35,7 @@ const currentPath = Astro.url.pathname;
 	<body>
 		<div class="app-layout">
 			<!-- Mobile Top Bar -->
-			<header class="mobile-topbar">
+			<header class="mobile-topbar" transition:persist>
 				<button id="menu-toggle" class="menu-btn" aria-label="Toggle navigation">
 					<span class="hamburger-line"></span>
 					<span class="hamburger-line"></span>
@@ -46,27 +46,36 @@ const currentPath = Astro.url.pathname;
 			<!-- Overlay for mobile -->
 			<div id="sidebar-overlay" class="sidebar-overlay"></div>
 
-			<aside id="sidebar" class="sidebar">
+			<aside id="sidebar" class="sidebar" transition:persist>
 				<div class="sidebar-header">
 					<div class="logo">EWS</div>
 					<h2 class="project-title">Economics of<br/>the Welfare State</h2>
 				</div>
 				<nav class="main-nav">
-					<a href={`${base}/`} class="nav-item">
+					<a href={`${base}/`} class={`nav-item ${currentPath === base || currentPath === base + '/' ? 'active' : ''}`}>
 						<span class="nav-icon">🏠</span>
 						Overview
 					</a>
-					<a href={`${base}/analysis`} class="nav-item">
+					<a href={`${base}/analysis`} class={`nav-item ${currentPath.includes('/analysis') ? 'active' : ''}`}>
 						<span class="nav-icon">📈</span>
 						Analysis
 					</a>
-					<a href={`${base}/map`} class="nav-item">
+					<a href={`${base}/map`} class={`nav-item ${currentPath.includes('/map') ? 'active' : ''}`}>
 						<span class="nav-icon">🌍</span>
 						Interactive Map
 					</a>
-					<a href={`${base}/appendix`} class="nav-item">
+					<a href={`${base}/appendix`} class={`nav-item ${currentPath.includes('/appendix') ? 'active' : ''}`}>
 						<span class="nav-icon">📚</span>
 						Appendix
+					</a>
+					<div class="nav-divider"></div>
+					<a href={`${base}/compare`} class={`nav-item ${currentPath.includes('/compare') ? 'active' : ''}`}>
+						<span class="nav-icon">⚖️</span>
+						Compare Tool
+					</a>
+					<a href={`${base}/methodology`} class={`nav-item ${currentPath.includes('/methodology') ? 'active' : ''}`}>
+						<span class="nav-icon">📖</span>
+						Methodology
 					</a>
 				</nav>
 				<div class="sidebar-footer">
@@ -75,7 +84,11 @@ const currentPath = Astro.url.pathname;
 						<span class="theme-icon moon">🌙</span>
 						<span class="theme-label">Light Mode</span>
 					</button>
-					<p class="author">By Anton Ebsen</p>
+					<div class="authors-list">
+						<p class="author">A. M. E. Jørgensen</p>
+						<p class="author">Sheng Ye M. Chen</p>
+						<p class="author">Jonas A. S. Nielsen</p>
+					</div>
 					<p class="status">Seminar Project 2026</p>
 				</div>
 			</aside>
@@ -99,18 +112,47 @@ const currentPath = Astro.url.pathname;
 							</ul>
 						</div>
 						<div class="footer-col">
-							<h4>Links</h4>
-							<ul>
-								<li><a href="https://github.com/AntonEbsen/economics-of-the-welfare-state" target="_blank" rel="noopener">GitHub Repository</a></li>
-								<li><a href={`${base}/appendix`}>Full Appendix</a></li>
-							</ul>
+							<h4>Cite this Project</h4>
+							<div class="citation-box">
+								<p class="citation-text" id="citation-apa">
+									Jørgensen, A. M. E., Chen, S. Y. M., & Nielsen, J. A. S. (2026). 
+									<em>Economics of the Welfare State: A Longitudinal Analysis.</em>
+								</p>
+								<div class="citation-actions">
+									<button class="btn-copy" onclick="navigator.clipboard.writeText(document.getElementById('citation-apa').innerText)">APA</button>
+									<button class="btn-copy" id="btn-bibtex">BibTeX</button>
+								</div>
+								<div id="bibtex-content" style="display:none;">
+@article{jorgensen2026welfare,
+  title={Economics of the Welfare State: A Longitudinal Analysis},
+  author={Jørgensen, Anton M. E. and Chen, Sheng Ye M. and Nielsen, Jonas A. S.},
+  journal={University of Copenhagen Seminar Paper},
+  year={2026}
+}</div>
+							</div>
 						</div>
 					</div>
 					<div class="footer-bottom">
-						<p>&copy; 2026 Anton Ebsen &middot; University of Copenhagen &middot; Built with Astro</p>
+						<p>&copy; 2026 &middot; Anton M. E. Jørgensen, Sheng Ye M. Chen, Jonas A. S. Nielsen &middot; University of Copenhagen</p>
 					</div>
 				</footer>
 			</main>
+		</div>
+
+		<!-- Glossary Drawer -->
+		<div id="glossary-drawer" class="glossary-drawer">
+			<div class="drawer-header">
+				<h3 id="drawer-title">Term Definition</h3>
+				<button id="close-drawer" class="close-btn">&times;</button>
+			</div>
+			<div class="drawer-body">
+				<p id="drawer-definition" class="drawer-desc"></p>
+				<div class="drawer-meta">
+					<h4>How it applies:</h4>
+					<p id="drawer-details"></p>
+				</div>
+				<a id="drawer-link" href="#" class="btn-more">Read Full Methodology &rarr;</a>
+			</div>
 		</div>
 
 		<script is:inline>
@@ -157,6 +199,68 @@ const currentPath = Astro.url.pathname;
 					const isLight = document.documentElement.classList.contains('light');
 					localStorage.setItem('theme', isLight ? 'light' : 'dark');
 					updateThemeUI();
+				});
+			}
+
+			// Glossary Logic
+			const glossaryData = {
+				ecm: {
+					title: 'Error Correction Model (ECM)',
+					def: 'A model used to estimate both short-run and long-run effects when variables share a stable relationship (cointegrated).',
+					details: 'In this study, it captures how welfare spending adjusts when globalization shocks push it away from its long-run equilibrium.'
+				},
+				cointegration: {
+					title: 'Cointegration',
+					def: 'A long-term stochastic relationship between non-stationary variables.',
+					details: 'We test for this to ensure that the correlation between globalization and welfare is not accidental (spurious) but theoretically anchored.'
+				},
+				robustness: {
+					title: 'Specification Curve',
+					def: 'A rigorous test of whether a finding holds true across many different modeling choices.',
+					details: 'If the effect remains significant across 500+ different control combinations, we consider it highly robust.'
+				}
+			};
+
+			const drawer = document.getElementById('glossary-drawer');
+			const dTitle = document.getElementById('drawer-title');
+			const dDef = document.getElementById('drawer-definition');
+			const dDetails = document.getElementById('drawer-details');
+			const dLink = document.getElementById('drawer-link');
+			const closeDrawer = document.getElementById('close-drawer');
+
+			window.openGlossary = (id) => {
+				const term = glossaryData[id];
+				if (!term || !drawer) return;
+				
+				dTitle.innerText = term.title;
+				dDef.innerText = term.def;
+				dDetails.innerText = term.details;
+				dLink.setAttribute('href', `${base}/methodology#${id}`);
+				
+				drawer.classList.add('open');
+			};
+
+			if (closeDrawer) {
+				closeDrawer.addEventListener('click', () => drawer.classList.remove('open'));
+			}
+
+			// Smooth scroll for anchors
+			document.body.addEventListener('click', (e) => {
+				if (e.target.dataset.glossary) {
+					e.preventDefault();
+					window.openGlossary(e.target.dataset.glossary);
+				}
+			});
+			// BibTeX Copy
+			const bibBtn = document.getElementById('btn-bibtex');
+			const bibContent = document.getElementById('bibtex-content');
+			if (bibBtn && bibContent) {
+				bibBtn.addEventListener('click', () => {
+					navigator.clipboard.writeText(bibContent.innerText.trim()).then(() => {
+						const original = bibBtn.innerText;
+						bibBtn.innerText = 'Copied!';
+						setTimeout(() => bibBtn.innerText = original, 2000);
+					});
 				});
 			}
 		</script>
@@ -346,10 +450,19 @@ const currentPath = Astro.url.pathname;
 	:global(html.light) .theme-icon.sun { display: none; }
 	:global(html:not(.light)) .theme-icon.moon { display: none; }
 
+	.authors-list {
+		margin-bottom: 0.75rem;
+		display: flex;
+		flex-direction: column;
+		gap: 0.15rem;
+	}
+
 	.author {
+		font-size: 0.775rem;
 		color: #fff;
-		font-weight: 600;
-		margin-bottom: 0.25rem;
+		font-weight: 500;
+		opacity: 0.8;
+		margin: 0;
 	}
 
 	.status {
@@ -373,8 +486,14 @@ const currentPath = Astro.url.pathname;
 		border-right-color: rgba(0, 0, 0, 0.08);
 	}
 	:global(html.light) .project-title,
-	:global(html.light) .author {
-		color: #0f172a;
+	:global(html.light) .author,
+	:global(html.light) h1,
+	:global(html.light) h2,
+	:global(html.light) h3 {
+		color: #0f172a !important;
+	}
+	:global(html.light) .subtitle {
+		color: #475569 !important;
 	}
 	:global(html.light) .content {
 		background: radial-gradient(circle at top right, #dbeafe 0%, #f8fafc 40%);
@@ -439,6 +558,37 @@ const currentPath = Astro.url.pathname;
 		gap: 0.5rem;
 	}
 
+	.citation-box {
+		background: rgba(255, 255, 255, 0.03);
+		padding: 1rem;
+		border-radius: 8px;
+		border: 1px solid rgba(255, 255, 255, 0.05);
+	}
+	.citation-text {
+		font-size: 0.75rem !important;
+		line-height: 1.4 !important;
+		margin-bottom: 0.75rem !important;
+		color: var(--text-secondary) !important;
+	}
+	.btn-copy {
+		background: transparent;
+		border: 1px solid var(--accent-primary);
+		color: var(--accent-primary);
+		padding: 0.25rem 0.75rem;
+		border-radius: 4px;
+		font-size: 0.7rem;
+		cursor: pointer;
+		transition: all 0.2s;
+	}
+	.btn-copy:hover {
+		background: var(--accent-primary);
+		color: #fff;
+	}
+	.citation-actions {
+		display: flex;
+		gap: 0.5rem;
+	}
+
 	.footer-col ul li a {
 		font-size: 0.85rem;
 		color: #9ca3af;
@@ -483,5 +633,58 @@ const currentPath = Astro.url.pathname;
 			grid-template-columns: 1fr;
 			gap: 2rem;
 		}
+	}
+	.nav-divider {
+		height: 1px;
+		background: rgba(255,255,255,0.05);
+		margin: 1rem 0;
+	}
+
+	/* Glossary Drawer */
+	.glossary-drawer {
+		position: fixed;
+		top: 0;
+		right: -400px;
+		width: 400px;
+		height: 100vh;
+		background: #0f172a;
+		border-left: 1px solid var(--accent-primary);
+		box-shadow: -10px 0 30px rgba(0,0,0,0.5);
+		z-index: 10000;
+		transition: right 0.4s cubic-bezier(0.16, 1, 0.3, 1);
+		padding: 2.5rem;
+		display: flex;
+		flex-direction: column;
+	}
+	.glossary-drawer.open { right: 0; }
+	
+	.drawer-header {
+		display: flex;
+		justify-content: space-between;
+		align-items: center;
+		margin-bottom: 2rem;
+	}
+	.drawer-header h3 { font-family: 'Outfit', sans-serif; color: #fff; margin: 0; }
+	.close-btn { background: none; border: none; color: #fff; font-size: 2rem; cursor: pointer; }
+	
+	.drawer-desc { font-size: 1.1rem; line-height: 1.6; color: var(--text-secondary); margin-bottom: 2rem; }
+	.drawer-meta h4 { font-size: 0.8rem; text-transform: uppercase; color: var(--accent-primary); margin-bottom: 0.75rem; }
+	.drawer-meta p { font-size: 0.95rem; line-height: 1.6; color: var(--text-muted); }
+	
+	.btn-more {
+		margin-top: auto;
+		display: block;
+		padding: 1rem;
+		background: rgba(59, 130, 246, 0.1);
+		color: var(--accent-primary);
+		text-align: center;
+		border-radius: 8px;
+		font-weight: 600;
+		transition: all 0.2s;
+	}
+	.btn-more:hover { background: var(--accent-primary); color: #fff; }
+
+	@media (max-width: 500px) {
+		.glossary-drawer { width: 100%; right: -100%; }
 	}
 </style>

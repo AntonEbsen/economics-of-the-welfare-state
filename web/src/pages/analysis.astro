@@ -4,24 +4,32 @@ const base = import.meta.env.BASE_URL;
 ---
 
 <Layout title="Analysis | Interactive Specification Curves">
-	<div class="analysis-header container flex justify-between items-end flex-wrap gap-4">
+	<div class="analysis-header container">
 		<div>
 			<h1>Econometric Analysis</h1>
 			<p class="subtitle">
 				Interactive results showing effect stability and model diagnostics across different specifications.
 			</p>
 		</div>
-		<button id="export-pdf-btn" class="mb-6 px-6 py-2.5 bg-gradient-to-r from-blue-600 to-indigo-600 text-white font-bold rounded-lg shadow-lg hover:shadow-indigo-500/50 hover:scale-[1.02] transition-all flex items-center gap-2 border border-indigo-400/30">
-			<svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 10v6m0 0l-3-3m3 3l3-3m2 8H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"></path></svg>
-			Export Brief 
-		</button>
+		<div class="header-actions">
+			<button id="download-data-btn" class="export-btn secondary-btn">
+				<svg width="20" height="20" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16v1a2 2 0 002 2h12a2 2 0 002-2v-1m-4-4l-4 4m0 0l-4-4m4 4V4"></path></svg>
+				Download Dataset
+			</button>
+			<button id="export-pdf-btn" class="export-btn">
+				<svg width="20" height="20" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 10v6m0 0l-3-3m3 3l3-3m2 8H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"></path></svg>
+				Export Brief 
+			</button>
+		</div>
 	</div>
 
 	<section class="results-dashboard container">
 		<!-- Main Specs Curve Section -->
-		<div class="card spec-curve-container">
-			<div class="card-header">
-				<h2>Specification Curve</h2>
+		<div class="card spec-curve-card">
+			<header class="card-header">
+				<h2>
+					<a href="#" data-glossary="robustness" class="glossary-link">Specification Curve</a>
+				</h2>
 				<div class="controls">
 					<select id="index-select" class="styled-select">
 						<option value="KOFGI">Overall Globalization (KOFGI)</option>
@@ -30,22 +38,32 @@ const base = import.meta.env.BASE_URL;
 						<option value="KOFPoGI">Political Globalization (KOFPoGI)</option>
 					</select>
 				</div>
+			</header>
+			
+			<div class="robustness-explorer">
+				<div class="explorer-label">Sensitivity Toggles:</div>
+				<div id="control-toggles" class="toggle-group-grid">
+					<!-- Populated by JS -->
+				</div>
+				<div class="explorer-footer">
+					<span id="spec-count" class="badge">Showing all models</span>
+					<button id="reset-filters" class="text-link">Reset Filters</button>
+				</div>
 			</div>
+
+			<div id="plotly-chart" class="chart-viewport"></div>
 			
-			<div id="plotly-chart" style="width:100%;height:600px;"></div>
-			
-			<div class="chart-legend">
+			<footer class="chart-footer">
 				<p><small>* Shaded area represents 95% Confidence Interval. Dots show the point estimate for each incremental control specification.</small></p>
-			</div>
+			</footer>
 		</div>
 
-		<!-- Diagnostic Pulse Grid -->
-		<div class="diagnostic-grid">
+		<!-- Diagnostic & Insight Grid -->
+		<div class="analysis-grid">
 			<div class="card diagnostic-card">
 				<h3>Model Health Index</h3>
 				<div id="diagnostics-list" class="diag-list">
-					<!-- Populated by JS -->
-					<div class="loading">Loading diagnostic data...</div>
+					<div class="loading">Analyzing indicators...</div>
 				</div>
 			</div>
 			
@@ -53,36 +71,35 @@ const base = import.meta.env.BASE_URL;
 				<h3>Quick Interpretation</h3>
 				<div class="insight-pill">
 					<span class="icon">✅</span>
-					<div class="text">
+					<div class="insight-text">
 						<strong>Robustness:</strong> Globalization effects remain positive and significant across most specifications.
 					</div>
 				</div>
 				<div class="insight-pill">
 					<span class="icon">🔬</span>
-					<div class="text">
-						<strong>Cointegration:</strong> Long-run equilibrium is validated by Kao tests for all indices.
+					<div class="insight-text">
+						<strong><a href="#" data-glossary="cointegration" class="glossary-link">Cointegration</a>:</strong> Long-run equilibrium is validated by Kao tests for all indices.
 					</div>
 				</div>
 			</div>
 		</div>
 
 		<!-- Driver Analysis Section -->
-		<div class="card driver-container mt-8">
-			<div class="card-header">
+		<div class="card driver-card">
+			<header class="card-header">
 				<h2>Driver Analysis (Variance Decomposition)</h2>
 				<span class="badge badge-accent">Partial R² Contribution</span>
-			</div>
-			<div class="grid md:grid-cols-3 gap-6">
-				<div class="md:col-span-2">
-					<div id="importance-chart" style="width:100%;height:350px;"></div>
+			</header>
+			<div class="driver-layout">
+				<div class="driver-chart-wrap">
+					<div id="importance-chart" class="importance-chart"></div>
 				</div>
-				<div class="flex flex-col justify-center gap-4">
-					<div class="insight-pill mt-0">
+				<div class="driver-sidebar">
+					<div class="insight-pill">
 						<span class="icon">🔍</span>
-						<div class="text">
+						<div class="insight-text">
 							<strong>What drives welfare spending?</strong><br>
-							This chart shows the <span class="text-blue-400">Partial R-squared</span> percentage. 
-							It isolates how much unique variation in welfare spending is explained by each variable independently.
+							This chart isolates how much unique variation is explained by each variable independently (Partial R-squared).
 						</div>
 					</div>
 				</div>
@@ -92,12 +109,12 @@ const base = import.meta.env.BASE_URL;
 
 	<section class="simulator-section container">
 		<div class="card simulator-card">
-			<div class="card-header">
+			<header class="card-header">
 				<h2>Counterfactual Simulator</h2>
 				<span class="badge badge-accent">Predictive Insight</span>
-			</div>
+			</header>
 			
-			<div class="simulator-grid">
+			<div class="simulator-layout">
 				<div class="sim-controls">
 					<div class="control-group">
 						<label for="country-sim-select">Target Country (Baseline 2023)</label>
@@ -106,13 +123,13 @@ const base = import.meta.env.BASE_URL;
 						</select>
 					</div>
 
-					<div class="control-group mt-4">
-						<label for="shift-slider" class="flex justify-between">
+					<div class="control-group">
+						<label for="shift-slider" class="shift-label">
 							<span>Globalization Shift (Δ KOF)</span>
-							<span id="shift-value" class="text-blue-400 font-mono">+5.0</span>
+							<span id="shift-value" class="shift-value">+5.0</span>
 						</label>
-						<input type="range" id="shift-slider" min="-15" max="15" step="0.5" value="5" class="w-full h-2 bg-navy-700 rounded-lg appearance-none cursor-pointer accent-blue-500">
-						<div class="flex justify-between text-xs text-gray-500 mt-2">
+						<input type="range" id="shift-slider" min="-15" max="15" step="0.5" value="5" class="sim-range">
+						<div class="range-labels">
 							<span>-15 pts</span>
 							<span>Baseline</span>
 							<span>+15 pts</span>
@@ -122,11 +139,11 @@ const base = import.meta.env.BASE_URL;
 
 				<div class="sim-output">
 					<div class="prediction-box">
-						<span class="label">Predicted Impact on Welfare Spending</span>
-						<div id="prediction-result" class="value text-green-400">+1.24%</div>
-						<p id="prediction-desc" class="text-sm text-gray-400 mt-2">
-							Based on the Driscoll-Kraay robust coefficients, a 5-point increase in globalization 
-							is predicted to shift spending for <span class="country-name font-bold text-white">Denmark</span>.
+						<span class="prediction-label">Predicted Welfare Impact</span>
+						<div id="prediction-result" class="prediction-value">+1.24%</div>
+						<p id="prediction-desc" class="prediction-desc">
+							Based on robust coefficients, a 5-point increase in globalization 
+							is predicted to shift spending for <span class="country-name font-bold">Denmark</span>.
 						</p>
 					</div>
 				</div>
@@ -151,32 +168,71 @@ const base = import.meta.env.BASE_URL;
 
 			const select = document.getElementById('index-select');
 			const diagList = document.getElementById('diagnostics-list');
+			const toggleContainer = document.getElementById('control-toggles');
+			const specCountBadge = document.getElementById('spec-count');
 			
-			// Simulator Elements
-			const countrySelect = document.getElementById('country-sim-select');
-			const shiftSlider = document.getElementById('shift-slider');
-			const shiftValue = document.getElementById('shift-value');
-			const predictionResult = document.getElementById('prediction-result');
-			const predictionDesc = document.getElementById('prediction-desc');
+			const controlLabels = {
+				'ln_gdppc': 'GDP per Capita',
+				'inflation_cpi': 'Inflation',
+				'deficit': 'Deficit',
+				'debt': 'Debt',
+				'ln_population': 'Population',
+				'dependency_ratio': 'Dependency Ratio'
+			};
+			const allControls = Object.keys(controlLabels);
+			const filters = {}; // { control: 'any' | 'included' | 'excluded' }
 
-			// Populate Country Selector
-			const countries = Object.keys(simData.baselines).sort();
-			countries.forEach(iso3 => {
-				const opt = document.createElement('option');
-				opt.value = iso3;
-				opt.textContent = iso3;
-				if (iso3 === 'DNK') opt.selected = true; // High impact example
-				countrySelect.appendChild(opt);
+			function initToggles() {
+				if (!toggleContainer) return;
+				toggleContainer.innerHTML = allControls.map(ctrl => `
+					<div class="ctrl-toggle-item">
+						<label>${controlLabels[ctrl]}</label>
+						<select data-ctrl="${ctrl}" class="mini-select">
+							<option value="any">Any</option>
+							<option value="included">Required</option>
+							<option value="excluded">Excluded</option>
+						</select>
+					</div>
+				`).join('');
+
+				toggleContainer.querySelectorAll('select').forEach(sel => {
+					sel.addEventListener('change', (e) => {
+						filters[e.target.dataset.ctrl] = e.target.value;
+						updateChart(select.value);
+					});
+				});
+			}
+
+			document.getElementById('reset-filters')?.addEventListener('click', () => {
+				toggleContainer.querySelectorAll('select').forEach(sel => sel.value = 'any');
+				Object.keys(filters).forEach(k => filters[k] = 'any');
+				updateChart(select.value);
 			});
 
 			function updateChart(indexName) {
-				const data = specData[indexName];
+				let data = specData[indexName];
+				if (!data) return;
+
+				// Apply Filters from Omitted Variable Explorer
+				const activeFilters = Object.entries(filters).filter(([_, v]) => v !== 'any');
+				if (activeFilters.length > 0) {
+					data = data.filter(d => {
+						return activeFilters.every(([ctrl, val]) => {
+							const isIncluded = d.included_controls.includes(ctrl);
+							return val === 'included' ? isIncluded : !isIncluded;
+						});
+					});
+				}
+
+				if (specCountBadge) {
+					specCountBadge.innerText = `Showing ${data.length} models`;
+				}
+
 				const x = data.map((_, i) => i);
 				const y = data.map(d => d.coefficient);
 				const lower = data.map(d => d.lower_ci);
 				const upper = data.map(d => d.upper_ci);
 				
-				// Generate detailed hover labels
 				const labels = data.map((d, i) => {
 					let ctrlStr = d.included_controls.join(', ');
 					if (ctrlStr === "") ctrlStr = "None";
@@ -184,16 +240,14 @@ const base = import.meta.env.BASE_URL;
 				});
 
 				const trace = {
-					x: x,
-					y: y,
+					x: x, y: y,
 					mode: 'lines+markers',
 					name: 'Coefficient',
 					line: { color: '#3b82f6', width: 2 },
 					marker: { size: 4, color: '#fff', line: { width: 1, color: '#3b82f6' } },
 					text: labels,
 					hovertemplate: '%{text}<extra></extra>',
-					xaxis: 'x',
-					yaxis: 'y'
+					xaxis: 'x', yaxis: 'y'
 				};
 
 				const ciTrace = {
@@ -202,29 +256,15 @@ const base = import.meta.env.BASE_URL;
 					fill: 'toself',
 					fillcolor: 'rgba(59, 130, 246, 0.2)',
 					line: { color: 'transparent' },
-					name: '95% CI',
-					hoverinfo: 'skip',
-					xaxis: 'x',
-					yaxis: 'y'
+					name: '95% CI', hoverinfo: 'skip',
+					xaxis: 'x', yaxis: 'y'
 				};
 
-				// Bottom Grid: Control Variables Inclusion
-				const controlLabels = {
-					'ln_gdppc': 'GDP per Capita',
-					'inflation_cpi': 'Inflation',
-					'deficit': 'Deficit',
-					'debt': 'Debt',
-					'ln_population': 'Population',
-					'dependency_ratio': 'Dependency Ratio'
-				};
-				const allControls = Object.keys(controlLabels);
-				
 				const gridX = [];
 				const gridY = [];
-				
 				data.forEach((d, i) => {
 					allControls.forEach(c => {
-						if (d.controls.includes(c)) {
+						if (d.included_controls.includes(c)) {
 							gridX.push(i);
 							gridY.push(controlLabels[c]);
 						}
@@ -232,13 +272,11 @@ const base = import.meta.env.BASE_URL;
 				});
 
 				const gridTrace = {
-					x: gridX,
-					y: gridY,
+					x: gridX, y: gridY,
 					mode: 'markers',
 					marker: { symbol: 'square', size: 6, color: '#94a3b8' },
 					hoverinfo: 'skip',
-					xaxis: 'x',
-					yaxis: 'y2'
+					xaxis: 'x', yaxis: 'y2'
 				};
 
 				const layout = {
@@ -247,121 +285,76 @@ const base = import.meta.env.BASE_URL;
 					font: { color: '#f9fafb', family: 'Inter, sans-serif' },
 					margin: { t: 40, r: 20, l: 150, b: 20 },
 					showlegend: false,
-					xaxis: { 
-						showticklabels: false,
-						zeroline: false,
-						showgrid: false,
-						fixedrange: true
-					},
+					xaxis: { showticklabels: false, zeroline: false, showgrid: false, fixedrange: true },
 					yaxis: { 
-						title: 'Effect Size', 
-						gridcolor: '#374151', 
-						zerolinecolor: '#ef4444',
-						domain: [0.45, 1],
-						fixedrange: true
+						title: 'Effect Size', gridcolor: '#374151', zerolinecolor: '#ef4444',
+						domain: [0.45, 1], fixedrange: true
 					},
 					yaxis2: {
 						domain: [0, 0.40],
 						gridcolor: 'rgba(255,255,255,0.05)',
 						tickfont: { size: 11, color: '#94a3b8' },
 						fixedrange: true,
-						// Force categorical order alphabetically or fixed
 						categoryorder: 'array',
 						categoryarray: Object.values(controlLabels).reverse()
 					}
 				};
 
-				const config = { responsive: true, displayModeBar: false };
-				Plotly.newPlot('plotly-chart', [ciTrace, trace, gridTrace], layout, config);
+				Plotly.newPlot('plotly-chart', [ciTrace, trace, gridTrace], layout, { responsive: true, displayModeBar: false });
 			}
 
 			function updateImportanceChart(indexName) {
 				const data = impData[indexName];
 				if (!data) return;
-
-				// Reverse data so the largest bar is at the top in horizontal view
 				const sortedData = [...data].reverse();
-				
 				const x = sortedData.map(d => d.partial_r2);
 				const y = sortedData.map(d => d.label);
-
-				// Highlight the globalization index
-				const colors = sortedData.map(d => 
-					d.variable.includes(indexName) ? '#3b82f6' : '#475569'
-				);
+				const colors = sortedData.map(d => d.variable.includes(indexName) ? '#3b82f6' : '#475569');
 
 				const trace = {
-					type: 'bar',
-					x: x,
-					y: y,
+					type: 'bar', x: x, y: y,
 					orientation: 'h',
 					marker: { color: colors, border: { color: 'rgba(255,255,255,0.1)', width: 1 } },
 					hovertemplate: '<b>%{y}</b><br>Partial R²: %{x:.2f}%<extra></extra>'
 				};
 
-				const layout = {
-					paper_bgcolor: 'rgba(0,0,0,0)',
-					plot_bgcolor: 'rgba(0,0,0,0)',
+				Plotly.newPlot('importance-chart', [trace], {
+					paper_bgcolor: 'rgba(0,0,0,0)', plot_bgcolor: 'rgba(0,0,0,0)',
 					font: { color: '#f9fafb', family: 'Inter, sans-serif' },
 					margin: { t: 20, r: 20, l: 150, b: 40 },
-					xaxis: { 
-						title: 'Partial R² Contribution (%)',
-						gridcolor: '#374151',
-						ticksuffix: '%'
-					},
-					yaxis: { 
-						gridcolor: 'transparent'
-					}
-				};
-
-				Plotly.newPlot('importance-chart', [trace], layout, { responsive: true, displayModeBar: false });
+					xaxis: { title: 'Partial R² Contribution (%)', gridcolor: '#374151', ticksuffix: '%' },
+					yaxis: { gridcolor: 'transparent' }
+				}, { responsive: true, displayModeBar: false });
 			}
 
 			function updateDiagnostics(indexName) {
 				const diag = diagData.find(d => d.model === indexName);
 				if (!diag) return;
-
 				diagList.innerHTML = `
-					<div class="diag-item">
-						<span>Hausman Test (p < 0.05 → FE)</span>
-						<span class="badge ${diag.hausman_p < 0.05 ? 'badge-success' : 'badge-warning'}">${diag.hausman_preferred} (p=${diag.hausman_p})</span>
-					</div>
-					<div class="diag-item">
-						<span>Serial Correlation (Ljung-Box)</span>
-						<span class="badge ${diag.serial_corr_status === 'Clean' ? 'badge-success' : 'badge-error'}">${diag.serial_corr_status}</span>
-					</div>
-					<div class="diag-item">
-						<span>Observations</span>
-						<span class="badge badge-success">${diag.nobs}</span>
-					</div>
-					<div class="diag-item">
-						<span>R-squared</span>
-						<span class="badge badge-success">${diag.rsquared}</span>
-					</div>
+					<div class="diag-item"><span>Hausman Test</span><span class="badge ${diag.hausman_p < 0.05 ? 'badge-success' : 'badge-warning'}">${diag.hausman_preferred}</span></div>
+					<div class="diag-item"><span>Serial Correlation</span><span class="badge ${diag.serial_corr_status === 'Clean' ? 'badge-success' : 'badge-error'}">${diag.serial_corr_status}</span></div>
+					<div class="diag-item"><span>Observations</span><span class="badge badge-success">${diag.nobs}</span></div>
+					<div class="diag-item"><span>R-squared</span><span class="badge badge-success">${diag.rsquared}</span></div>
 				`;
 			}
 
 			function updateSimulator() {
-				const iso3 = countrySelect.value;
+				const iso3 = document.getElementById('country-sim-select').value;
 				const idx = select.value;
-				const deltaG = parseFloat(shiftSlider.value);
-				
+				const deltaG = parseFloat(document.getElementById('shift-slider').value);
 				const baselineWelfare = simData.baselines[iso3].sstran;
 				const beta = simData.coefficients[idx].coef;
-				
-				// Delta % = (beta * deltaG / baseline_welfare) * 100
 				const deltaPct = (beta * deltaG / baselineWelfare) * 100;
 				
-				shiftValue.textContent = (deltaG > 0 ? "+" : "") + deltaG.toFixed(1);
-				
-				const colorClass = deltaPct > 0 ? 'text-green-400' : (deltaPct < 0 ? 'text-red-400' : 'text-gray-400');
-				predictionResult.className = `value ${colorClass} text-4xl font-bold font-mono`;
+				document.getElementById('shift-value').textContent = (deltaG > 0 ? "+" : "") + deltaG.toFixed(1);
+				const predictionResult = document.getElementById('prediction-result');
+				predictionResult.className = `value ${deltaPct > 0 ? 'text-green-400' : 'text-red-400'} text-4xl font-bold font-mono`;
 				predictionResult.textContent = (deltaPct > 0 ? "+" : "") + deltaPct.toFixed(2) + "%";
 				
-				predictionDesc.innerHTML = `
+				document.getElementById('prediction-desc').innerHTML = `
 					Based on the <span class="text-blue-400">Driscoll-Kraay</span> coefficients, a ${Math.abs(deltaG)} point 
 					${deltaG >= 0 ? "increase" : "decrease"} in globalization (${idx}) is predicted to 
-					${deltaPct >= 0 ? "expand" : "reduce"} relative welfare spending for 
+					${deltaPct >= 0 ? "expand" : "reduce"} welfare spending for 
 					<span class="text-white font-bold">${iso3}</span> by ${Math.abs(deltaPct).toFixed(2)}%.
 				`;
 			}
@@ -373,10 +366,11 @@ const base = import.meta.env.BASE_URL;
 				updateSimulator();
 			});
 
-			countrySelect.addEventListener('change', updateSimulator);
-			shiftSlider.addEventListener('input', updateSimulator);
+			document.getElementById('country-sim-select').addEventListener('change', updateSimulator);
+			document.getElementById('shift-slider').addEventListener('input', updateSimulator);
 
 			// Initial Load
+			initToggles();
 			updateChart('KOFGI');
 			updateDiagnostics('KOFGI');
 			updateImportanceChart('KOFGI');
@@ -477,6 +471,93 @@ const base = import.meta.env.BASE_URL;
 		text-align: left;
 	}
 
+	.header-actions {
+		display: flex;
+		gap: 1rem;
+	}
+	.secondary-btn {
+		background: rgba(255, 255, 255, 0.05) !important;
+		border: 1px solid rgba(255, 255, 255, 0.1) !important;
+		color: var(--text-secondary) !important;
+	}
+	.secondary-btn:hover {
+		background: rgba(255, 255, 255, 0.1) !important;
+		border-color: rgba(255, 255, 255, 0.2) !important;
+	}
+
+	.glossary-link {
+		color: inherit;
+		text-decoration: underline dotted var(--accent-primary);
+		cursor: help;
+		transition: color 0.2s;
+	}
+	.glossary-link:hover {
+		color: var(--accent-primary);
+	}
+
+	.robustness-explorer {
+		background: rgba(15, 23, 42, 0.5);
+		border: 1px solid rgba(255,255,255,0.05);
+		border-radius: 12px;
+		padding: 1.5rem;
+		margin: 0 2rem 1.5rem;
+	}
+	.explorer-label {
+		font-size: 0.75rem;
+		text-transform: uppercase;
+		color: var(--accent-primary);
+		font-weight: 700;
+		margin-bottom: 1rem;
+		letter-spacing: 0.05em;
+	}
+	.toggle-group-grid {
+		display: grid;
+		grid-template-columns: repeat(auto-fill, minmax(180px, 1fr));
+		gap: 1rem;
+		margin-bottom: 1rem;
+	}
+	.ctrl-toggle-item {
+		display: flex;
+		flex-direction: column;
+		gap: 0.4rem;
+	}
+	.ctrl-toggle-item label {
+		font-size: 0.8rem;
+		color: var(--text-secondary);
+	}
+	.mini-select {
+		background: #1e293b;
+		color: #fff;
+		border: 1px solid rgba(255,255,255,0.1);
+		padding: 0.35rem 0.5rem;
+		border-radius: 6px;
+		font-size: 0.85rem;
+		cursor: pointer;
+	}
+	.explorer-footer {
+		display: flex;
+		justify-content: space-between;
+		align-items: center;
+		padding-top: 1rem;
+		border-top: 1px solid rgba(255,255,255,0.05);
+	}
+	.text-link {
+		background: none;
+		border: none;
+		color: var(--accent-primary);
+		font-size: 0.8rem;
+		cursor: pointer;
+		padding: 0;
+		text-decoration: underline;
+	}
+	.badge {
+		font-size: 0.75rem;
+		background: rgba(59, 130, 246, 0.1);
+		color: var(--accent-primary);
+		padding: 0.2rem 0.6rem;
+		border-radius: 4px;
+	}
+
 	.results-dashboard {
 		display: flex;
 		flex-direction: column;
@@ -503,103 +584,149 @@ const base = import.meta.env.BASE_URL;
 		cursor: pointer;
 	}
 
-	.chart-legend {
+	.chart-viewport {
+		width: 100%;
+		height: 600px;
+		margin: 1.5rem 0;
+	}
+
+	.chart-footer {
 		margin-top: 1rem;
 		color: var(--text-muted);
 		text-align: center;
 	}
 
-	.diagnostic-grid {
-		display: grid;
-		grid-template-columns: 3fr 2fr;
-		gap: 2rem;
+	/* Tooltip */
+	.info-tooltip {
+		display: inline-block;
+		position: relative;
+		margin-left: 0.5rem;
+		vertical-align: middle;
+	}
+	.info-icon {
+		cursor: help;
+		opacity: 0.5;
+		transition: opacity 0.2s;
+		font-size: 0.9rem;
+	}
+	.info-icon:hover { opacity: 1; }
+	.info-panel {
+		display: none;
+		position: absolute;
+		bottom: 150%;
+		left: 50%;
+		transform: translateX(-50%);
+		width: 320px;
+		padding: 1.25rem;
+		background: #0f172a;
+		border: 1px solid var(--accent-primary);
+		border-radius: 12px;
+		box-shadow: 0 20px 50px rgba(0,0,0,0.6);
+		z-index: 9999;
+		font-size: 0.875rem;
+		color: var(--text-secondary);
+		line-height: 1.6;
+		text-align: left;
+		pointer-events: none;
+	}
+	.info-panel strong { color: #fff; display: block; margin-bottom: 0.5rem; }
+	.info-tooltip:hover .info-panel,
+	.info-tooltip:focus-within .info-panel { 
+		display: block; 
 	}
 
+	/* Grids */
+	.analysis-grid {
+		display: grid;
+		grid-template-columns: 1fr 1fr;
+		gap: 2rem;
+		margin: 2rem 0;
+	}
+
+	.diagnostic-card {
+		padding: 2rem;
+	}
 	.diag-list {
 		display: flex;
 		flex-direction: column;
 		gap: 1rem;
-		margin-top: 1rem;
+		margin-top: 1.5rem;
 	}
 
-	.diag-item {
-		display: flex;
-		justify-content: space-between;
-		align-items: center;
-		padding: 0.75rem;
-		background: rgba(255, 255, 255, 0.03);
-		border-radius: 8px;
-		font-size: 0.875rem;
-	}
-
+	.summary-card { padding: 2rem; }
 	.insight-pill {
 		display: flex;
 		gap: 1rem;
-		margin-top: 1.5rem;
-		padding: 1rem;
-		background: rgba(59, 130, 246, 0.05);
+		padding: 1.25rem;
+		background: rgba(255, 255, 255, 0.03);
 		border-radius: 12px;
-		border: 1px solid rgba(59, 130, 246, 0.1);
+		margin-bottom: 1rem;
+		border: 1px solid rgba(255,255,255,0.02);
 	}
+	.insight-text strong { color: #fff; display: block; margin-bottom: 0.25rem; }
+	.insight-text { font-size: 0.9rem; color: var(--text-secondary); line-height: 1.5; }
 
-	.insight-pill .icon {
-		font-size: 1.5rem;
+	/* Driver Analysis */
+	.driver-card { padding: 2.5rem; margin-bottom: 2rem; }
+	.driver-layout {
+		display: grid;
+		grid-template-columns: 2fr 1fr;
+		gap: 3rem;
+		margin-top: 1.5rem;
 	}
+	.importance-chart { width: 100%; height: 350px; }
+	.driver-sidebar { display: flex; flex-direction: column; justify-content: center; }
 
-	.insight-pill strong {
-		color: var(--accent-primary);
-		display: block;
-		margin-bottom: 0.25rem;
-	}
-
-	@media (max-width: 900px) {
-		.diagnostic-grid {
-			grid-template-columns: 1fr;
-		}
-	}
-
-	/* Simulator Styles */
-	.simulator-section {
-		margin-top: 2rem;
-		padding-bottom: 4rem;
-	}
-
-	.simulator-grid {
+	/* Simulator */
+	.simulator-card { padding: 2.5rem; margin-bottom: 3rem; }
+	.simulator-layout {
 		display: grid;
 		grid-template-columns: 1fr 1fr;
-		gap: 3rem;
-		align-items: center;
+		gap: 4rem;
+		margin-top: 2rem;
+	}
+	.sim-controls { display: flex; flex-direction: column; gap: 2rem; }
+	.control-group label { display: block; margin-bottom: 0.75rem; color: var(--text-muted); font-size: 0.9rem; font-weight: 600; }
+	
+	.shift-label { display: flex; justify-content: space-between; }
+	.shift-value { color: var(--accent-primary); font-family: monospace; font-size: 1.1rem; }
+	
+	.sim-range {
+		width: 100%;
+		height: 6px;
+		background: #1e293b;
+		border-radius: 8px;
+		appearance: none;
+		cursor: pointer;
+	}
+	.sim-range::-webkit-slider-thumb {
+		appearance: none;
+		width: 18px;
+		height: 18px;
+		background: var(--accent-primary);
+		border-radius: 50%;
+		box-shadow: 0 0 10px rgba(59, 130, 246, 0.5);
 	}
 
-	.control-group label {
-		display: block;
-		margin-bottom: 0.75rem;
-		color: #94a3b8;
-		font-size: 0.9rem;
-		font-weight: 500;
-	}
+	.range-labels { display: flex; justify-content: space-between; font-size: 0.7rem; color: var(--text-muted); margin-top: 0.5rem; }
 
 	.prediction-box {
-		background: rgba(59, 130, 246, 0.05);
-		border: 1px solid rgba(59, 130, 246, 0.2);
-		border-radius: 20px;
-		padding: 2rem;
+		height: 100%;
+		display: flex;
+		flex-direction: column;
+		justify-content: center;
+		padding: 2.5rem;
+		background: rgba(16, 185, 129, 0.05);
+		border: 1px dashed rgba(16, 185, 129, 0.2);
+		border-radius: 16px;
 		text-align: center;
 	}
+	.prediction-label { font-size: 0.9rem; color: var(--text-muted); text-transform: uppercase; letter-spacing: 0.05em; }
+	.prediction-value { font-size: 3.5rem; font-weight: 800; color: var(--success); margin: 0.5rem 0; font-family: 'Outfit', sans-serif; }
+	.prediction-desc { font-size: 0.95rem; color: var(--text-secondary); line-height: 1.6; }
 
-	.prediction-box .label {
-		color: #94a3b8;
-		font-size: 0.8rem;
-		text-transform: uppercase;
-		letter-spacing: 0.05em;
-		margin-bottom: 1rem;
-		display: block;
-	}
-
-	@media (max-width: 800px) {
-		.simulator-grid {
-			grid-template-columns: 1fr;
-			gap: 2rem;
-		}
+	@media (max-width: 1024px) {
+		.analysis-grid, .driver-layout, .simulator-layout { grid-template-columns: 1fr; gap: 2rem; }
+		.prediction-box { padding: 1.5rem; }
 	}
 </style>

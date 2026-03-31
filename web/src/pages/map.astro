@@ -4,56 +4,59 @@ const base = import.meta.env.BASE_URL;
 ---
 
 <Layout title="Interactive Map | Midnight Econometrics">
-	<main class="container mx-auto px-4 py-12">
-		<div class="mb-12">
-			<h1 class="text-4xl md:text-5xl font-bold mb-4 bg-gradient-to-r from-blue-400 to-indigo-400 bg-clip-text text-transparent">
-				Geographic Deep Dive
-			</h1>
-			<p class="text-gray-400 max-w-2xl text-lg">
+	<main class="map-page container">
+		<header class="page-header">
+			<h1 class="gradient-text text-glow">Geographic Deep Dive</h1>
+			<p class="subtitle">
 				Explore the evolution of welfare states and globalization across 32 OECD countries from 1980 to 2023. 
 				Use the slider to see how policies shifted over four decades.
 			</p>
-		</div>
+		</header>
 
-		<div class="glass-card mb-8">
-			<div class="flex flex-wrap items-center justify-between mb-6 gap-4">
-				<div class="flex items-center gap-4 bg-navy-900/50 p-2 rounded-xl border border-white/5">
-					<button id="view-sstran" class="px-4 py-2 rounded-lg bg-blue-600 text-white font-medium transition-all shadow-lg shadow-blue-500/20 active-toggle">
+		<div class="card map-card">
+			<div class="map-controls">
+				<div class="toggle-group">
+					<button id="view-sstran" class="toggle-btn active">
 						Welfare Spending
 					</button>
-					<button id="view-kofgi" class="px-4 py-2 rounded-lg text-gray-400 hover:text-white transition-all">
+					<button id="view-kofgi" class="toggle-btn">
 						Globalization (KOF)
 					</button>
 				</div>
-                <div class="text-right">
-                    <span id="current-year-display" class="text-3xl font-mono font-bold text-blue-400">2023</span>
+                <div class="playback-controls">
+                    <button id="play-btn" class="play-btn" aria-label="Play Animation">
+                        <span class="play-icon">▶</span>
+                        <span class="pause-icon" style="display:none">Ⅱ</span>
+                    </button>
+                    <input type="range" id="year-slider" min="1980" max="2023" step="1" value="2023" class="temporal-slider" />
+                    <span id="current-year-display" class="year-badge">2023</span>
                 </div>
 			</div>
 
-			<div id="choropleth-map" style="height: 600px;" class="rounded-xl overflow-hidden">
+			<div id="choropleth-map" class="map-viewport">
                 <!-- Plotly will render here -->
-                <div class="h-full w-full flex items-center justify-center bg-navy-900/40 animate-pulse">
-                    <span class="text-gray-500 font-mono">Initializing Neural Map...</span>
+                <div class="map-loading">
+                    <span class="loading-text">Initializing Neural Map...</span>
                 </div>
             </div>
 		</div>
 
-		<div class="grid md:grid-cols-2 gap-8">
-			<div class="glass-card p-6">
-				<h3 class="text-xl font-bold mb-3 flex items-center gap-2">
-					<span class="text-blue-400">📊</span> Legend & Scale
+		<div class="insight-grid">
+			<div class="card insight-card">
+				<h3>
+					<span class="icon">📊</span> Legend & Scale
 				</h3>
-				<p class="text-gray-400 text-sm leading-relaxed">
+				<p>
 					Welfare spending is measured as <strong>Social Security Transfers</strong> (percentage of GDP). 
 					Globalization is represented by the <strong>KOF Overall Index</strong> (0-100 scale). 
 					Darker regions indicate higher intensity in the selected metric.
 				</p>
 			</div>
-			<div class="glass-card p-6">
-				<h3 class="text-xl font-bold mb-3 flex items-center gap-2">
-					<span class="text-indigo-400">💡</span> Insight
+			<div class="card insight-card">
+				<h3>
+					<span class="icon">💡</span> Insight
 				</h3>
-				<p class="text-gray-400 text-sm leading-relaxed">
+				<p>
 					Observe the "dual movement" of the 1990s: globalization accelerated rapidly in Central Europe while welfare spending 
 					began its long-term divergence between Liberal and Social Democratic regimes.
 				</p>
@@ -77,6 +80,10 @@ const base = import.meta.env.BASE_URL;
 			
 			renderMap();
 			setupListeners();
+
+			// Hide loader after initial render
+			const loader = document.querySelector('.map-loading');
+			if (loader) loader.style.display = 'none';
 		} catch (err) {
 			console.error("Failed to load map data:", err);
 		}
@@ -136,10 +143,7 @@ const base = import.meta.env.BASE_URL;
 		Plotly.newPlot('choropleth-map', data, layout, config);
 	}
 
-	function setupListeners() {
-		const myPlot = document.getElementById('choropleth-map');
-		
-		// Navigate to Country Deep Dive Profile on click
+		// Navigation
 		myPlot.on('plotly_click', function(data) {
 			if (data.points && data.points.length > 0) {
 				const iso3 = data.points[0].location;
@@ -149,7 +153,12 @@ const base = import.meta.env.BASE_URL;
 
 		const btnSstran = document.getElementById('view-sstran');
 		const btnKofgi = document.getElementById('view-kofgi');
+		const slider = document.getElementById('year-slider');
+		const playBtn = document.getElementById('play-btn');
 		const yearDisplay = document.getElementById('current-year-display');
+
+		let isPlaying = false;
+		let playInterval;
 
 		btnSstran.addEventListener('click', () => {
 			currentVar = 'sstran';
@@ -163,66 +172,234 @@ const base = import.meta.env.BASE_URL;
 			renderMap();
 		});
 
-		// Listen to global layout events if we had a shared slider, 
-		// but since we want high performance, let's add the slider logic here
-        // We'll use a Plotly slider for the smoothest experience
-        updateMapWithSlider();
+		// Slider Logic
+		slider.addEventListener('input', (e) => {
+			currentYear = parseInt(e.target.value);
+			yearDisplay.innerText = currentYear;
+			renderMap();
+		});
+
+		// Playback Logic
+		playBtn.addEventListener('click', () => {
+			isPlaying = !isPlaying;
+			const playIcon = playBtn.querySelector('.play-icon');
+			const pauseIcon = playBtn.querySelector('.pause-icon');
+
+			if (isPlaying) {
+				playIcon.style.display = 'none';
+				pauseIcon.style.display = 'inline';
+				playInterval = setInterval(() => {
+					currentYear++;
+					if (currentYear > 2023) currentYear = 1980;
+					slider.value = currentYear;
+					yearDisplay.innerText = currentYear;
+					renderMap();
+				}, 350);
+			} else {
+				playIcon.style.display = 'inline';
+				pauseIcon.style.display = 'none';
+				clearInterval(playInterval);
+			}
+		});
 	}
 
 	function toggleButtons(active, inactive) {
-		active.classList.add('bg-blue-600', 'text-white', 'shadow-lg', 'shadow-blue-500/20');
-		active.classList.remove('text-gray-400');
-		inactive.classList.remove('bg-blue-600', 'text-white', 'shadow-lg', 'shadow-blue-500/20');
-		inactive.classList.add('text-gray-400');
+		active.classList.add('active');
+		inactive.classList.remove('active');
 	}
-
-    function updateMapWithSlider() {
-        const years = Array.from({length: 2023 - 1980 + 1}, (_, i) => 1980 + i);
-        
-        const frames = years.map(year => {
-            const filtered = mapData.filter(d => d.year === year);
-            return {
-                name: year.toString(),
-                data: [{
-                    locations: filtered.map(d => d.iso3),
-                    z: filtered.map(d => d[currentVar]),
-                    text: filtered.map(d => `${d.iso3}: ${d[currentVar].toFixed(2)}`)
-                }]
-            };
-        });
-
-        const sliders = [{
-            pad: { t: 60 },
-            currentvalue: {
-                visible: true,
-                prefix: 'Year: ',
-                xanchor: 'right',
-                font: { size: 20, color: '#60a5fa' }
-            },
-            steps: years.map(year => ({
-                label: year.toString(),
-                method: 'animate',
-                args: [[year.toString()], {
-                    mode: 'immediate',
-                    transition: { duration: 300 },
-                    frame: { duration: 300, redraw: true }
-                }]
-            }))
-        }];
-
-        Plotly.relayout('choropleth-map', { sliders: sliders });
-        Plotly.addFrames('choropleth-map', frames);
-    }
 
 	initMap();
 </script>
 
 <style>
-	.glass-card {
-		background: rgba(15, 23, 42, 0.6);
-		backdrop-filter: blur(12px);
-		border: 1px solid rgba(255, 255, 255, 0.1);
-		border-radius: 1.5rem;
+	.map-page {
+		padding: var(--spacing-xl) 0;
+	}
+
+	.page-header {
+		margin-bottom: 3rem;
+	}
+
+	.gradient-text {
+		font-size: clamp(2.5rem, 8vw, 3.5rem);
+		font-weight: 800;
+		background: linear-gradient(to right, #60a5fa, #818cf8);
+		-webkit-background-clip: text;
+		-webkit-text-fill-color: transparent;
+		font-family: 'Outfit', sans-serif;
+		margin-bottom: 0.5rem;
+	}
+
+	.subtitle {
+		color: var(--text-secondary);
+		max-width: 600px;
+		font-size: 1.1rem;
+		line-height: 1.6;
+	}
+
+	.map-card {
 		padding: 2rem;
+		margin-bottom: 3rem;
+	}
+
+	.map-controls {
+		display: flex;
+		justify-content: space-between;
+		align-items: center;
+		padding: 1.5rem 2rem;
+		border-bottom: 1px solid rgba(255, 255, 255, 0.05);
+		background: rgba(15, 23, 42, 0.2);
+		flex-wrap: wrap;
+		gap: 1.5rem;
+	}
+
+	.playback-controls {
+		display: flex;
+		align-items: center;
+		gap: 1.25rem;
+		flex: 1;
+		justify-content: flex-end;
+		max-width: 600px;
+	}
+
+	.year-badge {
+		font-family: 'Outfit', sans-serif;
+		font-size: 1.5rem;
+		font-weight: 700;
+		color: var(--accent-primary);
+		min-width: 70px;
+		text-align: right;
+		text-shadow: 0 0 15px rgba(59, 130, 246, 0.3);
+	}
+
+	.play-btn {
+		background: var(--accent-primary);
+		color: #fff;
+		border: none;
+		width: 40px;
+		height: 40px;
+		border-radius: 50%;
+		display: flex;
+		align-items: center;
+		justify-content: center;
+		cursor: pointer;
+		font-size: 1rem;
+		transition: all 0.2s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+		box-shadow: 0 4px 15px rgba(59, 130, 246, 0.4);
+	}
+	.play-btn:hover { transform: scale(1.1); background: #60a5fa; }
+	.play-btn:active { transform: scale(0.95); }
+
+	.temporal-slider {
+		flex: 1;
+		height: 6px;
+		appearance: none;
+		background: #1e293b;
+		border-radius: 4px;
+		outline: none;
+	}
+	.temporal-slider::-webkit-slider-thumb {
+		appearance: none;
+		width: 20px;
+		height: 20px;
+		background: #fff;
+		border: 4px solid var(--accent-primary);
+		border-radius: 50%;
+		cursor: pointer;
+		box-shadow: 0 0 10px rgba(0,0,0,0.5);
+		transition: transform 0.2s;
+	}
+	.temporal-slider::-webkit-slider-thumb:hover { transform: scale(1.2); }
+
+	.toggle-group {
+		display: flex;
+		background: rgba(15, 23, 42, 0.4);
+		padding: 0.4rem;
+		border-radius: 12px;
+		border: 1px solid rgba(255, 255, 255, 0.05);
+	}
+
+	.toggle-btn {
+		padding: 0.75rem 1.5rem;
+		border-radius: 8px;
+		border: none;
+		background: transparent;
+		color: #94a3b8;
+		font-weight: 600;
+		cursor: pointer;
+		transition: all 0.3s ease;
+	}
+
+	.toggle-btn:not(.active):hover {
+		color: #cbd5e1;
+		background: rgba(255, 255, 255, 0.03);
+	}
+
+	.toggle-btn.active {
+		background: var(--accent-primary);
+		color: #fff;
+		box-shadow: 0 4px 12px rgba(59, 130, 246, 0.4);
+	}
+
+	.year-text {
+		font-family: 'Outfit', monospace;
+		font-size: 2.5rem;
+		font-weight: 700;
+		color: var(--accent-primary);
+		text-shadow: 0 0 20px rgba(59, 130, 246, 0.3);
+	}
+
+	.map-viewport {
+		height: 600px;
+		border-radius: 1rem;
+		overflow: hidden;
+		background: rgba(15, 23, 42, 0.2);
+		position: relative;
+	}
+
+	.map-loading {
+		position: absolute;
+		inset: 0;
+		display: flex;
+		align-items: center;
+		justify-content: center;
+		background: rgba(15, 23, 42, 0.4);
+		animation: pulse 2s infinite;
+	}
+
+	.loading-text {
+		color: var(--text-muted);
+		font-family: monospace;
+	}
+
+	.insight-grid {
+		display: grid;
+		grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+		gap: 2rem;
+	}
+
+	.insight-card h3 {
+		display: flex;
+		align-items: center;
+		gap: 0.75rem;
+		margin-bottom: 1rem;
+	}
+
+	.insight-card p {
+		color: var(--text-secondary);
+		font-size: 0.95rem;
+		line-height: 1.6;
+	}
+
+	@keyframes pulse {
+		0%, 100% { opacity: 1; }
+		50% { opacity: 0.5; }
+	}
+
+	@media (max-width: 768px) {
+		.map-viewport { height: 450px; }
+		.toggle-group { width: 100%; }
+		.toggle-btn { flex: 1; }
+		.year-right { width: 100%; text-align: center; }
 	}
 </style>

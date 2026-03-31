@@ -1,0 +1,168 @@
+---
+import Layout from '../layouts/Layout.astro';
+const base = import.meta.env.BASE_URL;
+
+const concepts = [
+	{
+		id: 'ecm',
+		title: 'Error Correction Model (ECM)',
+		definition: 'A category of multiple-time series models most commonly used for data where the underlying variables have a long-run stochastic trend (cointegration).',
+		details: 'ECMs allow for both short-run dynamics (changes) and long-run equilibrium (levels) to be estimated simultaneously. In this project, it helps us see how welfare spending "corrects" back to its equilibrium following a globalization shock.'
+	},
+	{
+		id: 'cointegration',
+		title: 'Cointegration',
+		definition: 'A statistical property of a collection of time series variables that are all I(1) but whose linear combination is I(0).',
+		details: 'If Globalization and Welfare are cointegrated, it means they share a stable, long-term relationship. Even if they wander apart briefly, the "economic gravity" of their relationship pulls them back together.'
+	},
+	{
+		id: 'panel-fe',
+		title: 'Panel Fixed Effects (FE)',
+		definition: 'A method of controlling for all time-invariant unobserved individual characteristics.',
+		details: 'By using Fixed Effects, we control for country-specific factors like "Cultural Heritage" or "Political System" that do not change over time, ensuring they do not bias our results.'
+	},
+	{
+		id: 'stationarity',
+		title: 'Stationarity & Unit Roots',
+		definition: 'A stationary process is one whose statistical properties do not change over time.',
+		details: 'Most economic variables (like GDP or KOF indices) are non-stationary. We use Augmented Dickey-Fuller (ADF) and Kao tests to ensure our regressions are not "spurious" (fake correlations).'
+	},
+	{
+		id: 'robustness',
+		title: 'Specification Curves',
+		definition: 'A method for estimating the sensitivity of an effect to various non-arbitrary model decisions.',
+		details: 'Instead of picking one "best" model, we run hundreds of models with different combinations of controls (GDP, Debt, Population, etc.) to see if the globalization effect remains stable.'
+	}
+];
+---
+
+<Layout title="Methodology & Glossary | Research Portal">
+	<div class="methodology-page container">
+		<header class="page-header">
+			<nav class="breadcrumb">
+				<a href={`${base}/`}>Overview</a>
+				<span class="sep">/</span>
+				<span class="current">Methodology</span>
+			</nav>
+			<h1>Econometric Methodology</h1>
+			<p class="subtitle">A guide to the statistical techniques and concepts used in this research.</p>
+		</header>
+
+		<div class="glossary-grid">
+			{concepts.map(c => (
+				<div id={c.id} class="card concept-card">
+					<div class="card-tag">Definition</div>
+					<h2>{c.title}</h2>
+					<p class="summary">{c.definition}</p>
+					<div class="details">
+						<h3>Application in this project</h3>
+						<p>{c.details}</p>
+					</div>
+				</div>
+			))}
+		</div>
+
+		<section class="data-tech-stack main-card card">
+			<h2>Computational Framework</h2>
+			<div class="tech-grid">
+				<div class="tech-item">
+					<strong>Data Pipeline</strong>
+					<p>Python (Pandas, Statsmodels) for regression and data cleaning.</p>
+				</div>
+				<div class="tech-item">
+					<strong>Frontend</strong>
+					<p>Astro + Plotly.js for interactive longitudinal visualization.</p>
+				</div>
+				<div class="tech-item">
+					<strong>Validation</strong>
+					<p>Stata-equivalent Driscoll-Kraay robust standard error calculations.</p>
+				</div>
+			</div>
+		</section>
+	</div>
+</Layout>
+
+<style>
+	.methodology-page {
+		padding-top: var(--spacing-xl);
+		padding-bottom: 4rem;
+	}
+
+	.page-header { margin-bottom: 4rem; }
+
+	.glossary-grid {
+		display: grid;
+		grid-template-columns: repeat(auto-fill, minmax(380px, 1fr));
+		gap: 2rem;
+		margin-bottom: 4rem;
+	}
+
+	.concept-card {
+		padding: 2.5rem;
+		transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+		background: rgba(15, 23, 42, 0.4);
+	}
+	.concept-card:hover {
+		transform: translateY(-5px);
+		border-color: var(--accent-primary);
+		box-shadow: 0 10px 40px rgba(0,0,0,0.4);
+	}
+
+	.card-tag {
+		display: inline-block;
+		font-size: 0.7rem;
+		text-transform: uppercase;
+		letter-spacing: 0.1em;
+		background: var(--accent-primary);
+		color: #fff;
+		padding: 0.2rem 0.6rem;
+		border-radius: 4px;
+		margin-bottom: 1.5rem;
+		font-weight: 700;
+	}
+
+	.concept-card h2 {
+		font-family: 'Outfit', sans-serif;
+		font-size: 1.75rem;
+		margin-bottom: 1rem;
+		color: #fff;
+	}
+
+	.summary {
+		font-size: 1.1rem;
+		line-height: 1.6;
+		color: var(--text-secondary);
+		margin-bottom: 2rem;
+	}
+
+	.details {
+		padding-top: 1.5rem;
+		border-top: 1px solid rgba(255,255,255,0.05);
+	}
+	.details h3 {
+		font-size: 0.85rem;
+		text-transform: uppercase;
+		color: var(--accent-primary);
+		margin-bottom: 0.75rem;
+		letter-spacing: 0.05em;
+	}
+	.details p {
+		font-size: 0.95rem;
+		color: var(--text-muted);
+		line-height: 1.6;
+	}
+
+	.tech-grid {
+		display: grid;
+		grid-template-columns: repeat(3, 1fr);
+		gap: 3rem;
+		margin-top: 2rem;
+	}
+	.tech-item strong { display: block; color: #fff; margin-bottom: 0.5rem; }
+	.tech-item p { font-size: 0.9rem; color: var(--text-muted); }
+
+	@media (max-width: 900px) {
+		.glossary-grid { grid-template-columns: 1fr; }
+		.tech-grid { grid-template-columns: 1fr; gap: 2rem; }
+	}
+</style>

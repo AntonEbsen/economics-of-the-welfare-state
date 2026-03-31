@@ -26,6 +26,38 @@ const latestKOFGI = profile.KOFGI[profile.KOFGI.length - 1];
 const earliestKOFGI = profile.KOFGI[0];
 const kofgiChange = (latestKOFGI - earliestKOFGI).toFixed(2);
 const kofgiChangeStr = kofgiChange > 0 ? `+${kofgiChange}` : kofgiChange;
+
+// --- Advanced Analytics ---
+const obsCount = profile.sstran.filter(v => v !== null).length;
+const reliability = obsCount >= 40 ? 'High' : obsCount >= 20 ? 'Moderate' : 'Limited';
+
+// Theory Scorer (Simple heuristic)
+const welfareDelta = latestWelfare - earliestWelfare;
+const kofDelta = latestKOFGI - earliestKOFGI;
+let theory = {
+	name: 'Neutral / Stable',
+	desc: 'This country shows a stable equilibrium between global integration and social policy, without clear evidence of racing-to-the-bottom or expansion.',
+	icon: '⚖️',
+	citation: 'Garrett (2001)'
+};
+
+if (kofDelta > 8) {
+	if (welfareDelta > 1.5) {
+		theory = {
+			name: 'Compensation Hypothesis',
+			desc: `Consistent with Rodrik (1998), ${profile.name} expanded social transfers as a buffer against external economic volatility from globalization.`,
+			icon: '🛡️',
+			citation: 'Rodrik (1998)'
+		};
+	} else if (welfareDelta < -1.5) {
+		theory = {
+			name: 'Efficiency Hypothesis',
+			desc: `Aligned with the "Race-to-the-Bottom" theory, ${profile.name} appears to have reduced social spending under the pressure of international market competition.`,
+			icon: '⚡',
+			citation: 'Garrett (1998)'
+		};
+	}
+}
 ---
 
 <Layout title={`${profile.name} | Welfare & Globalization Profile`}>
@@ -40,7 +72,12 @@ const kofgiChangeStr = kofgiChange > 0 ? `+${kofgiChange}` : kofgiChange;
 		</nav>
 
 		<div class="country-header">
-			<h1>{profile.name}</h1>
+			<div class="header-main">
+				<h1>{profile.name}</h1>
+				<div class={`reliability-badge ${reliability.toLowerCase()}`}>
+					Reliability: {reliability}
+				</div>
+			</div>
 			<p class="country-subtitle">Detailed Longitudinal Profile (1980 – 2022)</p>
 		</div>
 
@@ -64,6 +101,29 @@ const kofgiChangeStr = kofgiChange > 0 ? `+${kofgiChange}` : kofgiChange;
 						{kofgiChangeStr} pts since 1980
 					</span>
 				</div>
+			</div>
+		</div>
+
+		<!-- AI Insight & Theory Section -->
+		<div class="card insight-section">
+			<div class="theory-card">
+				<div class="theory-icon">{theory.icon}</div>
+				<div class="theory-content">
+					<div class="theory-label">Theory Match</div>
+					<h3>{theory.name}</h3>
+					<p>{theory.desc}</p>
+					<div class="citation">Key Reference: <span class="cite-ref">{theory.citation}</span></div>
+				</div>
+			</div>
+			<div class="narrative-box">
+				<div class="box-label">Automated Profile Summary</div>
+				<p>
+					Since 1980, <strong>{profile.name}</strong> has experienced a {Math.abs(Number(kofgiChange)).toFixed(1)} point 
+					{Number(kofgiChange) > 0 ? 'increase' : 'decrease'} in its Globalization Index. 
+					During this same window, social security transfers shifted by {welfareChangeStr} percentage points. 
+					This trajectory suggests {theory.name.toLowerCase()} dynamics, where social policy 
+					{Number(welfareChange) > 0 ? 'expanded to buffer' : 'receded to accommodate'} modern global market integration.
+				</p>
 			</div>
 		</div>
 
@@ -119,6 +179,55 @@ const kofgiChangeStr = kofgiChange > 0 ? `+${kofgiChange}` : kofgiChange;
 				yaxis: 'y2'
 			};
 
+			// Political & Policy Milestones
+			const milestones = {
+				'GBR': [
+					{ year: 1980, label: 'Thatcherism' },
+					{ year: 1993, label: 'ERM Crisis' },
+					{ year: 2010, label: 'Austerity' }
+				],
+				'USA': [
+					{ year: 1981, label: 'Reaganomics' },
+					{ year: 1994, label: 'NAFTA' },
+					{ year: 2008, label: 'GFC' }
+				],
+				'DEU': [
+					{ year: 1990, label: 'Reunification' },
+					{ year: 2003, label: 'Hartz Reforms' }
+				],
+				'SWE': [
+					{ year: 1991, label: 'Fiscal Reform' },
+					{ year: 1995, label: 'EU Entry' }
+				],
+				'DNK': [
+					{ year: 1982, label: 'Schlüter Reforms' },
+					{ year: 1993, label: 'Flexicurity' }
+				],
+				'FRA': [
+					{ year: 1983, label: 'Tournant de la rigueur' },
+					{ year: 1999, label: 'Euro Adoption' }
+				]
+			};
+
+			const countryMilestones = milestones[iso3] || [];
+			const shapes = countryMilestones.map(m => ({
+				type: 'line',
+				x0: m.year, x1: m.year,
+				y0: 0, y1: 1, yref: 'paper',
+				line: { color: 'rgba(255,255,255,0.2)', width: 1.5, dash: 'dot' }
+			}));
+
+			const annotations = countryMilestones.map(m => ({
+				x: m.year, y: 1, yref: 'paper',
+				text: m.label,
+				showarrow: false,
+				textangle: -90,
+				xanchor: 'left',
+				yanchor: 'top',
+				font: { size: 10, color: '#94a3b8' },
+				bgcolor: 'rgba(15,23,42,0.8)'
+			}));
+
 			const layout = {
 				paper_bgcolor: 'rgba(0,0,0,0)',
 				plot_bgcolor: 'rgba(0,0,0,0)',
@@ -145,7 +254,9 @@ const kofgiChangeStr = kofgiChange > 0 ? `+${kofgiChange}` : kofgiChange;
 					side: 'right',
 					gridcolor: 'transparent',
 					zeroline: false
-				}
+				},
+				shapes: shapes,
+				annotations: annotations
 			};
 
 			const config = { responsive: true, displayModeBar: false };
@@ -245,5 +356,67 @@ const kofgiChangeStr = kofgiChange > 0 ? `+${kofgiChange}` : kofgiChange;
 		.country-page { padding: 1.5rem 1rem; }
 		.summary-grid { grid-template-columns: 1fr; }
 		.country-header h1 { font-size: 2rem; }
+	}
+	.country-header {
+		margin-bottom: var(--spacing-lg);
+	}
+	.header-main {
+		display: flex;
+		align-items: center;
+		gap: 1.5rem;
+		margin-bottom: 0.5rem;
+	}
+	.reliability-badge {
+		padding: 0.25rem 0.75rem;
+		border-radius: 20px;
+		font-size: 0.75rem;
+		font-weight: 700;
+		text-transform: uppercase;
+		letter-spacing: 0.05em;
+	}
+	.reliability-badge.high { background: rgba(16, 185, 129, 0.1); color: #10b981; border: 1px solid rgba(16, 185, 129, 0.2); }
+	.reliability-badge.moderate { background: rgba(245, 158, 11, 0.1); color: #f59e0b; border: 1px solid rgba(245, 158, 11, 0.2); }
+	.reliability-badge.limited { background: rgba(239, 68, 68, 0.1); color: #ef4444; border: 1px solid rgba(239, 68, 68, 0.2); }
+
+	.insight-section {
+		display: grid;
+		grid-template-columns: 1fr 1fr;
+		gap: 2rem;
+		margin-bottom: 2rem;
+		padding: 2.5rem;
+		background: rgba(15, 23, 42, 0.3);
+		border-radius: 1.5rem;
+	}
+	.theory-card {
+		display: flex;
+		gap: 1.5rem;
+		padding-right: 2rem;
+		border-right: 1px solid rgba(255,255,255,0.05);
+	}
+	.theory-icon {
+		font-size: 2.5rem;
+		opacity: 0.8;
+	}
+	.theory-label, .box-label {
+		font-size: 0.7rem;
+		text-transform: uppercase;
+		letter-spacing: 0.1em;
+		color: var(--accent-primary);
+		font-weight: 700;
+		margin-bottom: 0.5rem;
+	}
+	.theory-content h3 { margin-bottom: 0.75rem; color: #fff; }
+	.theory-content p { font-size: 0.95rem; color: var(--text-secondary); line-height: 1.6; margin-bottom: 1rem; }
+	.cite-ref { font-family: 'Outfit'; font-style: italic; color: #fff; }
+
+	.narrative-box p {
+		font-size: 1.05rem;
+		line-height: 1.7;
+		color: var(--text-secondary);
+	}
+
+	@media (max-width: 900px) {
+		.insight-section { grid-template-columns: 1fr; }
+		.theory-card { border-right: none; border-bottom: 1px solid rgba(255,255,255,0.05); padding-bottom: 2rem; padding-right: 0; }
 	}
 </style>

@@ -30,17 +30,25 @@ const base = import.meta.env.BASE_URL;
 		<div id="summary-stats" class="card table-card">
 			<div class="card-header">
 				<h2>Table A1: Summary Statistics</h2>
+				<div class="table-actions">
+					<input type="text" id="table-search" class="table-search" placeholder="Search variables..." />
+					<div class="export-btns">
+						<button id="export-csv" class="btn-sm">Export CSV</button>
+						<button id="export-json" class="btn-sm">Export JSON</button>
+						<button id="export-latex" class="btn-sm accent-btn">Copy LaTeX</button>
+					</div>
+				</div>
 			</div>
 			<div class="table-responsive">
-				<table id="summary-table" class="premium-table">
+				<table id="summary-table" class="premium-table sortable">
 					<thead>
 						<tr>
-							<th>Variable</th>
-							<th>N</th>
-							<th>Mean</th>
-							<th>Std</th>
-							<th>Min</th>
-							<th>Max</th>
+							<th data-sort="string">Variable ⇅</th>
+							<th data-sort="number">N ⇅</th>
+							<th data-sort="number">Mean ⇅</th>
+							<th data-sort="number">Std ⇅</th>
+							<th data-sort="number">Min ⇅</th>
+							<th data-sort="number">Max ⇅</th>
 						</tr>
 					</thead>
 					<tbody id="summary-body">
@@ -84,15 +92,11 @@ const base = import.meta.env.BASE_URL;
 
 		<!-- Dynamic Master Regression Table -->
 		<div id="regression-results" class="card table-card">
-			<div class="card-header flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
+			<div class="card-header regression-header">
 				<h2>Table A3: Interactive Regression Results</h2>
-				<div class="flex bg-navy-900/50 p-1 rounded-lg border border-white/5">
-					<button id="btn-clustered" class="px-4 py-2 rounded-md bg-blue-600 text-white font-medium text-sm transition-all shadow-lg active">
-						Standard Clustered SE
-					</button>
-					<button id="btn-dk" class="px-4 py-2 rounded-md text-gray-400 hover:text-white text-sm transition-all">
-						Driscoll-Kraay Robust SE
-					</button>
+				<div class="se-toggle">
+					<button id="btn-clustered" class="se-btn active">Standard Clustered SE</button>
+					<button id="btn-dk" class="se-btn">Driscoll-Kraay Robust SE</button>
 				</div>
 			</div>
 			<div class="table-responsive" style="margin-top: 0;">
@@ -111,7 +115,7 @@ const base = import.meta.env.BASE_URL;
 					</tbody>
 				</table>
 			</div>
-			<div class="table-footer mt-4">
+			<div class="table-footer">
 				<p>Significance levels: * p&lt;0.10, ** p&lt;0.05, *** p&lt;0.01. Standard errors in parentheses.</p>
 			</div>
 		</div>
@@ -215,25 +219,21 @@ const base = import.meta.env.BASE_URL;
 					tbody.innerHTML = html;
 				};
 
-				// Toggle Logic
+		// Toggle Logic (vanilla CSS classes)
 				const btnClustered = document.getElementById('btn-clustered');
 				const btnDk = document.getElementById('btn-dk');
 				
 				btnClustered.addEventListener('click', () => {
 					currentSeType = 'clustered';
-					btnClustered.classList.add('bg-blue-600', 'text-white', 'shadow-lg');
-					btnClustered.classList.remove('text-gray-400');
-					btnDk.classList.remove('bg-blue-600', 'text-white', 'shadow-lg');
-					btnDk.classList.add('text-gray-400');
+					btnClustered.classList.add('active');
+					btnDk.classList.remove('active');
 					renderRegressionTable();
 				});
 				
 				btnDk.addEventListener('click', () => {
 					currentSeType = 'dk';
-					btnDk.classList.add('bg-blue-600', 'text-white', 'shadow-lg');
-					btnDk.classList.remove('text-gray-400');
-					btnClustered.classList.remove('bg-blue-600', 'text-white', 'shadow-lg');
-					btnClustered.classList.add('text-gray-400');
+					btnDk.classList.add('active');
+					btnClustered.classList.remove('active');
 					renderRegressionTable();
 				});
 
@@ -241,15 +241,129 @@ const base = import.meta.env.BASE_URL;
 				
 			} catch (err) {
 				console.error("Failed to load regression table data:", err);
-				document.getElementById('regression-body').innerHTML = `<tr><td colspan="5" class="text-red-400">Error loading table data. Please re-run the Python export script.</td></tr>`;
+				document.getElementById('regression-body').innerHTML = `<tr><td colspan="5" style="color:#f87171;">Error loading table data. Please re-run the Python export script.</td></tr>`;
 			}
 		}
 
-		initAppendix();
+		// ===== EXPORT =====
+		const summaryData = []; 
+		const vifs = [];
+
+		function updateSummaryData(data) {
+			Object.entries(data).forEach(([varName, stats]) => {
+				summaryData.push({ variable: varName, ...stats });
+			});
+		}
+
+		function copyToClipboard(text, btn) {
+			navigator.clipboard.writeText(text).then(() => {
+				const original = btn.innerText;
+				btn.innerText = 'Copied!';
+				btn.style.background = '#10b981';
+				setTimeout(() => {
+					btn.innerText = original;
+					btn.style.background = '';
+				}, 2000);
+			});
+		}
+
+		// Update fetch logic to populate summaryData
+		async function fetchSummaryData() {
+			try {
+				const res = await fetch(`${base}/data/summary_stats.json`);
+				const data = await res.json();
+				updateSummaryData(data); // Store for export
+				
+				const tbody = document.getElementById('summary-body');
+				tbody.innerHTML = Object.entries(data).map(([varName, stats]) => `
+					<tr>
+						<td>${varName}</td>
+						<td>${stats.n}</td>
+						<td>${stats.mean.toFixed(2)}</td>
+						<td>${stats.std.toFixed(2)}</td>
+						<td>${stats.min.toFixed(2)}</td>
+						<td>${stats.max.toFixed(2)}</td>
+					</tr>
+				`).join('');
+			} catch (err) {
+				console.error("Failed to load summary statistics:", err);
+			}
+		}
+		
+		fetchSummaryData();
+
+		document.getElementById('export-csv')?.addEventListener('click', () => {
+			if (summaryData.length === 0) return;
+			const headers = Object.keys(summaryData[0]).join(',');
+			const rows = summaryData.map(d => Object.values(d).join(',')).join('\n');
+			downloadFile(`${headers}\n${rows}`, 'summary_statistics.csv', 'text/csv');
+		});
+
+		document.getElementById('export-json')?.addEventListener('click', () => {
+			if (summaryData.length === 0) return;
+			downloadFile(JSON.stringify(summaryData, null, 2), 'summary_statistics.json', 'application/json');
+		});
+
+		document.getElementById('export-latex')?.addEventListener('click', (e) => {
+			if (summaryData.length === 0) return;
+			let tex = '\\begin{table}[h]\n\\centering\n\\begin{tabular}{lccccc}\n\\hline\n';
+			tex += 'Variable & N & Mean & Std. Dev. & Min & Max \\\\\n\\hline\n';
+			summaryData.forEach(d => {
+				tex += `${d.variable.replace('_', '\\_')} & ${d.n} & ${d.mean.toFixed(2)} & ${d.std.toFixed(2)} & ${d.min.toFixed(2)} & ${d.max.toFixed(2)} \\\\\n`;
+			});
+			tex += '\\hline\n\\end{tabular}\n\\caption{Summary Statistics}\n\\end{table}';
+			copyToClipboard(tex, e.target);
+		});
+
+		function downloadFile(content, fileName, contentType) {
+			const a = document.createElement('a');
+			const file = new Blob([content], { type: contentType });
+			a.href = URL.createObjectURL(file);
+			a.download = fileName;
+			a.click();
+			URL.revokeObjectURL(a.href);
+		}
 	</script>
 </Layout>
 
 <style>
+	.table-actions {
+		display: flex;
+		gap: 1.5rem;
+		align-items: center;
+		flex-wrap: wrap;
+	}
+	.export-btns {
+		display: flex;
+		gap: 0.5rem;
+	}
+	.btn-sm {
+		padding: 0.5rem 1rem;
+		font-size: 0.75rem;
+		font-weight: 600;
+		background: rgba(255,255,255,0.05);
+		border: 1px solid rgba(255,255,255,0.1);
+		color: var(--text-secondary);
+		border-radius: 8px;
+		cursor: pointer;
+		transition: all 0.2s;
+	}
+	.btn-sm:hover {
+		background: var(--accent-primary);
+		color: #fff;
+		border-color: var(--accent-primary);
+		transform: translateY(-1px);
+	}
+
+	.accent-btn {
+		background: var(--accent-primary) !important;
+		color: #fff !important;
+		border: none !important;
+	}
+	.accent-btn:hover {
+		background: #60a5fa !important;
+	}
+
 	.appendix-header {
 		padding: var(--spacing-xl) var(--spacing-lg);
 	}
@@ -334,6 +448,74 @@ const base = import.meta.env.BASE_URL;
 		font-size: 1.5rem;
 	}
 
+	/* Search Input */
+	.table-search {
+		width: 100%;
+		max-width: 320px;
+		padding: 0.5rem 1rem;
+		margin-top: 1rem;
+		background: rgba(255,255,255,0.05);
+		border: 1px solid var(--card-border);
+		border-radius: 8px;
+		color: var(--text-primary);
+		font-size: 0.9rem;
+		font-family: 'Inter', sans-serif;
+		transition: border-color 0.2s;
+	}
+	.table-search:focus {
+		outline: none;
+		border-color: var(--accent-primary);
+		box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.15);
+	}
+	.table-search::placeholder {
+		color: var(--text-muted);
+	}
+
+	/* Sortable column headers */
+	.sortable th[data-sort] {
+		cursor: pointer;
+		transition: color 0.2s;
+		user-select: none;
+	}
+	.sortable th[data-sort]:hover {
+		color: #fff;
+	}
+
+	/* SE Toggle Buttons */
+	.regression-header {
+		display: flex;
+		justify-content: space-between;
+		align-items: center;
+		flex-wrap: wrap;
+		gap: 1rem;
+	}
+	.se-toggle {
+		display: flex;
+		background: rgba(255,255,255,0.04);
+		padding: 0.25rem;
+		border-radius: 8px;
+		border: 1px solid rgba(255,255,255,0.05);
+	}
+	.se-btn {
+		padding: 0.5rem 1rem;
+		border-radius: 6px;
+		border: none;
+		background: transparent;
+		color: var(--text-muted);
+		font-size: 0.85rem;
+		font-family: 'Inter', sans-serif;
+		cursor: pointer;
+		transition: all 0.2s;
+	}
+	.se-btn:hover {
+		color: var(--text-primary);
+	}
+	.se-btn.active {
+		background: var(--accent-primary);
+		color: #fff;
+		box-shadow: 0 2px 8px rgba(59, 130, 246, 0.3);
+	}
+
 	/* Dynamic Table Specifics */
 	.regression-table th, .regression-table td {
 		text-align: center;
@@ -343,10 +525,12 @@ const base = import.meta.env.BASE_URL;
 	}
 	.se-row td {
 		padding-top: 0;
+		font-size: 0.85rem;
+		color: var(--text-muted);
 		border-bottom: 1px solid var(--card-border);
 	}
 	.se-row:last-of-type td {
-		border-bottom: 2px solid var(--card-border); /* Thicker line before stats */
+		border-bottom: 2px solid var(--card-border);
 	}
 	tr:not(.se-row) td {
 		border-bottom: none;

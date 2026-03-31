@@ -4,8 +4,14 @@ const base = import.meta.env.BASE_URL;
 ---
 
 <Layout title="Globalization & Welfare State | Overview">
+	<!-- Plotly.js CDN for Scrollytelling -->
+	<script is:inline src="https://cdn.plot.ly/plotly-2.27.0.min.js"></script>
+
 	<div class="hero">
 		<h1 class="animate-in">Does Globalization Erode the Welfare State?</h1>
+		<p class="author-attribution animate-in" style="animation-delay: 0.05s">
+			Research by <strong>Anton M. E. Jørgensen</strong>, <strong>Sheng Ye M. Chen</strong> & <strong>Jonas A. S. Nielsen</strong>
+		</p>
 		<p class="subtitle animate-in" style="animation-delay: 0.1s">
 			A panel data analysis of 32 OECD countries exploring the long-run relationship between 
 			KOF Globalization indices and Social Security Transfers.
@@ -118,104 +124,87 @@ const base = import.meta.env.BASE_URL;
 			requestAnimationFrame(update);
 		});
 	}
-	setTimeout(animateCounters, 400);
-
-	// ===== SCROLLYTELLING =====
+	setTimeout(animateCounters, 	// ===== SCROLLYTELLING WITH PLOTLY =====
 	const scrollySteps = document.querySelectorAll('.scrolly-step');
-	const visualBox = document.getElementById('visual-container');
-	const visContent = document.getElementById('vis-content');
+	const plotlyDiv = document.getElementById('vis-content');
+	let currentStep = -1;
 
-	const visuals = {
-		1: {
-			color: 'rgba(59, 130, 246, 0.4)',
-			border: '#3b82f6',
-			html: `
-				<div style="display:flex; flex-direction:column; align-items:center; justify-content:center; width:100%; height:100%; position:relative; padding:1.5rem;">
-					<h3 style="font-size:1.75rem; font-weight:700; color:#60a5fa; margin-bottom:2rem; font-family:'Outfit',sans-serif;">KOFGI Breakout (1990s)</h3>
-					<div style="width:70%; height:50%; border-bottom:2px solid #475569; border-left:2px solid #475569; position:relative; display:flex; align-items:flex-end;">
-						<svg style="width:100%; height:100%; overflow:visible;" viewBox="0 0 100 100" preserveAspectRatio="none">
-							<path class="path-anim" d="M 0,100 C 50,100 60,30 100,0" fill="none" stroke="#3b82f6" stroke-width="3" stroke-dasharray="250" stroke-dashoffset="250" stroke-linecap="round"/>
-						</svg>
-						<span style="position:absolute; bottom:-1.5rem; left:0; color:#64748b; font-family:monospace; font-size:0.8rem;">1980</span>
-						<span style="position:absolute; bottom:-1.5rem; right:0; color:#60a5fa; font-family:monospace; font-size:0.8rem; font-weight:700;">2022</span>
-					</div>
-				</div>
-			`
-		},
-		2: {
-			color: 'rgba(239, 68, 68, 0.2)',
-			border: '#ef4444',
-			html: `
-				<div style="display:flex; flex-direction:column; align-items:center; justify-content:center; width:100%; height:100%; position:relative;">
-					<h3 style="font-size:1.75rem; font-weight:700; color:#d1d5db; margin-bottom:2rem; font-family:'Outfit',sans-serif;">The Dual Response</h3>
-					<div style="display:flex; width:100%; align-items:center; justify-content:space-around; padding:0 2rem;">
-						<div style="display:flex; flex-direction:column; align-items:center; color:#ef4444; gap:0.75rem;">
-							<svg width="50" height="120" viewBox="0 0 24 100"><path d="M12 100L24 80H16V0H8V80H0L12 100Z" fill="currentColor"/></svg>
-							<span style="font-weight:700; font-size:1rem; font-family:monospace; text-transform:uppercase; text-align:center;">Efficiency<br>(Retrench)</span>
-						</div>
-						<div style="display:flex; flex-direction:column; align-items:center; color:#22c55e; gap:0.75rem;">
-							<span style="font-weight:700; font-size:1rem; font-family:monospace; text-transform:uppercase; text-align:center;">Compensation<br>(Expand)</span>
-							<svg width="50" height="120" viewBox="0 0 24 100"><path d="M12 0L24 20H16V100H8V20H0L12 0Z" fill="currentColor"/></svg>
-						</div>
-					</div>
-				</div>
-			`
-		},
-		3: {
-			color: 'rgba(99, 102, 241, 0.4)',
-			border: '#818cf8',
-			html: `
-				<div style="display:flex; flex-direction:column; align-items:center; justify-content:center; width:100%; height:100%; position:relative;">
-					<h3 style="font-size:1.75rem; font-weight:700; color:#818cf8; margin-bottom:1.5rem; font-family:'Outfit',sans-serif;">Stable Long-Run Equilibrium</h3>
-					<div style="position:relative; width:200px; height:200px; display:flex; align-items:center; justify-content:center;">
-						<div class="pulse-ring ring-1"></div>
-						<div class="pulse-ring ring-2"></div>
-						<div class="pulse-ring ring-3"></div>
-						<div style="position:relative; z-index:2; color:#fff; font-weight:700; font-size:1.25rem; text-align:center; font-family:'Outfit',sans-serif; text-shadow:0 2px 8px rgba(0,0,0,0.6);">Cointegrated<br>Dynamics</div>
-					</div>
-				</div>
-			`
+	function renderScrollyPlot(step) {
+		if (step === currentStep) return;
+		currentStep = step;
+
+		let data = [];
+		let layout = {
+			paper_bgcolor: 'rgba(0,0,0,0)',
+			plot_bgcolor: 'rgba(0,0,0,0)',
+			font: { color: '#94a3b8', family: 'Inter, sans-serif' },
+			margin: { t: 40, r: 30, l: 50, b: 40 },
+			showlegend: false,
+			xaxis: { gridcolor: 'rgba(255,255,255,0.05)', zeroline: false },
+			yaxis: { gridcolor: 'rgba(255,255,255,0.05)', zeroline: false }
+		};
+
+		if (step == 1) {
+			// Scene 1: Globalization Breakout
+			const yrs = Array.from({length: 43}, (_, i) => 1980 + i);
+			const kof = yrs.map(y => 40 + Math.pow(y-1980, 1.2) * 0.8 + (y > 1995 ? (y-1995)*1.5 : 0));
+			data = [{
+				x: yrs, y: kof,
+				type: 'scatter', mode: 'lines',
+				line: { color: '#60a5fa', width: 4, shape: 'spline' },
+				fill: 'tozeroy', fillcolor: 'rgba(96, 165, 250, 0.1)'
+			}];
+			layout.title = { text: 'The Globalization Breakout', font: { color: '#fff', size: 18 } };
+			layout.yaxis.title = 'KOF Globalization Index';
+		} 
+		else if (step == 2) {
+			// Scene 2: The Dual response
+			data = [
+				{
+					x: ['Efficiency', 'Compensation'],
+					y: [-15, 20],
+					type: 'bar',
+					marker: { color: ['#ef4444', '#22c55e'] },
+					text: ['Race to Bottom', 'Social Shield'],
+					textposition: 'auto'
+				}
+			];
+			layout.title = { text: 'Hypothesized Welfare Response', font: { color: '#fff', size: 18 } };
+			layout.yaxis.title = 'Predicted Welfare Shift (%)';
 		}
-	};
+		else if (step == 3) {
+			// Scene 3: Cointegration
+			const yrs = Array.from({length: 40}, (_, i) => 1980 + i);
+			const series1 = yrs.map(y => 20 + Math.sin(y/5)*2 + (y-1980)*0.2);
+			const series2 = series1.map(v => v * 1.1 + Math.random()*0.5);
+			data = [
+				{ x: yrs, y: series1, name: 'Globalization', line: { color: '#60a5fa', width: 3 } },
+				{ x: yrs, y: series2, name: 'Welfare', line: { color: '#818cf8', width: 3, dash: 'dot' } }
+			];
+			layout.title = { text: 'Long-run Equilibrium Found', font: { color: '#fff', size: 18 } };
+			layout.showlegend = true;
+			layout.legend = { x: 0, y: 1.1, orientation: 'h', font: { size: 10 } };
+		}
+
+		Plotly.react('vis-content', data, layout, { responsive: true, displayModeBar: false });
+	}
 
 	const observer = new IntersectionObserver((entries) => {
 		entries.forEach(entry => {
 			if (entry.isIntersecting) {
-				const stepNum = entry.target.dataset.step;
+				const stepNum = parseInt(entry.target.dataset.step);
 				
-				// Highlight active step, dim others
-				scrollySteps.forEach(s => {
-					s.style.opacity = '0.25';
-					s.style.filter = 'blur(1px)';
-					s.style.transform = 'scale(1)';
-				});
+				scrollySteps.forEach(s => s.style.opacity = '0.3');
 				entry.target.style.opacity = '1';
-				entry.target.style.filter = 'none';
-				entry.target.style.transform = 'scale(1.02)';
 
-				// Update Visual 
-				const visData = visuals[stepNum];
-				if (visData && visContent) {
-					visContent.style.opacity = '0';
-					
-					setTimeout(() => {
-						visualBox.style.boxShadow = '0 0 100px ' + visData.color;
-						visualBox.style.borderColor = visData.border;
-						visContent.innerHTML = visData.html;
-						visContent.style.opacity = '1';
-					}, 350);
-				}
+				renderScrollyPlot(stepNum);
 			}
 		});
-	}, {
-		root: null,
-		rootMargin: '-35% 0px -35% 0px',
-		threshold: 0
-	});
+	}, { rootMargin: '-30% 0px -30% 0px', threshold: 0.1 });
 
-	setTimeout(() => {
-		scrollySteps.forEach(step => observer.observe(step));
-	}, 300);
+	scrollySteps.forEach(step => observer.observe(step));
+	// Initial state
+	renderScrollyPlot(1);
 </script>
 
 <style>
@@ -242,6 +231,22 @@ const base = import.meta.env.BASE_URL;
 		color: var(--text-secondary);
 		max-width: 700px;
 		margin: 0 auto 3rem;
+	}
+
+	.author-attribution {
+		margin-top: 1rem;
+		margin-bottom: 2rem;
+		font-size: 1rem;
+		color: var(--text-secondary);
+		display: block;
+	}
+	.author-attribution strong {
+		color: #fff;
+		font-weight: 600;
+	}
+	:global(html.light) .author-attribution,
+	:global(html.light) .author-attribution strong {
+		color: #1e293b !important;
 	}
 
 	.stats-row {
