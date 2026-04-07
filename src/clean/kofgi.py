@@ -73,8 +73,18 @@ def filter_kof_32countries(df: pd.DataFrame, cfg: KOFConfig = KOFConfig()) -> pd
     if cfg.year_max is not None:
         out = out[out["year"] <= cfg.year_max]
 
-    # select core indices
-    core_indices = ["KOFGI", "KOFEcGI", "KOFSoGI", "KOFPoGI"]
+    # select core indices and sub-components
+    core_indices = [
+        "KOFGI",
+        "KOFEcGI",
+        "KOFTrGI",
+        "KOFFiGI",
+        "KOFSoGI",
+        "KOFIpGI",
+        "KOFInGI",
+        "KOFCuGI",
+        "KOFPoGI",
+    ]
 
     # check which ones exist in the dataframe to avoid errors
     available_indices = [c for c in core_indices if c in out.columns]

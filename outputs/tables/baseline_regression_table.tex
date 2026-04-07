@@ -1,44 +1,54 @@
 \begin{center}
-\begin{tabular}{lcccc}
+\begin{tabular}{lccccccccc}
 \toprule
-                                   & \textbf{KOFGI} & \textbf{KOFEcGI} & \textbf{KOFSoGI} & \textbf{KOFPoGI}  \\
+                                   &   \textbf{KOFGI}   &  \textbf{KOFEcGI}  &  \textbf{KOFTrGI}  &  \textbf{KOFFiGI}  &  \textbf{KOFSoGI}  &  \textbf{KOFIpGI}  &  \textbf{KOFInGI}  &  \textbf{KOFCuGI}  &  \textbf{KOFPoGI}   \\
 \midrule
-\textbf{Dep. Variable}             &     sstran     &      sstran      &      sstran      &      sstran       \\
-\textbf{Estimator}                 &    PanelOLS    &     PanelOLS     &     PanelOLS     &     PanelOLS      \\
-\textbf{No. Observations}          &      996       &       996        &       996        &       996         \\
-\textbf{Cov. Est.}                 &   Clustered    &    Clustered     &    Clustered     &    Clustered      \\
-\textbf{R-squared}                 &     0.3583     &      0.3523      &      0.3706      &      0.3579       \\
-\textbf{R-Squared (Within)}        &     0.3220     &      0.2747      &      0.3174      &      0.3120       \\
-\textbf{R-Squared (Between)}       &    -5.4414     &     -10.053      &     -4.4064      &     -7.3221       \\
-\textbf{R-Squared (Overall)}       &    -3.9675     &     -7.4364      &     -3.2069      &     -5.3812       \\
-\textbf{F-statistic}               &     73.776     &      71.867      &      77.807      &      73.664       \\
-\textbf{P-value (F-stat)}          &     0.0000     &      0.0000      &      0.0000      &      0.0000       \\
-\textbf{=======================}   &  ============  &   ============   &   ============   &   ============    \\
-\textbf{Constant}                     &    105.00**    &    138.13***     &     90.013**     &    123.29***      \\
-\textbf{ }                         &    (2.1329)    &     (2.8161)     &     (2.0539)     &     (2.9267)      \\
-\textbf{Globalization (Overall)$_{t-1}$}               &     0.0882     &                  &                  &                   \\
-\textbf{ }                         &    (1.3905)    &                  &                  &                   \\
-\textbf{log GDP per capita$_{t-1}$}           &   -5.0275***   &    -4.1346***    &    -4.9845***    &    -4.8930***     \\
-\textbf{ }                         &   (-4.0346)    &    (-3.0957)     &    (-4.0949)     &    (-3.8891)      \\
-\textbf{Inflation$_{t-1}$}      &   -0.0032***   &    -0.0035***    &    -0.0027***    &    -0.0035***     \\
-\textbf{ }                         &   (-4.0637)    &    (-4.2871)     &    (-3.1766)     &    (-4.1138)      \\
-\textbf{Deficit$_{t-1}$}             &   -0.1564***   &    -0.1527***    &    -0.1449***    &    -0.1532***     \\
-\textbf{ }                         &   (-5.8475)    &    (-5.4850)     &    (-5.4279)     &    (-5.4532)      \\
-\textbf{Debt$_{t-1}$}                &   0.0268***    &    0.0315***     &    0.0283***     &    0.0282***      \\
-\textbf{ }                         &    (2.9891)    &     (3.3372)     &     (3.2685)     &     (3.1084)      \\
-\textbf{log Population$_{t-1}$}      &    -4.6738*    &    -6.4374**     &     -3.9673*     &    -5.6396**      \\
-\textbf{ }                         &   (-1.7447)    &    (-2.3739)     &    (-1.6663)     &    (-2.4302)      \\
-\textbf{Dependency Ratio$_{t-1}$}   &    -0.0307     &     -0.0439      &     -0.0202      &     -0.0387       \\
-\textbf{ }                         &   (-0.6096)    &    (-0.9367)     &    (-0.4394)     &    (-0.8231)      \\
-\textbf{Globalization (Economic)$_{t-1}$}             &                &     -0.0199      &                  &                   \\
-\textbf{ }                         &                &    (-0.4833)     &                  &                   \\
-\textbf{Globalization (Social)$_{t-1}$}             &                &                  &    0.1288***     &                   \\
-\textbf{ }                         &                &                  &     (2.6324)     &                   \\
-\textbf{Globalization (Political)$_{t-1}$}             &                &                  &                  &      0.0458       \\
-\textbf{ }                         &                &                  &                  &     (1.3971)      \\
-\textbf{=========================} & ============== &  ==============  &  ==============  &  ==============   \\
-\textbf{Effects}                   &     Entity     &      Entity      &      Entity      &      Entity       \\
-\textbf{}                          &      Time      &       Time       &       Time       &       Time        \\
+\textbf{Dep. Variable}             &       sstran       &       sstran       &       sstran       &       sstran       &       sstran       &       sstran       &       sstran       &       sstran       &       sstran        \\
+\textbf{Estimator}                 &      PanelOLS      &      PanelOLS      &      PanelOLS      &      PanelOLS      &      PanelOLS      &      PanelOLS      &      PanelOLS      &      PanelOLS      &      PanelOLS       \\
+\textbf{No. Observations}          &        996         &        996         &        996         &        996         &        996         &        996         &        996         &        996         &        996          \\
+\textbf{Cov. Est.}                 &   Driscoll-Kraay   &   Driscoll-Kraay   &   Driscoll-Kraay   &   Driscoll-Kraay   &   Driscoll-Kraay   &   Driscoll-Kraay   &   Driscoll-Kraay   &   Driscoll-Kraay   &   Driscoll-Kraay    \\
+\textbf{R-squared}                 &       0.3583       &       0.3523       &       0.3646       &       0.3526       &       0.3706       &       0.3707       &       0.3580       &       0.3554       &       0.3579        \\
+\textbf{R-Squared (Within)}        &       0.3220       &       0.2747       &       0.1903       &       0.3010       &       0.3174       &       0.3216       &       0.3326       &       0.2929       &       0.3120        \\
+\textbf{R-Squared (Between)}       &      -5.4414       &      -10.053       &      -15.578       &      -8.5117       &      -4.4064       &      -2.6376       &      -7.4943       &      -8.1573       &      -7.3221        \\
+\textbf{R-Squared (Overall)}       &      -3.9675       &      -7.4364       &      -11.588       &      -6.2659       &      -3.2069       &      -1.8803       &      -5.5074       &      -6.0120       &      -5.3812        \\
+\textbf{F-statistic}               &       73.776       &       71.867       &       75.815       &       71.983       &       77.807       &       77.855       &       73.679       &       72.858       &       73.664        \\
+\textbf{P-value (F-stat)}          &       0.0000       &       0.0000       &       0.0000       &       0.0000       &       0.0000       &       0.0000       &       0.0000       &       0.0000       &       0.0000        \\
+\textbf{=======================}   &  ================  &  ================  &  ================  &  ================  &  ================  &  ================  &  ================  &  ================  &  ================   \\
+\textbf{Constant}                     &     105.00***      &     138.13***      &     171.88***      &     127.38***      &     90.013***      &     71.408***      &     117.93***      &     124.31***      &     123.29***       \\
+\textbf{ }                         &      (5.5049)      &      (8.1086)      &      (10.475)      &      (5.9497)      &      (3.7000)      &      (2.7558)      &      (5.6842)      &      (5.3470)      &      (6.0623)       \\
+\textbf{Globalization (Overall)$_{t-1}$}               &     0.0882***      &                    &                    &                    &                    &                    &                    &                    &                     \\
+\textbf{ }                         &      (2.7217)      &                    &                    &                    &                    &                    &                    &                    &                     \\
+\textbf{log GDP per capita$_{t-1}$}           &     -5.0275***     &     -4.1346***     &     -4.3294***     &     -4.5085***     &     -4.9845***     &     -5.2371***     &     -4.2119***     &     -4.5606***     &     -4.8930***      \\
+\textbf{ }                         &     (-6.1580)      &     (-5.6850)      &     (-6.1193)      &     (-5.9166)      &     (-6.4490)      &     (-7.4996)      &     (-5.8335)      &     (-6.2423)      &     (-6.5782)       \\
+\textbf{Inflation$_{t-1}$}      &     -0.0032***     &     -0.0035***     &     -0.0038***     &     -0.0035***     &     -0.0027***     &     -0.0035***     &     -0.0031***     &     -0.0032***     &     -0.0035***      \\
+\textbf{ }                         &     (-4.5096)      &     (-4.7670)      &     (-5.1365)      &     (-5.0580)      &     (-4.6079)      &     (-5.5090)      &     (-5.1428)      &     (-5.0441)      &     (-4.8710)       \\
+\textbf{Deficit$_{t-1}$}             &     -0.1564***     &     -0.1527***     &     -0.1527***     &     -0.1605***     &     -0.1449***     &     -0.1481***     &     -0.1526***     &     -0.1524***     &     -0.1532***      \\
+\textbf{ }                         &     (-7.6902)      &     (-6.2770)      &     (-6.8245)      &     (-6.7284)      &     (-6.5493)      &     (-7.3055)      &     (-6.7940)      &     (-6.9365)      &     (-7.4581)       \\
+\textbf{Debt$_{t-1}$}                &     0.0268***      &     0.0315***      &     0.0321***      &     0.0288***      &     0.0283***      &     0.0288***      &     0.0290***      &     0.0301***      &     0.0282***       \\
+\textbf{ }                         &      (5.0473)      &      (5.0844)      &      (5.9141)      &      (4.8796)      &      (6.5727)      &      (5.8754)      &      (6.1445)      &      (6.0287)      &      (5.3873)       \\
+\textbf{log Population$_{t-1}$}      &     -4.6738***     &     -6.4374***     &     -8.2695***     &     -5.8505***     &     -3.9673***     &      -2.7286*      &     -5.4757***     &     -5.7204***     &     -5.6396***      \\
+\textbf{ }                         &     (-4.1996)      &     (-6.4499)      &     (-8.6512)      &     (-4.7698)      &     (-2.8421)      &     (-1.8320)      &     (-4.6338)      &     (-4.2602)      &     (-4.7648)       \\
+\textbf{Dependency Ratio$_{t-1}$}   &      -0.0307       &      -0.0439       &      -0.0413       &      -0.0365       &      -0.0202       &      -0.0086       &      -0.0411       &      -0.0347       &      -0.0387        \\
+\textbf{ }                         &     (-1.0488)      &     (-1.6068)      &     (-1.5139)      &     (-1.2062)      &     (-0.8466)      &     (-0.2837)      &     (-1.5470)      &     (-1.2565)      &     (-1.3530)       \\
+\textbf{Globalization (Economic)$_{t-1}$}             &                    &      -0.0199       &                    &                    &                    &                    &                    &                    &                     \\
+\textbf{ }                         &                    &     (-0.9769)      &                    &                    &                    &                    &                    &                    &                     \\
+\textbf{Globalization (Trade)$_{t-1}$}             &                    &                    &     -0.0675***     &                    &                    &                    &                    &                    &                     \\
+\textbf{ }                         &                    &                    &     (-3.9645)      &                    &                    &                    &                    &                    &                     \\
+\textbf{Globalization (Financial)$_{t-1}$}             &                    &                    &                    &       0.0169       &                    &                    &                    &                    &                     \\
+\textbf{ }                         &                    &                    &                    &      (1.1410)      &                    &                    &                    &                    &                     \\
+\textbf{Globalization (Social)$_{t-1}$}             &                    &                    &                    &                    &     0.1288***      &                    &                    &                    &                     \\
+\textbf{ }                         &                    &                    &                    &                    &      (4.4012)      &                    &                    &                    &                     \\
+\textbf{Globalization (Interpersonal)$_{t-1}$}             &                    &                    &                    &                    &                    &     0.1235***      &                    &                    &                     \\
+\textbf{ }                         &                    &                    &                    &                    &                    &      (5.1773)      &                    &                    &                     \\
+\textbf{Globalization (Informational)$_{t-1}$}             &                    &                    &                    &                    &                    &                    &     0.0484***      &                    &                     \\
+\textbf{ }                         &                    &                    &                    &                    &                    &                    &      (2.7732)      &                    &                     \\
+\textbf{Globalization (Cultural)$_{t-1}$}             &                    &                    &                    &                    &                    &                    &                    &      0.0291**      &                     \\
+\textbf{ }                         &                    &                    &                    &                    &                    &                    &                    &      (2.2982)      &                     \\
+\textbf{Globalization (Political)$_{t-1}$}             &                    &                    &                    &                    &                    &                    &                    &                    &      0.0458**       \\
+\textbf{ }                         &                    &                    &                    &                    &                    &                    &                    &                    &      (2.5471)       \\
+\textbf{=========================} & ================== & ================== & ================== & ================== & ================== & ================== & ================== & ================== & ==================  \\
+\textbf{Effects}                   &       Entity       &       Entity       &       Entity       &       Entity       &       Entity       &       Entity       &       Entity       &       Entity       &       Entity        \\
+\textbf{}                          &        Time        &        Time        &        Time        &        Time        &        Time        &        Time        &        Time        &        Time        &        Time         \\
 \bottomrule
 \end{tabular}
 %\caption{Model Comparison}

@@ -1,0 +1,49 @@
+\begin{center}
+\begin{tabular}{lccccc}
+\toprule
+                                   &  \textbf{KOFTrGI}  &  \textbf{KOFFiGI}  &  \textbf{KOFIpGI}  &  \textbf{KOFInGI}  &  \textbf{KOFCuGI}   \\
+\midrule
+\textbf{Dep. Variable}             &       sstran       &       sstran       &       sstran       &       sstran       &       sstran        \\
+\textbf{Estimator}                 &      PanelOLS      &      PanelOLS      &      PanelOLS      &      PanelOLS      &      PanelOLS       \\
+\textbf{No. Observations}          &        996         &        996         &        996         &        996         &        996          \\
+\textbf{Cov. Est.}                 &   Driscoll-Kraay   &   Driscoll-Kraay   &   Driscoll-Kraay   &   Driscoll-Kraay   &   Driscoll-Kraay    \\
+\textbf{R-squared}                 &       0.3646       &       0.3526       &       0.3707       &       0.3580       &       0.3554        \\
+\textbf{R-Squared (Within)}        &       0.1903       &       0.3010       &       0.3216       &       0.3326       &       0.2929        \\
+\textbf{R-Squared (Between)}       &      -15.578       &      -8.5117       &      -2.6376       &      -7.4943       &      -8.1573        \\
+\textbf{R-Squared (Overall)}       &      -11.588       &      -6.2659       &      -1.8803       &      -5.5074       &      -6.0120        \\
+\textbf{F-statistic}               &       75.815       &       71.983       &       77.855       &       73.679       &       72.858        \\
+\textbf{P-value (F-stat)}          &       0.0000       &       0.0000       &       0.0000       &       0.0000       &       0.0000        \\
+\textbf{=======================}   &  ================  &  ================  &  ================  &  ================  &  ================   \\
+\textbf{const}                     &     171.88***      &     127.38***      &     71.408***      &     117.93***      &     124.31***       \\
+\textbf{ }                         &      (10.475)      &      (5.9497)      &      (2.7558)      &      (5.6842)      &      (5.3470)       \\
+\textbf{KOFTrGI\_lag1}             &     -0.0675***     &                    &                    &                    &                     \\
+\textbf{ }                         &     (-3.9645)      &                    &                    &                    &                     \\
+\textbf{ln\_gdppc\_lag1}           &     -4.3294***     &     -4.5085***     &     -5.2371***     &     -4.2119***     &     -4.5606***      \\
+\textbf{ }                         &     (-6.1193)      &     (-5.9166)      &     (-7.4996)      &     (-5.8335)      &     (-6.2423)       \\
+\textbf{inflation\_cpi\_lag1}      &     -0.0038***     &     -0.0035***     &     -0.0035***     &     -0.0031***     &     -0.0032***      \\
+\textbf{ }                         &     (-5.1365)      &     (-5.0580)      &     (-5.5090)      &     (-5.1428)      &     (-5.0441)       \\
+\textbf{deficit\_lag1}             &     -0.1527***     &     -0.1605***     &     -0.1481***     &     -0.1526***     &     -0.1524***      \\
+\textbf{ }                         &     (-6.8245)      &     (-6.7284)      &     (-7.3055)      &     (-6.7940)      &     (-6.9365)       \\
+\textbf{debt\_lag1}                &     0.0321***      &     0.0288***      &     0.0288***      &     0.0290***      &     0.0301***       \\
+\textbf{ }                         &      (5.9141)      &      (4.8796)      &      (5.8754)      &      (6.1445)      &      (6.0287)       \\
+\textbf{ln\_population\_lag1}      &     -8.2695***     &     -5.8505***     &      -2.7286*      &     -5.4757***     &     -5.7204***      \\
+\textbf{ }                         &     (-8.6512)      &     (-4.7698)      &     (-1.8320)      &     (-4.6338)      &     (-4.2602)       \\
+\textbf{dependency\_ratio\_lag1}   &      -0.0413       &      -0.0365       &      -0.0086       &      -0.0411       &      -0.0347        \\
+\textbf{ }                         &     (-1.5139)      &     (-1.2062)      &     (-0.2837)      &     (-1.5470)      &     (-1.2565)       \\
+\textbf{KOFFiGI\_lag1}             &                    &       0.0169       &                    &                    &                     \\
+\textbf{ }                         &                    &      (1.1410)      &                    &                    &                     \\
+\textbf{KOFIpGI\_lag1}             &                    &                    &     0.1235***      &                    &                     \\
+\textbf{ }                         &                    &                    &      (5.1773)      &                    &                     \\
+\textbf{KOFInGI\_lag1}             &                    &                    &                    &     0.0484***      &                     \\
+\textbf{ }                         &                    &                    &                    &      (2.7732)      &                     \\
+\textbf{KOFCuGI\_lag1}             &                    &                    &                    &                    &      0.0291**       \\
+\textbf{ }                         &                    &                    &                    &                    &      (2.2982)       \\
+\textbf{=========================} & ================== & ================== & ================== & ================== & ==================  \\
+\textbf{Effects}                   &       Entity       &       Entity       &       Entity       &       Entity       &       Entity        \\
+\textbf{}                          &        Time        &        Time        &        Time        &        Time        &        Time         \\
+\bottomrule
+\end{tabular}
+%\caption{Model Comparison}
+\end{center}
+
+T-stats reported in parentheses
