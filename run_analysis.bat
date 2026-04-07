@@ -28,7 +28,7 @@ echo     Done.
 echo.
 
 echo [2/3] Running the data cleaning pipeline...
-python -m src.clean.pipeline --save-outputs
+python -m src.clean.pipeline
 if errorlevel 1 (
     echo ERROR: Data pipeline failed. See pipeline.log for details.
     pause
@@ -42,13 +42,17 @@ python -c "
 import sys, pathlib
 sys.path.insert(0, str(pathlib.Path('src')))
 from clean.utils import load_config, setup_logging
-from analysis.robustness import export_stepwise_robustness_tables
+from clean.panel_utils import add_welfare_regimes
+from analysis.robustness import export_stepwise_robustness_tables, export_subperiod_regressions, export_subperiod_heterogeneity_regressions
 import pandas as pd
 
 setup_logging('pipeline.log')
 config = load_config()
-master = pd.read_parquet('data/processed/master_regimes.parquet')
-export_stepwise_robustness_tables(master, config)
+master = pd.read_parquet('data/final/master_dataset.parquet')
+master_regimes = add_welfare_regimes(master)
+export_stepwise_robustness_tables(master_regimes, config)
+export_subperiod_regressions(master_regimes, config)
+export_subperiod_heterogeneity_regressions(master_regimes, config)
 print('Tables and figures saved to outputs/')
 "
 if errorlevel 1 (

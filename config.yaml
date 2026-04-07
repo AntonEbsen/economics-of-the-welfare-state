@@ -4,7 +4,12 @@
 indices:
   - KOFGI
   - KOFEcGI
+  - KOFTrGI
+  - KOFFiGI
   - KOFSoGI
+  - KOFIpGI
+  - KOFInGI
+  - KOFCuGI
   - KOFPoGI
 
 # Control Variables

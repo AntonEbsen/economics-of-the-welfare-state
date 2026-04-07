@@ -34,6 +34,7 @@ from .stats import (
     export_vif_latex,
     generate_summary_stats,
 )
+from .structural_breaks import export_structural_breaks_latex
 from .subsets import COUNTRY_GROUPS, filter_by_region, list_regions
 from .tests import (
     export_diagnostics_latex,
@@ -122,6 +123,8 @@ __all__ = [
     "test_stationarity",
     "test_normality",
     "export_diagnostics_latex",
+    # Structural Breaks
+    "export_structural_breaks_latex",
     # Documentation
     "generate_methods_section",
     "generate_data_appendix",

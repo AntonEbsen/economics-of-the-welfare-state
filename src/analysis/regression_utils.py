@@ -13,7 +13,12 @@ from linearmodels.panel import PanelOLS
 LATEX_LABEL_MAP = {
     "KOFGI\\_lag1": "Globalization (Overall)$_{t-1}$",
     "KOFEcGI\\_lag1": "Globalization (Economic)$_{t-1}$",
+    "KOFTrGI\\_lag1": "Globalization (Trade)$_{t-1}$",
+    "KOFFiGI\\_lag1": "Globalization (Financial)$_{t-1}$",
     "KOFSoGI\\_lag1": "Globalization (Social)$_{t-1}$",
+    "KOFIpGI\\_lag1": "Globalization (Interpersonal)$_{t-1}$",
+    "KOFInGI\\_lag1": "Globalization (Informational)$_{t-1}$",
+    "KOFCuGI\\_lag1": "Globalization (Cultural)$_{t-1}$",
     "KOFPoGI\\_lag1": "Globalization (Political)$_{t-1}$",
     "sstran\\_lag1": "Social Security Transfers$_{t-1}$",
     "int\\_conservative": "$\\times$ Conservative",

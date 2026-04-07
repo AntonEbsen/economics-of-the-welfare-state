@@ -992,6 +992,19 @@ def build_latex_appendix(
                 ("granger_causality_table.tex", "Panel Granger Causality Tests"),
             ],
         ),
+        (
+            "Structural Stability",
+            [
+                (
+                    "chow_test_table.tex",
+                    "Chow Structural Break Test (known break at China WTO accession, 2000)",
+                ),
+                (
+                    "qlr_test_table.tex",
+                    "QLR / Sup-Wald Test for Unknown Structural Break (Andrews 1993)",
+                ),
+            ],
+        ),
     ]
 
     print("\n" + "=" * 60)

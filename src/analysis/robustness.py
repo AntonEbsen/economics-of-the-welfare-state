@@ -11,8 +11,6 @@ import matplotlib.ticker as mticker
 import numpy as np
 import pandas as pd
 import seaborn as sns
-from linearmodels.panel import compare
-
 from clean.panel_utils import create_lags
 from clean.stats import (
     build_latex_appendix,
@@ -22,6 +20,7 @@ from clean.stats import (
     export_model_diagnostics_latex,
     export_reset_test_latex,
 )
+from linearmodels.panel import compare
 
 from .regression_utils import LATEX_LABEL_MAP, prepare_regression_data, run_panel_ols
 
@@ -273,3 +272,203 @@ def get_robustness_summary(models: dict) -> pd.DataFrame:
     robustness["Robustness (%)"] = (robustness["Robustness (%)"] * 100).round(1)
 
     return robustness.sort_values("Robustness (%)", ascending=False)
+
+
+def export_subperiod_regressions(
+    master_regimes: pd.DataFrame, config: dict, out_dir: str | Path = None
+) -> None:
+    """
+    Run fully specified foundational models across different eras (Pre/Post China shock).
+    Generates a table per era, with columns representing different indices.
+    """
+    if out_dir is None:
+        out_dir = Path(__file__).resolve().parent.parent.parent / "outputs" / "tables"
+    else:
+        out_dir = Path(out_dir)
+
+    os.makedirs(out_dir, exist_ok=True)
+
+    # Restrict to primary components: Total, Economic, Social, Political
+    indices = ["KOFGI", "KOFEcGI", "KOFSoGI", "KOFPoGI"]
+    macro_controls = config.get(
+        "controls",
+        ["ln_gdppc", "inflation_cpi", "deficit", "debt", "ln_population", "dependency_ratio"],
+    )
+    dep_var = config.get("dependent_var", "sstran")
+
+    subperiods = {
+        "pre_china_shock": (1980, 1999),
+        "post_china_shock": (2000, 2023),
+    }
+
+    print("\n" + "=" * 60)
+    print("🕰️ RUNNING SUBPERIOD REGRESSIONS (Pre vs Post China Shock)")
+    print("=" * 60)
+
+    valid_indices = [idx for idx in indices if idx in master_regimes.columns]
+
+    for period_name, (start_year, end_year) in subperiods.items():
+        models = {}
+
+        for idx_name in valid_indices:
+            all_needed_vars = [idx_name] + macro_controls
+            reg_data = create_lags(master_regimes, all_needed_vars, lags=[1])
+
+            g_var = f"{idx_name}_lag1"
+            lagged_ctrls = [f"{v}_lag1" for v in macro_controls]
+
+            if "year" in reg_data.columns:
+                period_data = reg_data[
+                    (reg_data["year"] >= start_year) & (reg_data["year"] <= end_year)
+                ].copy()
+            else:
+                period_data = reg_data.copy()
+
+            ols_data, exog_vars = prepare_regression_data(
+                period_data, dep_var, g_var, lagged_ctrls, interactions=False
+            )
+
+            if len(ols_data) < len(exog_vars) + 10:
+                logger.warning(f"Not enough observations for {idx_name} in {period_name}")
+                continue
+
+            try:
+                res = run_panel_ols(ols_data, dep_var, exog_vars)
+                # Map to human readable index name for the column header
+                header_name = (
+                    LATEX_LABEL_MAP.get(g_var, idx_name).replace("_{t-1}", "").replace("$", "")
+                )
+                models[header_name] = res
+            except Exception as e:
+                logger.error(f"Error running {idx_name} for {period_name}: {e}")
+
+        if not models:
+            continue
+
+        comparison = compare(models, stars=True)
+        print(f"  Generated table for {period_name} with {len(models)} indices")
+
+        output_file = out_dir / f"baseline_regressions_{period_name}.tex"
+        latex_str = comparison.summary.as_latex()
+
+        for old, new in LATEX_LABEL_MAP.items():
+            latex_str = latex_str.replace(old, new)
+
+        with open(output_file, "w", encoding="utf-8") as f:
+            f.write(latex_str)
+
+    print("=" * 60 + "\n")
+
+
+def export_subperiod_heterogeneity_regressions(
+    master_regimes: pd.DataFrame, config: dict, out_dir: str | Path = None
+) -> None:
+    """
+    Run heterogeneity (regime interaction) models across different eras (Pre/Post China shock).
+    Generates a table per era, with columns representing different indices.
+    """
+    if out_dir is None:
+        out_dir = Path(__file__).resolve().parent.parent.parent / "outputs" / "tables"
+    else:
+        out_dir = Path(out_dir)
+
+    os.makedirs(out_dir, exist_ok=True)
+
+    # Restrict to primary components: Total, Economic, Social, Political
+    indices = ["KOFGI", "KOFEcGI", "KOFSoGI", "KOFPoGI"]
+    macro_controls = config.get(
+        "controls",
+        ["ln_gdppc", "inflation_cpi", "deficit", "debt", "ln_population", "dependency_ratio"],
+    )
+    dep_var = config.get("dependent_var", "sstran")
+
+    subperiods = {
+        "pre_china_shock": (1980, 1999),
+        "post_china_shock": (2000, 2023),
+    }
+
+    print("\n" + "=" * 60)
+    print("🕰️ RUNNING SUBPERIOD REGRESSIONS (Heterogeneity)")
+    print("=" * 60)
+
+    # Need regime dummy columns to create interactions
+    regime_cols = [
+        "regime_conservative",
+        "regime_mediterranean",
+        "regime_liberal",
+    ]
+    missing_regimes = [col for col in regime_cols if col not in master_regimes.columns]
+    if missing_regimes:
+        logger.error(
+            f"Missing regime columns: {missing_regimes}. Cannot run heterogeneity analysis."
+        )
+        return
+
+    valid_indices = [idx for idx in indices if idx in master_regimes.columns]
+
+    for period_name, (start_year, end_year) in subperiods.items():
+        models = {}
+
+        for idx_name in valid_indices:
+            all_needed_vars = [idx_name] + macro_controls + regime_cols
+            reg_data = create_lags(master_regimes, all_needed_vars, lags=[1])
+
+            g_var = f"{idx_name}_lag1"
+            lagged_ctrls = [f"{v}_lag1" for v in macro_controls]
+
+            if "year" in reg_data.columns:
+                period_data = reg_data[
+                    (reg_data["year"] >= start_year) & (reg_data["year"] <= end_year)
+                ].copy()
+            else:
+                period_data = reg_data.copy()
+
+            # Conservative, Mediterranean, Liberal interactions (Social Democrat = reference, Post-Communist excluded)
+            period_data["int_conservative"] = (
+                period_data[g_var] * period_data["regime_conservative"]
+            )
+            period_data["int_mediterranean"] = (
+                period_data[g_var] * period_data["regime_mediterranean"]
+            )
+            period_data["int_liberal"] = period_data[g_var] * period_data["regime_liberal"]
+
+            custom_exog_ctrls = [
+                "int_conservative",
+                "int_mediterranean",
+                "int_liberal",
+            ] + lagged_ctrls
+
+            ols_data, exog_vars = prepare_regression_data(
+                period_data, dep_var, g_var, custom_exog_ctrls, interactions=False
+            )
+
+            if len(ols_data) < len(exog_vars) + 10:
+                logger.warning(f"Not enough observations for {idx_name} in {period_name}")
+                continue
+
+            try:
+                res = run_panel_ols(ols_data, dep_var, exog_vars)
+                # Map to human readable index name for the column header
+                header_name = (
+                    LATEX_LABEL_MAP.get(g_var, idx_name).replace("_{t-1}", "").replace("$", "")
+                )
+                models[header_name] = res
+            except Exception as e:
+                logger.error(f"Error running {idx_name} for {period_name}: {e}")
+
+        if not models:
+            continue
+
+        comparison = compare(models, stars=True)
+        print(f"  Generated heterogeneity table for {period_name} with {len(models)} indices")
+
+        output_file = out_dir / f"heterogeneity_regressions_{period_name}.tex"
+        latex_str = comparison.summary.as_latex()
+
+        for old, new in LATEX_LABEL_MAP.items():
+            latex_str = latex_str.replace(old, new)
+
+        with open(output_file, "w", encoding="utf-8") as f:
+            f.write(latex_str)
+
+    print("=" * 60 + "\n")
