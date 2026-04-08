@@ -98,11 +98,13 @@ def run_panel_ols(
     exog_vars: list[str],
     entity_effects: bool = True,
     time_effects: bool = True,
-    cov_type: str = "kernel",
+    cov_type: str = "clustered",
+    cluster_entity: bool = True,
+    cluster_time: bool = True,
 ):
     """
     Execute standard PanelOLS with robust standard errors.
-    Driscoll-Kraay (kernel) is the default choice for OECD panels.
+    By default, uses Two-Way Clustering (entity + time).
     """
     exog = sm.add_constant(ols_data[exog_vars])
     exog = exog.loc[:, ~exog.columns.duplicated()]
@@ -110,8 +112,65 @@ def run_panel_ols(
     model = PanelOLS(
         ols_data[dep_var], exog, entity_effects=entity_effects, time_effects=time_effects
     )
-    results = model.fit(cov_type=cov_type)
+    if cov_type == "clustered":
+        results = model.fit(
+            cov_type=cov_type, cluster_entity=cluster_entity, cluster_time=cluster_time
+        )
+    else:
+        results = model.fit(cov_type=cov_type)
     return results
+
+
+def run_event_study(
+    ols_data: pd.DataFrame,
+    dep_var: str,
+    treat_var: str,
+    event_year: int = 2000,
+    window: int = 5,
+    exog_vars: list[str] = None,
+):
+    """
+    Compute an event study design around a specific year.
+    Creates interactions between the treatment variable and year relative to the event.
+    """
+    df_event = ols_data.copy()
+
+    # Extract 'year' from the index if needed
+    if "year" not in df_event.columns and "year" in df_event.index.names:
+        df_event = df_event.reset_index()
+
+    df_event["rel_time"] = df_event["year"] - event_year
+    df_event = df_event[(df_event["rel_time"] >= -window) & (df_event["rel_time"] <= window)].copy()
+
+    interaction_cols = []
+    for t in range(-window, window + 1):
+        if t == -1:
+            continue  # Baseline
+        col_name = f"event_{t}"
+        df_event[col_name] = (df_event["rel_time"] == t).astype(int) * df_event[treat_var]
+        interaction_cols.append(col_name)
+
+    final_exogs = interaction_cols
+    if exog_vars:
+        # Filter out the main treatment var if it was provided, since we interact it
+        final_exogs += [v for v in exog_vars if v != treat_var]
+
+    df_event = df_event.set_index(["iso3", "year"])
+    res = run_panel_ols(df_event, dep_var, final_exogs)
+
+    plot_data = []
+    for t in range(-window, window + 1):
+        if t == -1:
+            plot_data.append({"rel_time": t, "coef": 0.0, "lower": 0.0, "upper": 0.0})
+        else:
+            col_name = f"event_{t}"
+            coef = res.params[col_name]
+            se = res.std_errors[col_name]
+            plot_data.append(
+                {"rel_time": t, "coef": coef, "lower": coef - 1.96 * se, "upper": coef + 1.96 * se}
+            )
+
+    return pd.DataFrame(plot_data), res
 
 
 def run_hausman_test(

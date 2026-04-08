@@ -299,10 +299,12 @@ def export_subperiod_regressions(
     subperiods = {
         "pre_china_shock": (1980, 1999),
         "post_china_shock": (2000, 2023),
+        "pre_gfc": (1980, 2007),
+        "post_gfc": (2008, 2023),
     }
 
     print("\n" + "=" * 60)
-    print("🕰️ RUNNING SUBPERIOD REGRESSIONS (Pre vs Post China Shock)")
+    print("🕰️ RUNNING SUBPERIOD REGRESSIONS (China Shock & GFC)")
     print("=" * 60)
 
     valid_indices = [idx for idx in indices if idx in master_regimes.columns]
@@ -385,6 +387,8 @@ def export_subperiod_heterogeneity_regressions(
     subperiods = {
         "pre_china_shock": (1980, 1999),
         "post_china_shock": (2000, 2023),
+        "pre_gfc": (1980, 2007),
+        "post_gfc": (2008, 2023),
     }
 
     print("\n" + "=" * 60)
@@ -472,3 +476,93 @@ def export_subperiod_heterogeneity_regressions(
             f.write(latex_str)
 
     print("=" * 60 + "\n")
+
+
+def export_event_study_plots(
+    master_regimes: pd.DataFrame, config: dict, out_dir: str | Path = None
+) -> None:
+    """
+    Run event study models around the year 2000 (China Shock) and export plots.
+    """
+    from .regression_utils import run_event_study
+
+    if out_dir is None:
+        out_dir = Path(__file__).resolve().parent.parent.parent / "outputs" / "figures"
+    else:
+        out_dir = Path(out_dir)
+
+    os.makedirs(out_dir, exist_ok=True)
+
+    indices = ["KOFGI", "KOFEcGI", "KOFSoGI", "KOFPoGI"]
+    macro_controls = config.get(
+        "controls",
+        ["ln_gdppc", "inflation_cpi", "deficit", "debt", "ln_population", "dependency_ratio"],
+    )
+    dep_var = config.get("dependent_var", "sstran")
+
+    event_year = 2000
+    window = 5
+
+    logger.info("\n=======================================================")
+    logger.info(f"📈 RUNNING EVENT STUDY ({event_year} +/- {window} years)")
+    logger.info("=======================================================")
+
+    for idx_name in indices:
+        if idx_name not in master_regimes.columns:
+            continue
+
+        all_needed_vars = [idx_name] + macro_controls
+        reg_data = create_lags(master_regimes, all_needed_vars, lags=[1])
+
+        g_var = f"{idx_name}_lag1"
+        lagged_ctrls = [f"{v}_lag1" for v in macro_controls]
+
+        ols_data, exog_vars = prepare_regression_data(
+            reg_data, dep_var, g_var, lagged_ctrls, interactions=False
+        )
+
+        try:
+            plot_df, _ = run_event_study(
+                ols_data=ols_data,
+                dep_var=dep_var,
+                treat_var=g_var,
+                event_year=event_year,
+                window=window,
+                exog_vars=lagged_ctrls,
+            )
+
+            sns.set_theme(style="whitegrid")
+            fig, ax = plt.subplots(figsize=(10, 6))
+
+            ax.errorbar(
+                x=plot_df["rel_time"],
+                y=plot_df["coef"],
+                yerr=[plot_df["coef"] - plot_df["lower"], plot_df["upper"] - plot_df["coef"]],
+                fmt="o-",
+                color="#2563EB",
+                capsize=5,
+                markersize=8,
+                linewidth=2,
+            )
+
+            ax.axhline(0, color="red", linestyle="--", alpha=0.7)
+            ax.axvline(0, color="gray", linestyle=":", alpha=0.5)
+
+            ax.set_title(
+                f"Event Study: Impact of {idx_name} on {dep_var} around {event_year}",
+                fontsize=14,
+                pad=15,
+            )
+            ax.set_xlabel(f"Years relative to {event_year}", fontsize=12)
+            ax.set_ylabel("Coefficient Estimate", fontsize=12)
+
+            sns.despine()
+            plt.tight_layout()
+
+            out_file = out_dir / f"event_study_{idx_name}_{event_year}.png"
+            fig.savefig(out_file, dpi=300)
+            plt.close(fig)
+
+            logger.info(f"  ✅ Saved Event Study Plot: {out_file.name}")
+        except Exception as e:
+            logger.error(f"  ❌ Error running event study for {idx_name}: {e}")

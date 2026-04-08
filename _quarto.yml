@@ -10,6 +10,8 @@ website:
         text: Overview
       - href: notebooks/02_modern_pipeline.ipynb
         text: Analysis
+      - href: presentation.qmd
+        text: Presentation
 
 format:
   html:
