@@ -7,7 +7,6 @@ import logging
 import pandas as pd
 import pandera.pandas as pa
 import pytest
-
 from clean.validation import (
     master_schema,
     merged_panel_schema,
@@ -15,7 +14,6 @@ from clean.validation import (
     validate_merged_panel,
     validate_output,
 )
-
 
 # ---------------------------------------------------------------------------
 # Fixtures

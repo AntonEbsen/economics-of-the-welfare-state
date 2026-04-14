@@ -77,8 +77,7 @@ def validate_output(
     missing = [c for c in required_cols if c not in df.columns]
     if missing:
         raise ValueError(
-            f"[{dataset_name}] missing required columns: {missing}. "
-            f"Present: {list(df.columns)}"
+            f"[{dataset_name}] missing required columns: {missing}. " f"Present: {list(df.columns)}"
         )
 
     if "year" in df.columns:
@@ -100,9 +99,7 @@ def validate_output(
     if expect_32_countries and "iso3" in df.columns:
         n_countries = df["iso3"].nunique()
         if n_countries != 32:
-            logger.warning(
-                "[%s] expected 32 countries, found %s", dataset_name, n_countries
-            )
+            logger.warning("[%s] expected 32 countries, found %s", dataset_name, n_countries)
 
     return df
 
