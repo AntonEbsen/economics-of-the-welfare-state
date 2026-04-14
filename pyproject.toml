@@ -45,6 +45,7 @@ dev = [
     "pytest-cov>=3.0.0",
     "black>=23.0.0",
     "ruff>=0.1.0",
+    "pre-commit>=3.5.0",
 ]
 all = [
     "econ-clean[dev]",
@@ -62,6 +63,23 @@ testpaths = ["tests"]
 python_files = ["test_*.py"]
 python_classes = ["Test*"]
 python_functions = ["test_*"]
+
+[tool.coverage.run]
+source = ["src"]
+omit = [
+    "src/dashboard.py",
+    "src/clean/viz.py",
+    "src/analysis/export_web_data.py",
+]
+
+[tool.coverage.report]
+exclude_lines = [
+    "pragma: no cover",
+    "if __name__ == .__main__.:",
+    "raise NotImplementedError",
+]
+show_missing = true
+skip_covered = false
 
 [tool.black]
 line-length = 100
