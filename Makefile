@@ -1,4 +1,4 @@
-.PHONY: env format data all
+.PHONY: env format data paper report all test lint
 
 # Install editable package and all dev dependencies
 env:
@@ -9,12 +9,18 @@ format:
 	ruff check src/ --fix
 	black src/
 
+# Lint-only check (no auto-fix); mirrors the CI checks
+lint:
+	ruff check src/
+	black --check src/
+
+# Run the project test suite
+test:
+	pytest
+
 # Run the data processing pipeline endpoint
 data:
 	python -m src.clean.pipeline --save-outputs
-
-# Execute full replication: install env, format code, process data, compile paper
-all: env format data paper
 
 # Compile the LaTeX paper to PDF
 paper:

@@ -9,9 +9,12 @@ RUN apt-get update && apt-get install -y \
     build-essential \
     && rm -rf /var/lib/apt/lists/*
 
-# Copy requirements and install
-COPY requirements.txt .
-RUN pip install --no-cache-dir -r requirements.txt
+# Copy package metadata and source, then install via pyproject.toml.
+# docs/README.md is the README referenced by pyproject.toml.
+COPY pyproject.toml ./
+COPY docs/README.md ./docs/README.md
+COPY src/ ./src/
+RUN pip install --no-cache-dir -e .
 
 # Copy the rest of the application
 COPY . .
