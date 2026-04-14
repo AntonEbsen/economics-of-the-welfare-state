@@ -2,9 +2,14 @@ name: CI
 
 on:
   push:
-    branches: [main]
   pull_request:
-    branches: [main]
+
+# Cancel superseded runs for the same ref so a push that follows a PR sync
+# (or vice-versa) doesn't double-queue. Keeps CI feedback fast on feature
+# branches.
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
 
 jobs:
   lint:
