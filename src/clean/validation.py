@@ -77,7 +77,7 @@ def validate_output(
     missing = [c for c in required_cols if c not in df.columns]
     if missing:
         raise ValueError(
-            f"[{dataset_name}] missing required columns: {missing}. " f"Present: {list(df.columns)}"
+            f"[{dataset_name}] missing required columns: {missing}. Present: {list(df.columns)}"
         )
 
     if "year" in df.columns:

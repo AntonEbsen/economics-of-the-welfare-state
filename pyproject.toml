@@ -89,6 +89,12 @@ include = '\.pyi?$'
 [tool.ruff]
 line-length = 100
 target-version = "py311"
+# Notebooks are narrative documents with their own cell-order semantics
+# (cells redefine imports, import at cell top, use symbols bound by earlier
+# cells). The newer ruff lints them by default and flags these patterns,
+# so we scope linting to the package + tests and leave notebook hygiene
+# to the author.
+extend-exclude = ["*.ipynb"]
 
 [tool.ruff.lint]
 select = ["E", "F", "W", "I"]

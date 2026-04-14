@@ -5,6 +5,7 @@ Unit tests for panel utilities.
 import numpy as np
 import pandas as pd
 import pytest
+
 from clean.panel_utils import check_panel_balance, create_differences, create_lags, fill_panel_gaps
 
 

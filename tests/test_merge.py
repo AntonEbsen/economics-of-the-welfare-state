@@ -4,6 +4,7 @@ Unit tests for merge utilities.
 
 import pandas as pd
 import pytest
+
 from clean.merge import get_merge_summary, merge_all_datasets
 
 
