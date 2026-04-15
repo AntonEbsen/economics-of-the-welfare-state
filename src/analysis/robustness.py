@@ -655,3 +655,86 @@ def export_feedback_regression_table(
         fh.write(latex_str)
     logger.info(f"✅ Feedback regression table saved to: {out_path}")
     return out_path
+
+
+# Default finer-grained KOF sub-components (one step below the four
+# KOFEcGI / KOFSoGI / KOFPoGI aggregates).
+#
+#   KOFTrGI  Trade globalisation   (de-facto trade flows)
+#   KOFFiGI  Financial globalisation
+#   KOFIpGI  Interpersonal globalisation
+#   KOFInGI  Informational globalisation
+#   KOFCuGI  Cultural globalisation
+DEFAULT_SUBCOMPONENTS: list[str] = ["KOFTrGI", "KOFFiGI", "KOFIpGI", "KOFInGI", "KOFCuGI"]
+
+
+def run_subcomponent_regressions(
+    master: pd.DataFrame,
+    config: dict,
+    subcomponents: list[str] | None = None,
+) -> dict:
+    """Baseline Driscoll-Kraay spec run against each KOF sub-component.
+
+    Complements :func:`export_stepwise_robustness_tables`, which sweeps
+    over the four aggregate indices. This helper drives the same
+    specification against the finer ``KOFTrGI / KOFFiGI / KOFIpGI /
+    KOFInGI / KOFCuGI`` decomposition — useful for decomposing which
+    channel of globalisation (trade vs. finance vs. information, etc.)
+    is driving the headline result.
+
+    Lifted from ``notebooks/02_modern_pipeline.ipynb`` cell 38.
+    """
+    if subcomponents is None:
+        subcomponents = DEFAULT_SUBCOMPONENTS
+
+    ctrl_vars = config.get(
+        "controls",
+        ["ln_gdppc", "inflation_cpi", "deficit", "debt", "ln_population", "dependency_ratio"],
+    )
+    dep_var = config.get("dependent_var", "sstran")
+
+    models: dict = {}
+    for comp in subcomponents:
+        if comp not in master.columns:
+            logger.warning("Sub-component %s not in master panel; skipping.", comp)
+            continue
+        current_ctrl_vars = [comp] + ctrl_vars
+        reg_data = create_lags(master, current_ctrl_vars, lags=[1])
+
+        indep_var = f"{comp}_lag1"
+        lagged_ctrls = [f"{v}_lag1" for v in ctrl_vars]
+        ols_data, exog_vars = prepare_regression_data(
+            reg_data, dep_var, indep_var, lagged_ctrls, interactions=False
+        )
+        models[comp] = run_panel_ols(ols_data, dep_var, exog_vars)
+
+    return models
+
+
+def export_subcomponent_regression_table(
+    master: pd.DataFrame,
+    config: dict,
+    out_dir: str | Path | None = None,
+    subcomponents: list[str] | None = None,
+) -> Path:
+    """Run :func:`run_subcomponent_regressions` and write the LaTeX comparison."""
+    if out_dir is None:
+        out_dir = Path(__file__).resolve().parent.parent.parent / "outputs" / "tables"
+    else:
+        out_dir = Path(out_dir)
+    out_dir.mkdir(parents=True, exist_ok=True)
+
+    models = run_subcomponent_regressions(master, config, subcomponents=subcomponents)
+    if not models:
+        raise ValueError("No sub-components produced a fitted model — check column names.")
+
+    comparison = compare(models, stars=True)
+    latex_str = comparison.summary.as_latex()
+    for old, new in LATEX_LABEL_MAP.items():
+        latex_str = latex_str.replace(old, new)
+
+    out_path = out_dir / "component_regression_table.tex"
+    with open(out_path, "w", encoding="utf-8") as fh:
+        fh.write(latex_str)
+    logger.info(f"✅ Sub-component comparison table saved to: {out_path}")
+    return out_path

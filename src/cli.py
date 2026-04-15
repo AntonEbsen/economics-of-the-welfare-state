@@ -131,6 +131,7 @@ def analyze(
     from analysis.robustness import (
         export_feedback_regression_table,
         export_stepwise_robustness_tables,
+        export_subcomponent_regression_table,
         export_subperiod_heterogeneity_regressions,
         export_subperiod_regressions,
     )
@@ -158,6 +159,13 @@ def analyze(
     export_subperiod_heterogeneity_regressions(panel, config)
     export_feedback_regression_table(panel, config, out_dir=tables_dir)
     export_correlation_matrix(panel, tables_dir)
+    try:
+        export_subcomponent_regression_table(panel, config, out_dir=tables_dir)
+    except ValueError as exc:
+        # Master panel may not include the finer-grained KOF sub-components
+        # (KOFTrGI, KOFFiGI, etc.). Log and continue rather than failing
+        # the whole analyze step.
+        typer.secho(f"Skipping sub-component table: {exc}", fg=typer.colors.YELLOW, err=True)
     typer.secho("Tables and figures saved to outputs/", fg=typer.colors.GREEN)
 
 

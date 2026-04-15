@@ -75,7 +75,7 @@ country-year panel.
 | Module | Responsibility |
 |---|---|
 | `regression_utils.py` | `run_panel_ols`, `run_hausman_test`, `run_event_study`, `run_placebo_test`, `prepare_regression_data`, `LATEX_LABEL_MAP` |
-| `robustness.py` | stepwise specs, subperiod splits, heterogeneity by welfare regime, feedback (reverse-causality) regressions |
+| `robustness.py` | stepwise specs, subperiod splits, heterogeneity by welfare regime, feedback (reverse-causality) regressions, KOF sub-component regressions |
 | `correlations.py` | lagged-variable correlation matrix with significance stars (CSV + LaTeX export) |
 | `export_web_data.py` | JSON/CSV fixtures consumed by the Astro front-end in `web/` |
 | `latex_injector.py` | swap generated tables into `paper/manuscript.tex` |
@@ -88,7 +88,7 @@ country-year panel.
 | `dashboard.py` | Streamlit data-quality dashboard (optional; not in CI) |
 | `config.py` | pydantic settings wrapper around `config.yaml` |
 
-### `tests/` — 56 tests
+### `tests/` — 61 tests
 
 - `test_constants.py` — ISO3 coverage and year-range sanity
 - `test_merge.py` — outer-join shape and column carry-through
@@ -98,7 +98,7 @@ country-year panel.
 - `test_pipeline_smoke.py` — end-to-end feed a 3×4 synthetic `results` dict through merge → schema → save
 - `test_analysis.py`, `test_econometrics.py` — interaction terms and marginal effects
 - `test_correlations.py` — correlation-matrix shape, stars, CSV + LaTeX export
-- `test_feedback_regressions.py` — reverse-causality regressions produce a PanelResults per index and a non-empty LaTeX table
+- `test_feedback_regressions.py` — reverse-causality regressions + KOF sub-component (trade / finance / info / culture / interpersonal) regressions produce PanelResults per index and non-empty LaTeX tables
 
 ## Dataset contract
 

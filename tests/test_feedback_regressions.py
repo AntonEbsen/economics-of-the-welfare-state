@@ -15,10 +15,14 @@ from __future__ import annotations
 
 import numpy as np
 import pandas as pd
+import pytest
 
 from analysis.robustness import (
+    DEFAULT_SUBCOMPONENTS,
     export_feedback_regression_table,
+    export_subcomponent_regression_table,
     run_feedback_regressions,
+    run_subcomponent_regressions,
 )
 
 
@@ -104,3 +108,53 @@ def test_export_feedback_regression_table_writes_latex(tmp_path):
     # LATEX_LABEL_MAP should have rewritten sstran_lag1 to a presentation label.
     # We check a weaker invariant: the file is non-trivial LaTeX.
     assert "\\begin" in text
+
+
+# ---------------------------------------------------------------------------
+# Sub-component regressions (cell 38 extraction)
+# ---------------------------------------------------------------------------
+
+
+def _synthetic_subcomponent_panel(seed: int = 22) -> pd.DataFrame:
+    """Panel that carries the finer KOF sub-components."""
+    base = _synthetic_panel(seed)
+    rng = np.random.default_rng(seed + 1)
+    # Each sub-component tracks KOFGI with modest noise so the
+    # regressions are well-identified.
+    for comp in DEFAULT_SUBCOMPONENTS:
+        base[comp] = base["KOFGI"] + rng.normal(0, 0.3, size=len(base))
+    return base
+
+
+def test_default_subcomponents_are_the_five_kof_fine_indices():
+    assert DEFAULT_SUBCOMPONENTS == ["KOFTrGI", "KOFFiGI", "KOFIpGI", "KOFInGI", "KOFCuGI"]
+
+
+def test_run_subcomponent_regressions_returns_one_model_per_component():
+    df = _synthetic_subcomponent_panel()
+    models = run_subcomponent_regressions(df, _config())
+    assert set(models.keys()) == set(DEFAULT_SUBCOMPONENTS)
+    for name, result in models.items():
+        assert hasattr(result, "params"), f"{name}: expected PanelResults"
+        assert f"{name}_lag1" in result.params.index
+
+
+def test_run_subcomponent_regressions_skips_missing_columns():
+    df = _synthetic_subcomponent_panel().drop(columns=["KOFCuGI"])
+    models = run_subcomponent_regressions(df, _config())
+    assert "KOFCuGI" not in models
+    assert "KOFTrGI" in models
+
+
+def test_export_subcomponent_regression_table_writes_latex(tmp_path):
+    df = _synthetic_subcomponent_panel()
+    out_path = export_subcomponent_regression_table(df, _config(), out_dir=tmp_path)
+    assert out_path.name == "component_regression_table.tex"
+    assert out_path.exists() and out_path.stat().st_size > 0
+    assert "\\begin" in out_path.read_text(encoding="utf-8")
+
+
+def test_export_subcomponent_regression_table_raises_if_no_models(tmp_path):
+    df = _synthetic_subcomponent_panel().drop(columns=list(DEFAULT_SUBCOMPONENTS))
+    with pytest.raises(ValueError, match="No sub-components"):
+        export_subcomponent_regression_table(df, _config(), out_dir=tmp_path)
