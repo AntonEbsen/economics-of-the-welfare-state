@@ -20,6 +20,7 @@ import pytest
 from analysis.robustness import (
     export_baseline_regression_table,
     export_interaction_regression_table,
+    export_marginal_effects_tables,
     run_baseline_regressions,
     run_interaction_regressions,
 )
@@ -166,3 +167,33 @@ def test_export_interaction_regression_table_raises_when_no_indices(tmp_path):
     df = _synthetic_regime_panel().drop(columns=["KOFGI", "KOFEcGI", "KOFSoGI", "KOFPoGI"])
     with pytest.raises(ValueError, match="No interaction models"):
         export_interaction_regression_table(df, _config(), out_dir=tmp_path)
+
+
+# ---------------------------------------------------------------------------
+# Marginal-effects tables
+# ---------------------------------------------------------------------------
+
+
+def test_export_marginal_effects_tables_writes_one_file_per_index(tmp_path):
+    df = _synthetic_regime_panel()
+    paths = export_marginal_effects_tables(df, _config(), out_dir=tmp_path)
+    assert set(paths.keys()) == {"KOFGI", "KOFEcGI", "KOFSoGI", "KOFPoGI"}
+    for idx_name, out_path in paths.items():
+        assert out_path.name == f"marginal_effects_{idx_name}.tex"
+        assert out_path.exists() and out_path.stat().st_size > 0
+        text = out_path.read_text(encoding="utf-8")
+        # Each regime row-label from generate_marginal_effects should survive.
+        for regime in ("Social Democrat", "Conservative", "Mediterranean", "Liberal"):
+            assert regime in text, f"{idx_name}: missing regime row {regime!r}"
+
+
+def test_export_marginal_effects_tables_respects_indices_arg(tmp_path):
+    df = _synthetic_regime_panel()
+    paths = export_marginal_effects_tables(df, _config(), out_dir=tmp_path, indices=["KOFGI"])
+    assert set(paths.keys()) == {"KOFGI"}
+
+
+def test_export_marginal_effects_tables_raises_when_no_indices(tmp_path):
+    df = _synthetic_regime_panel().drop(columns=["KOFGI", "KOFEcGI", "KOFSoGI", "KOFPoGI"])
+    with pytest.raises(ValueError, match="No interaction models"):
+        export_marginal_effects_tables(df, _config(), out_dir=tmp_path)

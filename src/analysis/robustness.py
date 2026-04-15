@@ -23,7 +23,12 @@ from clean.stats import (
     export_reset_test_latex,
 )
 
-from .regression_utils import LATEX_LABEL_MAP, prepare_regression_data, run_panel_ols
+from .regression_utils import (
+    LATEX_LABEL_MAP,
+    generate_marginal_effects,
+    prepare_regression_data,
+    run_panel_ols,
+)
 
 logger = logging.getLogger(__name__)
 
@@ -870,3 +875,57 @@ def export_interaction_regression_table(
         fh.write(latex_str)
     logger.info(f"✅ Interaction comparison table saved to: {out_path}")
     return out_path
+
+
+def export_marginal_effects_tables(
+    master_regimes: pd.DataFrame,
+    config: dict,
+    out_dir: str | Path | None = None,
+    indices: list[str] | None = None,
+) -> dict[str, Path]:
+    """Write per-index marginal-effects-by-regime LaTeX tables.
+
+    For each KOF index, fits the regime-interaction PanelOLS (same spec
+    as :func:`run_interaction_regressions`) and uses
+    :func:`analysis.regression_utils.generate_marginal_effects` to turn
+    the interaction coefficients into a marginal-effect-per-regime
+    table. Each table is written to
+    ``outputs/tables/marginal_effects_{idx}.tex``.
+
+    Previously these tables were printed inside
+    ``notebooks/02_modern_pipeline.ipynb`` cell 60 via ``display`` but
+    never persisted — so swapping the notebook to a thin call lost the
+    information. This helper restores it.
+
+    Returns ``{idx_name: Path}`` for every index that produced a model.
+    Raises :class:`ValueError` when no index in the panel yields a fit.
+    """
+    if out_dir is None:
+        out_dir = Path(__file__).resolve().parent.parent.parent / "outputs" / "tables"
+    else:
+        out_dir = Path(out_dir)
+    out_dir.mkdir(parents=True, exist_ok=True)
+
+    models = run_interaction_regressions(master_regimes, config, indices=indices)
+    if not models:
+        raise ValueError("No interaction models produced — check that index columns exist.")
+
+    out_paths: dict[str, Path] = {}
+    for idx_name, result in models.items():
+        g_var = f"{idx_name}_lag1"
+        me_table = generate_marginal_effects(result, g_var).round(4)
+        caption = f"Marginal Effects by Welfare Regime — {idx_name}"
+        label = f"tab:marginal_effects_{idx_name}"
+        latex_str = me_table.to_latex(
+            index=False,
+            caption=caption,
+            label=label,
+            column_format="lcc",
+            position="htbp",
+        )
+        out_path = out_dir / f"marginal_effects_{idx_name}.tex"
+        with open(out_path, "w", encoding="utf-8") as fh:
+            fh.write(latex_str)
+        logger.info(f"✅ Marginal-effects table saved to: {out_path}")
+        out_paths[idx_name] = out_path
+    return out_paths
