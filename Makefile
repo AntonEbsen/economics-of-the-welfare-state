@@ -1,8 +1,25 @@
-.PHONY: env format data paper report all test lint
+.PHONY: env env-locked lock verify-data format data paper report all test lint
 
-# Install editable package and all dev dependencies
+# Install editable package and all dev dependencies (follows pyproject bounds)
 env:
 	pip install -e .[dev]
+
+# Install the exact pinned stack used for the published results. Use this
+# for reproduction. Requires requirements-lock.txt to have been generated
+# via `make lock` on a maintainer machine.
+env-locked:
+	pip install -r requirements-lock.txt
+	pip install -e . --no-deps
+
+# Re-generate requirements-lock.txt from pyproject.toml. Requires pip-tools.
+# Run this when bumping dependency bounds and commit the diff.
+lock:
+	pip install --quiet pip-tools
+	pip-compile --extra=dev --output-file=requirements-lock.txt pyproject.toml
+
+# Verify that data/raw/*.xlsx matches the pinned checksum manifest.
+verify-data:
+	python scripts/download_raw_data.py
 
 # Format codebase using Black and Ruff
 format:

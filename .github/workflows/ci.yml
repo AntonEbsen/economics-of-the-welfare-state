@@ -62,3 +62,45 @@ jobs:
           name: coverage-xml
           path: coverage.xml
           if-no-files-found: ignore
+
+  smoke-pipeline:
+    name: Smoke (real pipeline, subset years)
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Set up Python 3.11
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+          cache: "pip"
+
+      - name: Install dependencies
+        run: pip install -e .[dev]
+
+      - name: Verify raw data manifest (checksums)
+        run: python scripts/download_raw_data.py
+
+      - name: Run cleaning pipeline on 2015-2022 subset
+        run: python -m src.clean.pipeline --year-min 2015 --year-max 2022
+
+      - name: Assert processed outputs exist
+        run: |
+          set -e
+          for ds in cpds population gdppc inflation dependency_ratio kofgi; do
+            f="data/processed/${ds}_32countries_2015_2022.parquet"
+            if [ ! -s "$f" ]; then
+              echo "::error::Missing or empty: $f"
+              exit 1
+            fi
+            echo "ok: $f"
+          done
+
+      - name: Upload pipeline log on failure
+        if: failure()
+        uses: actions/upload-artifact@v4
+        with:
+          name: pipeline-log
+          path: pipeline.log
+          if-no-files-found: ignore
