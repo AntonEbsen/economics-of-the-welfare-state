@@ -75,7 +75,7 @@ country-year panel.
 | Module | Responsibility |
 |---|---|
 | `regression_utils.py` | `run_panel_ols`, `run_hausman_test`, `run_event_study`, `run_placebo_test`, `prepare_regression_data`, `LATEX_LABEL_MAP` |
-| `robustness.py` | stepwise specs, subperiod splits, heterogeneity by welfare regime, feedback (reverse-causality) regressions, KOF sub-component regressions |
+| `robustness.py` | baseline + regime-interaction tables, stepwise specs, subperiod splits, heterogeneity by welfare regime, feedback (reverse-causality) regressions, KOF sub-component regressions |
 | `correlations.py` | lagged-variable correlation matrix with significance stars (CSV + LaTeX export) |
 | `trend_plots.py` | cross-country mean time-series figures (sstran + KOF indices) as PNG + PDF |
 | `export_web_data.py` | JSON/CSV fixtures consumed by the Astro front-end in `web/` |
@@ -89,7 +89,7 @@ country-year panel.
 | `dashboard.py` | Streamlit data-quality dashboard (optional; not in CI) |
 | `config.py` | pydantic settings wrapper around `config.yaml` |
 
-### `tests/` — 69 tests
+### `tests/` — 77 tests
 
 - `test_constants.py` — ISO3 coverage and year-range sanity
 - `test_merge.py` — outer-join shape and column carry-through
@@ -101,6 +101,7 @@ country-year panel.
 - `test_correlations.py` — correlation-matrix shape, stars, CSV + LaTeX export
 - `test_feedback_regressions.py` — reverse-causality regressions + KOF sub-component (trade / finance / info / culture / interpersonal) regressions produce PanelResults per index and non-empty LaTeX tables
 - `test_trend_plots.py` — cross-country mean of sstran and KOF indices aggregates correctly, writes PNG + PDF, skips missing indices, raises on empty input
+- `test_baseline_interaction_regressions.py` — baseline (no interactions) and regime-interaction PanelOLS runs per index, missing-index skip, ValueError on empty models, non-trivial LaTeX output
 
 ## Dataset contract
 

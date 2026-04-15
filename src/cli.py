@@ -129,7 +129,9 @@ def analyze(
 
     from analysis.correlations import export_correlation_matrix
     from analysis.robustness import (
+        export_baseline_regression_table,
         export_feedback_regression_table,
+        export_interaction_regression_table,
         export_stepwise_robustness_tables,
         export_subcomponent_regression_table,
         export_subperiod_heterogeneity_regressions,
@@ -156,6 +158,8 @@ def analyze(
     panel = add_welfare_regimes(pd.read_parquet(master_path))
     tables_dir = root / "outputs" / "tables"
     figures_dir = root / "outputs" / "figures"
+    export_baseline_regression_table(panel, config, out_dir=tables_dir)
+    export_interaction_regression_table(panel, config, out_dir=tables_dir)
     export_stepwise_robustness_tables(panel, config)
     export_subperiod_regressions(panel, config)
     export_subperiod_heterogeneity_regressions(panel, config)
