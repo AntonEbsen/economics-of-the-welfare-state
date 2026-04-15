@@ -1,0 +1,52 @@
+% ============================================================================
+% Appendix: additional tables, diagnostics, and specification tests.
+% Included from manuscript.tex via \input{appendix}.
+% ============================================================================
+
+\section{Data Appendix}
+\label{app:data}
+
+\subsection{Country coverage}
+The 32 countries in the balanced panel are listed in
+\texttt{paper/methods.md}. Five of them (BGR, EST, LTU, LVA, SVK) enter
+the dataset from 1995 owing to WB data availability; the merge fills
+forward these rows with NaN for earlier years, and the two-way
+fixed-effects estimator drops them via within-transformation.
+
+\subsection{Missing-data patterns}
+% TODO: Import the missing-data heatmap emitted by src/clean/quality.py
+% when the narrative is finalised.
+
+% ============================================================================
+\section{Additional Results}
+\label{app:results}
+% ============================================================================
+
+\subsection{First-stage diagnostics}
+% TODO: Hausman test results, serial correlation tests (Wooldridge),
+% cross-sectional dependence (Pesaran CD). These are emitted by
+% src/analysis/regression_utils.py::run_hausman_test and exported via
+% src/clean/stats.py.
+
+\subsection{Alternative specifications}
+% TODO: Random-effects, first-differenced, dynamic panel (Arellano-Bond)
+% comparison.
+
+\subsection{Placebo distribution}
+% TODO: Histogram of placebo β from run_placebo_test (shuffles the
+% treatment within entity). Exported to outputs/figures/placebo_hist.pdf.
+
+\subsection{Structural-break detection}
+% TODO: Chow and QLR statistics per country from
+% src/clean/structural_breaks.py.
+
+% ============================================================================
+\section{Replication Notes}
+\label{app:replication}
+% ============================================================================
+
+The full replication archive --- raw inputs, cleaning pipeline,
+regression code, and this manuscript --- is available at
+\url{https://github.com/AntonEbsen/economics-of-the-welfare-state}.
+See \texttt{docs/replication\_notes.md} for system requirements,
+runtime expectations, and reproduction instructions.
