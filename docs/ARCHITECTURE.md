@@ -89,7 +89,7 @@ country-year panel.
 | `dashboard.py` | Streamlit data-quality dashboard (optional; not in CI) |
 | `config.py` | pydantic settings wrapper around `config.yaml` |
 
-### `tests/` — 80 tests
+### `tests/` — 83 tests
 
 - `test_constants.py` — ISO3 coverage and year-range sanity
 - `test_merge.py` — outer-join shape and column carry-through
@@ -102,6 +102,7 @@ country-year panel.
 - `test_feedback_regressions.py` — reverse-causality regressions + KOF sub-component (trade / finance / info / culture / interpersonal) regressions produce PanelResults per index and non-empty LaTeX tables
 - `test_trend_plots.py` — cross-country mean of sstran and KOF indices aggregates correctly, writes PNG + PDF, skips missing indices, raises on empty input
 - `test_baseline_interaction_regressions.py` — baseline (no interactions) and regime-interaction PanelOLS runs per index, per-regime marginal-effects LaTeX output per index, missing-index skip, ValueError on empty models, non-trivial LaTeX output
+- `test_notebook_imports.py` — parses `02_modern_pipeline.ipynb`, verifies every top-level `from analysis.X import Y` still resolves (catches refactor drift) and that the seven thin-call markers remain intact
 
 ## Dataset contract
 
@@ -131,6 +132,7 @@ post-communist).
 | `make lock-uv` | regenerate `uv.lock` via `uv lock` |
 | `make verify-data` | SHA-256 check on `data/raw/*.xlsx` |
 | `make data` | run the cleaning pipeline |
+| `make analyze` | regenerate LaTeX tables + PNG/PDF figures from the master panel |
 | `make test` | run the pytest suite |
 | `make lint` | ruff + black check (mirrors CI) |
 | `make format` | ruff + black auto-fix |

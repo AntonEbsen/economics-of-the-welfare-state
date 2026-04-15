@@ -1,4 +1,4 @@
-.PHONY: env env-locked env-uv lock lock-uv verify-data format data paper report all test lint
+.PHONY: env env-locked env-uv lock lock-uv verify-data format data analyze paper report all test lint
 
 # Install editable package and all dev dependencies (follows pyproject bounds)
 env:
@@ -54,6 +54,14 @@ test:
 data:
 	econ-clean clean
 
+# Regenerate every LaTeX table and PNG/PDF figure from the master panel.
+# Reads ``data/final/master_dataset.parquet`` (produced by ``make data``)
+# and writes to ``outputs/{tables,figures}/``. Wrapping ``econ-clean
+# analyze`` keeps the CLI as the single source of truth for which
+# artefacts ship alongside the paper.
+analyze:
+	econ-clean analyze
+
 # Compile the LaTeX paper to PDF
 paper:
 	cd paper && latexmk -pdf main.tex -interaction=nonstopmode || pdflatex main.tex
@@ -63,5 +71,7 @@ report:
 	quarto render
 	@echo "HTML report saved to _site/"
 
-# Full pipeline: install, format, clean data, compile paper, render report
-all: env format data paper report
+# Full pipeline: install, format, clean data, regenerate analysis artefacts,
+# compile paper, render report. ``analyze`` sits between ``data`` and
+# ``paper`` so the paper always picks up the freshest tables.
+all: env format data analyze paper report
