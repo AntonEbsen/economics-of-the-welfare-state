@@ -1,4 +1,4 @@
-.PHONY: env env-locked lock verify-data format data paper report all test lint
+.PHONY: env env-locked env-uv lock lock-uv verify-data format data paper report all test lint
 
 # Install editable package and all dev dependencies (follows pyproject bounds)
 env:
@@ -11,15 +11,27 @@ env-locked:
 	pip install -r requirements-lock.txt
 	pip install -e . --no-deps
 
+# Install the exact pinned stack via uv.lock. Drop-in replacement for
+# `env-locked` for users who prefer uv's resolver (dramatically faster
+# installs, same PyPI artefacts). Requires `uv` on PATH —
+# https://docs.astral.sh/uv/.
+env-uv:
+	uv sync --extra dev
+
 # Re-generate requirements-lock.txt from pyproject.toml. Requires pip-tools.
 # Run this when bumping dependency bounds and commit the diff.
 lock:
 	pip install --quiet pip-tools
 	pip-compile --extra=dev --output-file=requirements-lock.txt pyproject.toml
 
+# Re-generate uv.lock from pyproject.toml. Commit both lock files in
+# lockstep — they describe the same pinned graph via different tools.
+lock-uv:
+	uv lock
+
 # Verify that data/raw/*.xlsx matches the pinned checksum manifest.
 verify-data:
-	python scripts/download_raw_data.py
+	econ-clean verify-data
 
 # Format codebase using Black and Ruff
 format:
@@ -35,9 +47,12 @@ lint:
 test:
 	pytest
 
-# Run the data processing pipeline endpoint
+# Run the data processing pipeline endpoint. The ``econ-clean`` console
+# script is registered via ``[project.scripts]`` and wraps
+# ``src.clean.pipeline.process_all_datasets``; ``python -m
+# src.clean.pipeline`` still works as the direct escape hatch.
 data:
-	python -m src.clean.pipeline --save-outputs
+	econ-clean clean
 
 # Compile the LaTeX paper to PDF
 paper:

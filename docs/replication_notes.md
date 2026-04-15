@@ -40,13 +40,15 @@ make all
 
 Either path runs:
 
-1. `python scripts/download_raw_data.py` — verifies SHA-256 checksums of
-   the six raw `.xlsx` files against the manifest.
-2. `pip install -e .[dev]` — installs dependencies following the
-   lower-bound specs in `pyproject.toml`.
-3. `python -m src.clean.pipeline` — cleans and standardises each source,
-   merges into `data/final/master_dataset.parquet`.
-4. Exports regression tables and figures into `outputs/`.
+1. `pip install -e .[dev]` — installs dependencies following the
+   lower-bound specs in `pyproject.toml`, registering the
+   `econ-clean` console script.
+2. `econ-clean verify-data` — verifies SHA-256 checksums of the six
+   raw `.xlsx` files against the manifest.
+3. `econ-clean clean` — cleans and standardises each source, merges
+   into `data/final/master_dataset.parquet`.
+4. `econ-clean analyze` — exports regression tables and figures into
+   `outputs/`.
 
 ## Pinned reproduction
 
@@ -59,10 +61,26 @@ make env-locked   # installs the resolved pins from requirements-lock.txt
 make data         # rebuilds master dataset with the pinned stack
 ```
 
-`requirements-lock.txt` is generated via `pip-compile --extra=dev`
-against `pyproject.toml`. Maintainers regenerate it with `make lock`
-after bumping bounds. The locked stack pins the full transitive graph
-(pandas, numpy, linearmodels, statsmodels, pandera, matplotlib, etc.).
+Or, if you prefer the (much faster) `uv` resolver:
+
+```bash
+make env-uv       # uv sync against uv.lock — same pins, ~10× faster install
+make data
+```
+
+Both `requirements-lock.txt` (pip-compile) and `uv.lock` (uv) are
+committed and describe the **same** resolved pin graph. `uv.lock` is
+the preferred lock format going forward; `requirements-lock.txt` is
+kept for users without `uv` on PATH. Maintainers must regenerate them
+in lockstep after bumping bounds:
+
+```bash
+make lock      # refresh requirements-lock.txt via pip-compile
+make lock-uv   # refresh uv.lock via uv
+```
+
+The locked stack pins the full transitive graph (pandas, numpy,
+linearmodels, statsmodels, pandera, matplotlib, etc.).
 
 ## Runtime expectations
 
@@ -70,8 +88,8 @@ On a mid-range 2024 laptop (quad-core, 16 GB RAM):
 
 | Step | Wall clock |
 |------|-----------|
-| Checksum verify (`scripts/download_raw_data.py`) | ~1 s |
-| Data pipeline (`python -m src.clean.pipeline`) | ~15–20 s |
+| Checksum verify (`econ-clean verify-data`) | ~1 s |
+| Data pipeline (`econ-clean clean`) | ~15–20 s |
 | Regression / robustness exports | ~30–60 s |
 | Full `make all` (env + data + paper + report) | ~5 min |
 
@@ -101,7 +119,7 @@ tokens) can skip the `data/raw/*.xlsx` files. Run a full clone:
 ```bash
 git clone https://github.com/AntonEbsen/economics-of-the-welfare-state
 ```
-Or manually download the files listed with `python scripts/download_raw_data.py --show`.
+Or manually download the files listed with `econ-clean verify-data --show`.
 
 ### "CHECKSUM MISMATCH"
 Source data vendors (CPDS, World Bank, KOF) do periodically re-issue

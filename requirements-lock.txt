@@ -6,6 +6,8 @@
 #
 altair==6.0.0
     # via streamlit
+annotated-doc==0.0.4
+    # via typer
 annotated-types==0.7.0
     # via pydantic
 attrs==26.1.0
@@ -28,6 +30,7 @@ click==8.3.2
     # via
     #   black
     #   streamlit
+    #   typer
 contourpy==1.3.3
     # via matplotlib
 coverage[toml]==7.13.5
@@ -77,12 +80,16 @@ kiwisolver==1.5.0
     # via matplotlib
 linearmodels==7.0
     # via econ-clean (pyproject.toml)
+markdown-it-py==4.0.0
+    # via rich
 markupsafe==3.0.3
     # via jinja2
 matplotlib==3.10.8
     # via
     #   econ-clean (pyproject.toml)
     #   seaborn
+mdurl==0.1.2
+    # via markdown-it-py
 mypy-extensions==1.1.0
     # via
     #   black
@@ -165,7 +172,9 @@ pydantic-core==2.46.0
 pydeck==0.9.1
     # via streamlit
 pygments==2.20.0
-    # via pytest
+    # via
+    #   pytest
+    #   rich
 pyhdfe==0.2.0
     # via linearmodels
 pyparsing==3.3.2
@@ -194,6 +203,8 @@ referencing==0.37.0
     #   jsonschema-specifications
 requests==2.33.1
     # via streamlit
+rich==15.0.0
+    # via typer
 rpds-py==0.30.0
     # via
     #   jsonschema
@@ -209,6 +220,8 @@ scipy==1.17.1
     #   statsmodels
 seaborn==0.13.2
     # via econ-clean (pyproject.toml)
+shellingham==1.5.4
+    # via typer
 six==1.17.0
     # via python-dateutil
 smmap==5.0.3
@@ -229,6 +242,8 @@ tornado==6.5.5
     # via streamlit
 typeguard==4.5.1
     # via pandera
+typer==0.24.1
+    # via econ-clean (pyproject.toml)
 typing-extensions==4.15.0
     # via
     #   altair
