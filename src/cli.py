@@ -127,7 +127,9 @@ def analyze(
     """Export stepwise, subperiod, and heterogeneity regression tables."""
     import pandas as pd
 
+    from analysis.correlations import export_correlation_matrix
     from analysis.robustness import (
+        export_feedback_regression_table,
         export_stepwise_robustness_tables,
         export_subperiod_heterogeneity_regressions,
         export_subperiod_regressions,
@@ -150,9 +152,12 @@ def analyze(
 
     config = load_config()
     panel = add_welfare_regimes(pd.read_parquet(master_path))
+    tables_dir = root / "outputs" / "tables"
     export_stepwise_robustness_tables(panel, config)
     export_subperiod_regressions(panel, config)
     export_subperiod_heterogeneity_regressions(panel, config)
+    export_feedback_regression_table(panel, config, out_dir=tables_dir)
+    export_correlation_matrix(panel, tables_dir)
     typer.secho("Tables and figures saved to outputs/", fg=typer.colors.GREEN)
 
 

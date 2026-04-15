@@ -567,3 +567,91 @@ def export_event_study_plots(
             logger.info(f"  ✅ Saved Event Study Plot: {out_file.name}")
         except Exception as e:
             logger.error(f"  ❌ Error running event study for {idx_name}: {e}")
+
+
+def run_feedback_regressions(
+    master_regimes: pd.DataFrame,
+    config: dict,
+    indices: list[str] | None = None,
+) -> dict:
+    """Estimate "reverse direction" regressions: ``KOFxx = β·sstran_{t-1} + Xγ``.
+
+    The main paper regresses the welfare-state proxy ``sstran`` on lagged
+    globalisation. This helper flips the direction to address the worry
+    that welfare generosity itself drives the measured globalisation
+    indices (e.g. by changing trade intensity). If the coefficient on
+    ``sstran_lag1`` is statistically indistinguishable from zero, the
+    baseline's causal-direction interpretation is more credible.
+
+    Lifted from ``notebooks/02_modern_pipeline.ipynb`` cell 67 so the
+    notebook can become thin orchestration and this specification is
+    unit-testable.
+
+    Parameters
+    ----------
+    master_regimes
+        Panel frame with ``iso3``/``year`` and the globalisation indices.
+    config
+        Loaded ``config.yaml``; ``indices`` and ``controls`` keys are
+        consulted for defaults.
+    indices
+        Dependent variables (globalisation indices). Defaults to
+        ``config["indices"]`` then the four KOF aggregates.
+
+    Returns
+    -------
+    dict[str, PanelResults]
+        Mapping ``index_name -> fitted linearmodels PanelOLS result``.
+    """
+    if indices is None:
+        indices = config.get("indices", ["KOFGI", "KOFEcGI", "KOFSoGI", "KOFPoGI"])
+    ctrl_vars = config.get(
+        "controls",
+        ["ln_gdppc", "inflation_cpi", "deficit", "debt", "ln_population", "dependency_ratio"],
+    )
+    iv_var = "sstran"
+
+    models: dict = {}
+    for dv_name in indices:
+        all_needed_vars = [dv_name, iv_var] + ctrl_vars
+        reg_data = create_lags(master_regimes, all_needed_vars, lags=[1])
+
+        iv_lagged = f"{iv_var}_lag1"
+        ctrls_lagged = [f"{v}_lag1" for v in ctrl_vars]
+        ols_data, exog_vars = prepare_regression_data(
+            reg_data, dv_name, iv_lagged, ctrls_lagged, interactions=False
+        )
+        models[dv_name] = run_panel_ols(ols_data, dv_name, exog_vars)
+
+    return models
+
+
+def export_feedback_regression_table(
+    master_regimes: pd.DataFrame,
+    config: dict,
+    out_dir: str | Path | None = None,
+) -> Path:
+    """Run :func:`run_feedback_regressions` and write the LaTeX comparison.
+
+    Writes ``feedback_regression_table.tex`` into ``out_dir`` (or
+    ``outputs/tables/`` by default), with ``LATEX_LABEL_MAP`` applied so
+    the table labels match the rest of the paper.
+    """
+    if out_dir is None:
+        out_dir = Path(__file__).resolve().parent.parent.parent / "outputs" / "tables"
+    else:
+        out_dir = Path(out_dir)
+    out_dir.mkdir(parents=True, exist_ok=True)
+
+    models = run_feedback_regressions(master_regimes, config)
+    comparison = compare(models, stars=True)
+
+    latex_str = comparison.summary.as_latex()
+    for old, new in LATEX_LABEL_MAP.items():
+        latex_str = latex_str.replace(old, new)
+
+    out_path = out_dir / "feedback_regression_table.tex"
+    with open(out_path, "w", encoding="utf-8") as fh:
+        fh.write(latex_str)
+    logger.info(f"✅ Feedback regression table saved to: {out_path}")
+    return out_path
