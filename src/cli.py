@@ -135,6 +135,7 @@ def analyze(
         export_subperiod_heterogeneity_regressions,
         export_subperiod_regressions,
     )
+    from analysis.trend_plots import plot_kof_trend, plot_sstran_trend
     from clean.panel_utils import add_welfare_regimes
     from clean.utils import load_config, setup_logging
 
@@ -154,6 +155,7 @@ def analyze(
     config = load_config()
     panel = add_welfare_regimes(pd.read_parquet(master_path))
     tables_dir = root / "outputs" / "tables"
+    figures_dir = root / "outputs" / "figures"
     export_stepwise_robustness_tables(panel, config)
     export_subperiod_regressions(panel, config)
     export_subperiod_heterogeneity_regressions(panel, config)
@@ -166,6 +168,8 @@ def analyze(
         # (KOFTrGI, KOFFiGI, etc.). Log and continue rather than failing
         # the whole analyze step.
         typer.secho(f"Skipping sub-component table: {exc}", fg=typer.colors.YELLOW, err=True)
+    plot_sstran_trend(panel, figures_dir)
+    plot_kof_trend(panel, figures_dir)
     typer.secho("Tables and figures saved to outputs/", fg=typer.colors.GREEN)
 
 
