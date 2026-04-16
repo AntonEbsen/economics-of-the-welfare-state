@@ -89,7 +89,7 @@ country-year panel.
 | `dashboard.py` | Streamlit data-quality dashboard (optional; not in CI) |
 | `config.py` | pydantic settings wrapper around `config.yaml` |
 
-### `tests/` — 87 tests
+### `tests/` — 109 tests
 
 - `test_constants.py` — ISO3 coverage and year-range sanity
 - `test_merge.py` — outer-join shape and column carry-through
@@ -101,8 +101,10 @@ country-year panel.
 - `test_correlations.py` — correlation-matrix shape, stars, CSV + LaTeX export
 - `test_feedback_regressions.py` — reverse-causality regressions + KOF sub-component (trade / finance / info / culture / interpersonal) regressions produce PanelResults per index and non-empty LaTeX tables
 - `test_trend_plots.py` — cross-country mean of sstran and KOF indices aggregates correctly, writes PNG + PDF, skips missing indices, raises on empty input
-- `test_baseline_interaction_regressions.py` — baseline (no interactions) and regime-interaction PanelOLS runs per index, per-regime marginal-effects LaTeX output per index, missing-index skip, ValueError on empty models, non-trivial LaTeX output
-- `test_notebook_imports.py` — parses `02_modern_pipeline.ipynb`, verifies every top-level `from analysis.X import Y` still resolves (catches refactor drift) and that the seven thin-call markers remain intact
+- `test_baseline_interaction_regressions.py` — baseline (no interactions) and regime-interaction PanelOLS runs per index, per-regime marginal-effects LaTeX output per index, post-communist exclusion robustness, missing-index skip, ValueError on empty models, non-trivial LaTeX output
+- `test_notebook_imports.py` — parses `02_modern_pipeline.ipynb`, verifies every top-level `from analysis.X import Y` still resolves (catches refactor drift) and that the nine thin-call markers remain intact
+- `test_utils.py` — map_country_to_iso3, save_dataframe (parquet/csv/error), filter_to_target_countries (case normalisation, NaN drop), filter_to_year_range, load_config, setup_logging
+- `test_latex_injector.py` — placeholder substitution, separate output path, missing template, unmatched placeholders left intact
 
 ## Dataset contract
 
