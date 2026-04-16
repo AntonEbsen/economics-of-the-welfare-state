@@ -96,6 +96,7 @@ exclude_lines = [
 ]
 show_missing = true
 skip_covered = false
+fail_under = 20
 
 [tool.black]
 line-length = 100

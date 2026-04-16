@@ -929,3 +929,93 @@ def export_marginal_effects_tables(
         logger.info(f"✅ Marginal-effects table saved to: {out_path}")
         out_paths[idx_name] = out_path
     return out_paths
+
+
+# ---------------------------------------------------------------------------
+# Post-Communist exclusion robustness check (notebook cell 59)
+# ---------------------------------------------------------------------------
+
+
+def run_interaction_regressions_excl_postcommunist(
+    master_regimes: pd.DataFrame,
+    config: dict,
+    indices: list[str] | None = None,
+) -> dict:
+    """Interaction PanelOLS excluding the post-communist regime.
+
+    Same specification as :func:`run_interaction_regressions` but with
+    only three interaction terms (conservative, mediterranean, liberal)
+    — the post-communist regime is folded into the social-democratic
+    reference category.  This is a common robustness check because the
+    post-communist welfare-state model developed under very different
+    conditions and may distort the main interaction pattern.
+
+    Lifted from ``notebooks/02_modern_pipeline.ipynb`` cell 59.
+    """
+    if indices is None:
+        indices = config.get("indices", ["KOFGI", "KOFEcGI", "KOFSoGI", "KOFPoGI"])
+    ctrl_vars = config.get(
+        "controls",
+        ["ln_gdppc", "inflation_cpi", "deficit", "debt", "ln_population", "dependency_ratio"],
+    )
+    dep_var = config.get("dependent_var", "sstran")
+
+    models: dict = {}
+    for idx_name in indices:
+        if idx_name not in master_regimes.columns:
+            logger.warning("Index %s not in master panel; skipping.", idx_name)
+            continue
+        all_needed_vars = [idx_name] + ctrl_vars
+        reg_data = create_lags(master_regimes, all_needed_vars, lags=[1])
+
+        indep_var = f"{idx_name}_lag1"
+        lagged_ctrls = [f"{v}_lag1" for v in ctrl_vars]
+
+        # Manually build 3 interaction terms (no post_communist)
+        reg_data["int_conservative"] = reg_data[indep_var] * reg_data["regime_conservative"]
+        reg_data["int_mediterranean"] = reg_data[indep_var] * reg_data["regime_mediterranean"]
+        reg_data["int_liberal"] = reg_data[indep_var] * reg_data["regime_liberal"]
+
+        custom_ctrls = ["int_conservative", "int_mediterranean", "int_liberal"] + lagged_ctrls
+        ols_data, exog_vars = prepare_regression_data(
+            reg_data, dep_var, indep_var, custom_ctrls, interactions=False
+        )
+        header = LATEX_LABEL_MAP.get(indep_var, idx_name).replace("_{t-1}", "").replace("$", "")
+        models[header] = run_panel_ols(ols_data, dep_var, exog_vars)
+    return models
+
+
+def export_interaction_excl_postcommunist_table(
+    master_regimes: pd.DataFrame,
+    config: dict,
+    out_dir: str | Path | None = None,
+    indices: list[str] | None = None,
+) -> Path:
+    """Run the post-communist exclusion robustness check and write LaTeX.
+
+    Produces ``interaction_excl_postcommunist_table.tex`` alongside the
+    standard interaction table for easy comparison.
+    """
+    if out_dir is None:
+        out_dir = Path(__file__).resolve().parent.parent.parent / "outputs" / "tables"
+    else:
+        out_dir = Path(out_dir)
+    out_dir.mkdir(parents=True, exist_ok=True)
+
+    models = run_interaction_regressions_excl_postcommunist(master_regimes, config, indices=indices)
+    if not models:
+        raise ValueError(
+            "No interaction (excl. post-communist) models produced — "
+            "check that index columns exist."
+        )
+
+    comparison = compare(models, stars=True)
+    latex_str = comparison.summary.as_latex()
+    for old, new in LATEX_LABEL_MAP.items():
+        latex_str = latex_str.replace(old, new)
+
+    out_path = out_dir / "interaction_excl_postcommunist_table.tex"
+    with open(out_path, "w", encoding="utf-8") as fh:
+        fh.write(latex_str)
+    logger.info(f"✅ Interaction (excl. post-communist) table saved to: {out_path}")
+    return out_path

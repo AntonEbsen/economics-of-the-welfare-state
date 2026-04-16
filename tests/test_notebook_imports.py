@@ -112,6 +112,7 @@ def test_thin_cells_call_expected_helpers():
         "export_correlation_matrix",
         "export_baseline_regression_table",
         "export_interaction_regression_table",
+        "export_interaction_excl_postcommunist_table",
         "export_feedback_regression_table",
         "export_marginal_effects_tables",
     ]

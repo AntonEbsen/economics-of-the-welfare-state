@@ -131,6 +131,7 @@ def analyze(
     from analysis.robustness import (
         export_baseline_regression_table,
         export_feedback_regression_table,
+        export_interaction_excl_postcommunist_table,
         export_interaction_regression_table,
         export_marginal_effects_tables,
         export_stepwise_robustness_tables,
@@ -161,6 +162,7 @@ def analyze(
     figures_dir = root / "outputs" / "figures"
     export_baseline_regression_table(panel, config, out_dir=tables_dir)
     export_interaction_regression_table(panel, config, out_dir=tables_dir)
+    export_interaction_excl_postcommunist_table(panel, config, out_dir=tables_dir)
     export_marginal_effects_tables(panel, config, out_dir=tables_dir)
     export_stepwise_robustness_tables(panel, config)
     export_subperiod_regressions(panel, config)

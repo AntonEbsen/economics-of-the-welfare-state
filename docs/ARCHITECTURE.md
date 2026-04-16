@@ -75,7 +75,7 @@ country-year panel.
 | Module | Responsibility |
 |---|---|
 | `regression_utils.py` | `run_panel_ols`, `run_hausman_test`, `run_event_study`, `run_placebo_test`, `prepare_regression_data`, `LATEX_LABEL_MAP` |
-| `robustness.py` | baseline + regime-interaction tables, per-regime marginal-effects tables, stepwise specs, subperiod splits, heterogeneity by welfare regime, feedback (reverse-causality) regressions, KOF sub-component regressions |
+| `robustness.py` | baseline + regime-interaction tables, per-regime marginal-effects tables, post-communist exclusion robustness, stepwise specs, subperiod splits, heterogeneity by welfare regime, feedback (reverse-causality) regressions, KOF sub-component regressions |
 | `correlations.py` | lagged-variable correlation matrix with significance stars (CSV + LaTeX export) |
 | `trend_plots.py` | cross-country mean time-series figures (sstran + KOF indices) as PNG + PDF |
 | `export_web_data.py` | JSON/CSV fixtures consumed by the Astro front-end in `web/` |
