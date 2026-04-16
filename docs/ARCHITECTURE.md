@@ -89,7 +89,7 @@ country-year panel.
 | `dashboard.py` | Streamlit data-quality dashboard (optional; not in CI) |
 | `config.py` | pydantic settings wrapper around `config.yaml` |
 
-### `tests/` — 83 tests
+### `tests/` — 87 tests
 
 - `test_constants.py` — ISO3 coverage and year-range sanity
 - `test_merge.py` — outer-join shape and column carry-through

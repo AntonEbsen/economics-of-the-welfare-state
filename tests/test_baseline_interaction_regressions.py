@@ -19,10 +19,12 @@ import pytest
 
 from analysis.robustness import (
     export_baseline_regression_table,
+    export_interaction_excl_postcommunist_table,
     export_interaction_regression_table,
     export_marginal_effects_tables,
     run_baseline_regressions,
     run_interaction_regressions,
+    run_interaction_regressions_excl_postcommunist,
 )
 
 
@@ -197,3 +199,43 @@ def test_export_marginal_effects_tables_raises_when_no_indices(tmp_path):
     df = _synthetic_regime_panel().drop(columns=["KOFGI", "KOFEcGI", "KOFSoGI", "KOFPoGI"])
     with pytest.raises(ValueError, match="No interaction models"):
         export_marginal_effects_tables(df, _config(), out_dir=tmp_path)
+
+
+# ---------------------------------------------------------------------------
+# Post-communist exclusion robustness (notebook cell 59)
+# ---------------------------------------------------------------------------
+
+
+def test_run_excl_postcommunist_has_three_interaction_terms():
+    df = _synthetic_regime_panel()
+    models = run_interaction_regressions_excl_postcommunist(df, _config())
+    assert len(models) > 0
+    # Pick any model — it should have 3 interaction terms, NOT 4
+    result = next(iter(models.values()))
+    params = result.params.index
+    for term in ("int_conservative", "int_mediterranean", "int_liberal"):
+        assert term in params, f"{term} missing from excl-postcommunist model"
+    assert "int_post_communist" not in params
+
+
+def test_run_excl_postcommunist_skips_missing_index():
+    df = _synthetic_regime_panel().drop(columns=["KOFPoGI"])
+    models = run_interaction_regressions_excl_postcommunist(df, _config())
+    assert "KOFPoGI" not in models and len(models) == 3
+
+
+def test_export_excl_postcommunist_table_writes_latex(tmp_path):
+    df = _synthetic_regime_panel()
+    out_path = export_interaction_excl_postcommunist_table(df, _config(), out_dir=tmp_path)
+    assert out_path.name == "interaction_excl_postcommunist_table.tex"
+    assert out_path.exists() and out_path.stat().st_size > 0
+    text = out_path.read_text(encoding="utf-8")
+    assert "\\begin" in text
+    # Should NOT contain the post-communist interaction term
+    assert "int\\_post\\_communist" not in text or "int_post_communist" not in text
+
+
+def test_export_excl_postcommunist_table_raises_when_no_indices(tmp_path):
+    df = _synthetic_regime_panel().drop(columns=["KOFGI", "KOFEcGI", "KOFSoGI", "KOFPoGI"])
+    with pytest.raises(ValueError, match="No interaction.*excl.*post-communist"):
+        export_interaction_excl_postcommunist_table(df, _config(), out_dir=tmp_path)
