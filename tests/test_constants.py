@@ -2,8 +2,8 @@
 Unit tests for constants module.
 Run with: pytest tests/
 """
-import pytest
-from clean.constants import TARGET_ISO3_32, COUNTRY_TO_ISO3, DEFAULT_YEAR_MIN, DEFAULT_YEAR_MAX
+
+from clean.constants import COUNTRY_TO_ISO3, DEFAULT_YEAR_MAX, DEFAULT_YEAR_MIN, TARGET_ISO3_32
 
 
 def test_target_iso3_count():
@@ -22,23 +22,19 @@ def test_target_iso3_format():
 def test_country_mapping_coverage():
     """Test that country mapping covers all target countries."""
     mapped_iso3 = set(COUNTRY_TO_ISO3.values())
-    assert TARGET_ISO3_32.issubset(mapped_iso3), \
-        "Not all TARGET_ISO3_32 countries are in COUNTRY_TO_ISO3"
+    missing = TARGET_ISO3_32 - mapped_iso3
+    assert not missing, f"TARGET_ISO3_32 not covered by COUNTRY_TO_ISO3: {missing}"
 
 
 def test_no_duplicate_mappings():
     """Test that there are no duplicate country mappings."""
     # Each country name should map to only one ISO3
     country_names = list(COUNTRY_TO_ISO3.keys())
-    assert len(country_names) == len(set(country_names)), \
-        "Duplicate country names found in COUNTRY_TO_ISO3"
+    assert len(country_names) == len(set(country_names)), "Duplicate names in COUNTRY_TO_ISO3"
 
 
 def test_year_range_valid():
     """Test that default year range is valid."""
-    assert DEFAULT_YEAR_MIN < DEFAULT_YEAR_MAX, \
-        "DEFAULT_YEAR_MIN should be less than DEFAULT_YEAR_MAX"
-    assert 1900 < DEFAULT_YEAR_MIN < 2100, \
-        "DEFAULT_YEAR_MIN should be reasonable"
-    assert 1900 < DEFAULT_YEAR_MAX < 2100, \
-        "DEFAULT_YEAR_MAX should be reasonable"
+    assert DEFAULT_YEAR_MIN < DEFAULT_YEAR_MAX, "DEFAULT_YEAR_MIN must be < DEFAULT_YEAR_MAX"
+    assert 1900 < DEFAULT_YEAR_MIN < 2100, "DEFAULT_YEAR_MIN should be reasonable"
+    assert 1900 < DEFAULT_YEAR_MAX < 2100, "DEFAULT_YEAR_MAX should be reasonable"

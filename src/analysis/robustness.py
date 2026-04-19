@@ -11,6 +11,8 @@ import matplotlib.ticker as mticker
 import numpy as np
 import pandas as pd
 import seaborn as sns
+from linearmodels.panel import compare
+
 from clean.panel_utils import create_lags
 from clean.stats import (
     build_latex_appendix,
@@ -20,9 +22,13 @@ from clean.stats import (
     export_model_diagnostics_latex,
     export_reset_test_latex,
 )
-from linearmodels.panel import compare
 
-from .regression_utils import LATEX_LABEL_MAP, prepare_regression_data, run_panel_ols
+from .regression_utils import (
+    LATEX_LABEL_MAP,
+    generate_marginal_effects,
+    prepare_regression_data,
+    run_panel_ols,
+)
 
 logger = logging.getLogger(__name__)
 
@@ -566,3 +572,453 @@ def export_event_study_plots(
             logger.info(f"  ✅ Saved Event Study Plot: {out_file.name}")
         except Exception as e:
             logger.error(f"  ❌ Error running event study for {idx_name}: {e}")
+
+
+def run_feedback_regressions(
+    master_regimes: pd.DataFrame,
+    config: dict,
+    indices: list[str] | None = None,
+) -> dict:
+    """Estimate "reverse direction" regressions: ``KOFxx = β·sstran_{t-1} + Xγ``.
+
+    The main paper regresses the welfare-state proxy ``sstran`` on lagged
+    globalisation. This helper flips the direction to address the worry
+    that welfare generosity itself drives the measured globalisation
+    indices (e.g. by changing trade intensity). If the coefficient on
+    ``sstran_lag1`` is statistically indistinguishable from zero, the
+    baseline's causal-direction interpretation is more credible.
+
+    Lifted from ``notebooks/02_modern_pipeline.ipynb`` cell 67 so the
+    notebook can become thin orchestration and this specification is
+    unit-testable.
+
+    Parameters
+    ----------
+    master_regimes
+        Panel frame with ``iso3``/``year`` and the globalisation indices.
+    config
+        Loaded ``config.yaml``; ``indices`` and ``controls`` keys are
+        consulted for defaults.
+    indices
+        Dependent variables (globalisation indices). Defaults to
+        ``config["indices"]`` then the four KOF aggregates.
+
+    Returns
+    -------
+    dict[str, PanelResults]
+        Mapping ``index_name -> fitted linearmodels PanelOLS result``.
+    """
+    if indices is None:
+        indices = config.get("indices", ["KOFGI", "KOFEcGI", "KOFSoGI", "KOFPoGI"])
+    ctrl_vars = config.get(
+        "controls",
+        ["ln_gdppc", "inflation_cpi", "deficit", "debt", "ln_population", "dependency_ratio"],
+    )
+    iv_var = "sstran"
+
+    models: dict = {}
+    for dv_name in indices:
+        all_needed_vars = [dv_name, iv_var] + ctrl_vars
+        reg_data = create_lags(master_regimes, all_needed_vars, lags=[1])
+
+        iv_lagged = f"{iv_var}_lag1"
+        ctrls_lagged = [f"{v}_lag1" for v in ctrl_vars]
+        ols_data, exog_vars = prepare_regression_data(
+            reg_data, dv_name, iv_lagged, ctrls_lagged, interactions=False
+        )
+        models[dv_name] = run_panel_ols(ols_data, dv_name, exog_vars)
+
+    return models
+
+
+def export_feedback_regression_table(
+    master_regimes: pd.DataFrame,
+    config: dict,
+    out_dir: str | Path | None = None,
+) -> Path:
+    """Run :func:`run_feedback_regressions` and write the LaTeX comparison.
+
+    Writes ``feedback_regression_table.tex`` into ``out_dir`` (or
+    ``outputs/tables/`` by default), with ``LATEX_LABEL_MAP`` applied so
+    the table labels match the rest of the paper.
+    """
+    if out_dir is None:
+        out_dir = Path(__file__).resolve().parent.parent.parent / "outputs" / "tables"
+    else:
+        out_dir = Path(out_dir)
+    out_dir.mkdir(parents=True, exist_ok=True)
+
+    models = run_feedback_regressions(master_regimes, config)
+    comparison = compare(models, stars=True)
+
+    latex_str = comparison.summary.as_latex()
+    for old, new in LATEX_LABEL_MAP.items():
+        latex_str = latex_str.replace(old, new)
+
+    out_path = out_dir / "feedback_regression_table.tex"
+    with open(out_path, "w", encoding="utf-8") as fh:
+        fh.write(latex_str)
+    logger.info(f"✅ Feedback regression table saved to: {out_path}")
+    return out_path
+
+
+# Default finer-grained KOF sub-components (one step below the four
+# KOFEcGI / KOFSoGI / KOFPoGI aggregates).
+#
+#   KOFTrGI  Trade globalisation   (de-facto trade flows)
+#   KOFFiGI  Financial globalisation
+#   KOFIpGI  Interpersonal globalisation
+#   KOFInGI  Informational globalisation
+#   KOFCuGI  Cultural globalisation
+DEFAULT_SUBCOMPONENTS: list[str] = ["KOFTrGI", "KOFFiGI", "KOFIpGI", "KOFInGI", "KOFCuGI"]
+
+
+def run_subcomponent_regressions(
+    master: pd.DataFrame,
+    config: dict,
+    subcomponents: list[str] | None = None,
+) -> dict:
+    """Baseline Driscoll-Kraay spec run against each KOF sub-component.
+
+    Complements :func:`export_stepwise_robustness_tables`, which sweeps
+    over the four aggregate indices. This helper drives the same
+    specification against the finer ``KOFTrGI / KOFFiGI / KOFIpGI /
+    KOFInGI / KOFCuGI`` decomposition — useful for decomposing which
+    channel of globalisation (trade vs. finance vs. information, etc.)
+    is driving the headline result.
+
+    Lifted from ``notebooks/02_modern_pipeline.ipynb`` cell 38.
+    """
+    if subcomponents is None:
+        subcomponents = DEFAULT_SUBCOMPONENTS
+
+    ctrl_vars = config.get(
+        "controls",
+        ["ln_gdppc", "inflation_cpi", "deficit", "debt", "ln_population", "dependency_ratio"],
+    )
+    dep_var = config.get("dependent_var", "sstran")
+
+    models: dict = {}
+    for comp in subcomponents:
+        if comp not in master.columns:
+            logger.warning("Sub-component %s not in master panel; skipping.", comp)
+            continue
+        current_ctrl_vars = [comp] + ctrl_vars
+        reg_data = create_lags(master, current_ctrl_vars, lags=[1])
+
+        indep_var = f"{comp}_lag1"
+        lagged_ctrls = [f"{v}_lag1" for v in ctrl_vars]
+        ols_data, exog_vars = prepare_regression_data(
+            reg_data, dep_var, indep_var, lagged_ctrls, interactions=False
+        )
+        models[comp] = run_panel_ols(ols_data, dep_var, exog_vars)
+
+    return models
+
+
+def export_subcomponent_regression_table(
+    master: pd.DataFrame,
+    config: dict,
+    out_dir: str | Path | None = None,
+    subcomponents: list[str] | None = None,
+) -> Path:
+    """Run :func:`run_subcomponent_regressions` and write the LaTeX comparison."""
+    if out_dir is None:
+        out_dir = Path(__file__).resolve().parent.parent.parent / "outputs" / "tables"
+    else:
+        out_dir = Path(out_dir)
+    out_dir.mkdir(parents=True, exist_ok=True)
+
+    models = run_subcomponent_regressions(master, config, subcomponents=subcomponents)
+    if not models:
+        raise ValueError("No sub-components produced a fitted model — check column names.")
+
+    comparison = compare(models, stars=True)
+    latex_str = comparison.summary.as_latex()
+    for old, new in LATEX_LABEL_MAP.items():
+        latex_str = latex_str.replace(old, new)
+
+    out_path = out_dir / "component_regression_table.tex"
+    with open(out_path, "w", encoding="utf-8") as fh:
+        fh.write(latex_str)
+    logger.info(f"✅ Sub-component comparison table saved to: {out_path}")
+    return out_path
+
+
+# ---------------------------------------------------------------------------
+# Baseline and interaction regression tables (cells 54 and 60/61)
+# ---------------------------------------------------------------------------
+
+
+def _run_regressions_per_index(
+    master_regimes: pd.DataFrame,
+    config: dict,
+    *,
+    interactions: bool,
+    indices: list[str] | None = None,
+) -> dict:
+    """Shared loop: for each index run a single spec with all controls.
+
+    Returns ``{idx_name: PanelResults}``. Indices absent from the panel
+    are silently skipped so the helper works on reduced master frames.
+    """
+    if indices is None:
+        indices = config.get("indices", ["KOFGI", "KOFEcGI", "KOFSoGI", "KOFPoGI"])
+    ctrl_vars = config.get(
+        "controls",
+        ["ln_gdppc", "inflation_cpi", "deficit", "debt", "ln_population", "dependency_ratio"],
+    )
+    dep_var = config.get("dependent_var", "sstran")
+
+    models: dict = {}
+    for idx_name in indices:
+        if idx_name not in master_regimes.columns:
+            logger.warning("Index %s not in master panel; skipping.", idx_name)
+            continue
+        all_needed_vars = [idx_name] + ctrl_vars
+        reg_data = create_lags(master_regimes, all_needed_vars, lags=[1])
+
+        indep_var = f"{idx_name}_lag1"
+        lagged_ctrls = [f"{v}_lag1" for v in ctrl_vars]
+        ols_data, exog_vars = prepare_regression_data(
+            reg_data, dep_var, indep_var, lagged_ctrls, interactions=interactions
+        )
+        models[idx_name] = run_panel_ols(ols_data, dep_var, exog_vars)
+    return models
+
+
+def run_baseline_regressions(
+    master_regimes: pd.DataFrame,
+    config: dict,
+    indices: list[str] | None = None,
+) -> dict:
+    """Baseline PanelOLS (no regime interactions) per globalisation index.
+
+    Each regression is ``sstran ~ idx_{t-1} + controls_{t-1}`` with
+    entity + time fixed effects. Lifted from
+    ``notebooks/02_modern_pipeline.ipynb`` cell 54.
+    """
+    return _run_regressions_per_index(master_regimes, config, interactions=False, indices=indices)
+
+
+def export_baseline_regression_table(
+    master_regimes: pd.DataFrame,
+    config: dict,
+    out_dir: str | Path | None = None,
+    indices: list[str] | None = None,
+) -> Path:
+    """Run :func:`run_baseline_regressions` and write the LaTeX comparison."""
+    if out_dir is None:
+        out_dir = Path(__file__).resolve().parent.parent.parent / "outputs" / "tables"
+    else:
+        out_dir = Path(out_dir)
+    out_dir.mkdir(parents=True, exist_ok=True)
+
+    models = run_baseline_regressions(master_regimes, config, indices=indices)
+    if not models:
+        raise ValueError("No baseline models produced — check that index columns exist.")
+
+    comparison = compare(models, stars=True)
+    latex_str = comparison.summary.as_latex()
+    for old, new in LATEX_LABEL_MAP.items():
+        latex_str = latex_str.replace(old, new)
+
+    out_path = out_dir / "baseline_regression_table.tex"
+    with open(out_path, "w", encoding="utf-8") as fh:
+        fh.write(latex_str)
+    logger.info(f"✅ Baseline comparison table saved to: {out_path}")
+    return out_path
+
+
+def run_interaction_regressions(
+    master_regimes: pd.DataFrame,
+    config: dict,
+    indices: list[str] | None = None,
+) -> dict:
+    """Interaction PanelOLS: idx × welfare-regime dummies, per index.
+
+    Uses ``prepare_regression_data(interactions=True)`` so the interaction
+    terms follow the project-wide convention (social-democrat reference,
+    conservative / mediterranean / liberal / post-communist interactions).
+    Lifted from ``notebooks/02_modern_pipeline.ipynb`` cells 60/61.
+
+    Requires the ``regime_*`` dummy columns added by
+    :func:`clean.panel_utils.add_welfare_regimes`.
+    """
+    return _run_regressions_per_index(master_regimes, config, interactions=True, indices=indices)
+
+
+def export_interaction_regression_table(
+    master_regimes: pd.DataFrame,
+    config: dict,
+    out_dir: str | Path | None = None,
+    indices: list[str] | None = None,
+) -> Path:
+    """Run :func:`run_interaction_regressions` and write the LaTeX comparison."""
+    if out_dir is None:
+        out_dir = Path(__file__).resolve().parent.parent.parent / "outputs" / "tables"
+    else:
+        out_dir = Path(out_dir)
+    out_dir.mkdir(parents=True, exist_ok=True)
+
+    models = run_interaction_regressions(master_regimes, config, indices=indices)
+    if not models:
+        raise ValueError("No interaction models produced — check that index columns exist.")
+
+    comparison = compare(models, stars=True)
+    latex_str = comparison.summary.as_latex()
+    for old, new in LATEX_LABEL_MAP.items():
+        latex_str = latex_str.replace(old, new)
+
+    out_path = out_dir / "interaction_regression_table.tex"
+    with open(out_path, "w", encoding="utf-8") as fh:
+        fh.write(latex_str)
+    logger.info(f"✅ Interaction comparison table saved to: {out_path}")
+    return out_path
+
+
+def export_marginal_effects_tables(
+    master_regimes: pd.DataFrame,
+    config: dict,
+    out_dir: str | Path | None = None,
+    indices: list[str] | None = None,
+) -> dict[str, Path]:
+    """Write per-index marginal-effects-by-regime LaTeX tables.
+
+    For each KOF index, fits the regime-interaction PanelOLS (same spec
+    as :func:`run_interaction_regressions`) and uses
+    :func:`analysis.regression_utils.generate_marginal_effects` to turn
+    the interaction coefficients into a marginal-effect-per-regime
+    table. Each table is written to
+    ``outputs/tables/marginal_effects_{idx}.tex``.
+
+    Previously these tables were printed inside
+    ``notebooks/02_modern_pipeline.ipynb`` cell 60 via ``display`` but
+    never persisted — so swapping the notebook to a thin call lost the
+    information. This helper restores it.
+
+    Returns ``{idx_name: Path}`` for every index that produced a model.
+    Raises :class:`ValueError` when no index in the panel yields a fit.
+    """
+    if out_dir is None:
+        out_dir = Path(__file__).resolve().parent.parent.parent / "outputs" / "tables"
+    else:
+        out_dir = Path(out_dir)
+    out_dir.mkdir(parents=True, exist_ok=True)
+
+    models = run_interaction_regressions(master_regimes, config, indices=indices)
+    if not models:
+        raise ValueError("No interaction models produced — check that index columns exist.")
+
+    out_paths: dict[str, Path] = {}
+    for idx_name, result in models.items():
+        g_var = f"{idx_name}_lag1"
+        me_table = generate_marginal_effects(result, g_var)
+        # Round numerics for presentation
+        num_cols = ["Marginal Effect", "Std. Error", "t-stat", "p-value"]
+        me_table[num_cols] = me_table[num_cols].round(4)
+        caption = f"Marginal Effects by Welfare Regime — {idx_name}"
+        label = f"tab:marginal_effects_{idx_name}"
+        latex_str = me_table.to_latex(
+            index=False,
+            caption=caption,
+            label=label,
+            column_format="lccccc",
+            position="htbp",
+        )
+        out_path = out_dir / f"marginal_effects_{idx_name}.tex"
+        with open(out_path, "w", encoding="utf-8") as fh:
+            fh.write(latex_str)
+        logger.info(f"✅ Marginal-effects table saved to: {out_path}")
+        out_paths[idx_name] = out_path
+    return out_paths
+
+
+# ---------------------------------------------------------------------------
+# Post-Communist exclusion robustness check (notebook cell 59)
+# ---------------------------------------------------------------------------
+
+
+def run_interaction_regressions_excl_postcommunist(
+    master_regimes: pd.DataFrame,
+    config: dict,
+    indices: list[str] | None = None,
+) -> dict:
+    """Interaction PanelOLS excluding the post-communist regime.
+
+    Same specification as :func:`run_interaction_regressions` but with
+    only three interaction terms (conservative, mediterranean, liberal)
+    — the post-communist regime is folded into the social-democratic
+    reference category.  This is a common robustness check because the
+    post-communist welfare-state model developed under very different
+    conditions and may distort the main interaction pattern.
+
+    Lifted from ``notebooks/02_modern_pipeline.ipynb`` cell 59.
+    """
+    if indices is None:
+        indices = config.get("indices", ["KOFGI", "KOFEcGI", "KOFSoGI", "KOFPoGI"])
+    ctrl_vars = config.get(
+        "controls",
+        ["ln_gdppc", "inflation_cpi", "deficit", "debt", "ln_population", "dependency_ratio"],
+    )
+    dep_var = config.get("dependent_var", "sstran")
+
+    models: dict = {}
+    for idx_name in indices:
+        if idx_name not in master_regimes.columns:
+            logger.warning("Index %s not in master panel; skipping.", idx_name)
+            continue
+        all_needed_vars = [idx_name] + ctrl_vars
+        reg_data = create_lags(master_regimes, all_needed_vars, lags=[1])
+
+        indep_var = f"{idx_name}_lag1"
+        lagged_ctrls = [f"{v}_lag1" for v in ctrl_vars]
+
+        # Manually build 3 interaction terms (no post_communist)
+        reg_data["int_conservative"] = reg_data[indep_var] * reg_data["regime_conservative"]
+        reg_data["int_mediterranean"] = reg_data[indep_var] * reg_data["regime_mediterranean"]
+        reg_data["int_liberal"] = reg_data[indep_var] * reg_data["regime_liberal"]
+
+        custom_ctrls = ["int_conservative", "int_mediterranean", "int_liberal"] + lagged_ctrls
+        ols_data, exog_vars = prepare_regression_data(
+            reg_data, dep_var, indep_var, custom_ctrls, interactions=False
+        )
+        header = LATEX_LABEL_MAP.get(indep_var, idx_name).replace("_{t-1}", "").replace("$", "")
+        models[header] = run_panel_ols(ols_data, dep_var, exog_vars)
+    return models
+
+
+def export_interaction_excl_postcommunist_table(
+    master_regimes: pd.DataFrame,
+    config: dict,
+    out_dir: str | Path | None = None,
+    indices: list[str] | None = None,
+) -> Path:
+    """Run the post-communist exclusion robustness check and write LaTeX.
+
+    Produces ``interaction_excl_postcommunist_table.tex`` alongside the
+    standard interaction table for easy comparison.
+    """
+    if out_dir is None:
+        out_dir = Path(__file__).resolve().parent.parent.parent / "outputs" / "tables"
+    else:
+        out_dir = Path(out_dir)
+    out_dir.mkdir(parents=True, exist_ok=True)
+
+    models = run_interaction_regressions_excl_postcommunist(master_regimes, config, indices=indices)
+    if not models:
+        raise ValueError(
+            "No interaction (excl. post-communist) models produced — "
+            "check that index columns exist."
+        )
+
+    comparison = compare(models, stars=True)
+    latex_str = comparison.summary.as_latex()
+    for old, new in LATEX_LABEL_MAP.items():
+        latex_str = latex_str.replace(old, new)
+
+    out_path = out_dir / "interaction_excl_postcommunist_table.tex"
+    with open(out_path, "w", encoding="utf-8") as fh:
+        fh.write(latex_str)
+    logger.info(f"✅ Interaction (excl. post-communist) table saved to: {out_path}")
+    return out_path
