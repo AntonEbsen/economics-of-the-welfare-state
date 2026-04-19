@@ -241,35 +241,102 @@ def run_hausman_test(
 
 def generate_marginal_effects(results, g_var: str) -> pd.DataFrame:
     """
-    Given regression results model fitted with interactions, generate Marginal Effects Table.
-    Assumes Social Democrat is reference group.
+    Given regression results fitted with interactions, generate a
+    marginal-effects table with standard errors, t-statistics, p-values,
+    and significance stars.
+
+    The marginal effect for the reference group (Social Democrat) is
+    simply β₁.  For each non-reference regime *k* it is β₁ + β_k.
+    Standard errors are computed from the variance–covariance matrix::
+
+        SE(β₁ + β_k) = sqrt(Var(β₁) + Var(β_k) + 2 Cov(β₁, β_k))
+
+    Only regimes whose interaction term actually appears in the model
+    are included (so ``export_interaction_excl_postcommunist_table``
+    produces a four-row table without Post-Communist).
 
     Args:
-        results: Fitted results from linearmodels.
-        g_var: String representing the main variable that interactions are derived from.
-    """
-    params = results.params
-    b1 = params[g_var]
-    b2 = params.get("int_conservative", 0)
-    b3 = params.get("int_mediterranean", 0)
-    b4 = params.get("int_liberal", 0)
-    b5 = params.get("int_post_communist", 0)
+        results: Fitted PanelResults from linearmodels.
+        g_var: Name of the base globalisation variable (e.g. ``KOFGI_lag1``).
 
-    me_table = pd.DataFrame(
+    Returns:
+        DataFrame with columns ``Welfare Regime``, ``Marginal Effect``,
+        ``Std. Error``, ``t-stat``, ``p-value``, ``Sig.``.
+    """
+    from scipy import stats as sp_stats
+
+    params = results.params
+    cov = results.cov
+
+    b1 = params[g_var]
+    var_b1 = cov.loc[g_var, g_var]
+
+    interaction_map = [
+        ("int_conservative", "Conservative"),
+        ("int_mediterranean", "Mediterranean"),
+        ("int_liberal", "Liberal"),
+        ("int_post_communist", "Post-Communist"),
+    ]
+
+    rows = []
+
+    # Reference group (Social Democrat): ME = β₁, SE = SE(β₁)
+    se_ref = np.sqrt(var_b1)
+    t_ref = b1 / se_ref if se_ref > 0 else np.nan
+    p_ref = (
+        2 * (1 - sp_stats.t.cdf(abs(t_ref), df=results.df_resid)) if not np.isnan(t_ref) else np.nan
+    )
+    rows.append(
         {
-            "Welfare Regime": [
-                "Social Democrat (Ref)",
-                "Conservative",
-                "Mediterranean",
-                "Liberal",
-                "Post-Communist",
-            ],
-            "Formula": ["β1", "β1 + β2", "β1 + β3", "β1 + β4", "β1 + β5"],
-            "Marginal Effect": [b1, b1 + b2, b1 + b3, b1 + b4, b1 + b5],
+            "Welfare Regime": "Social Democrat (Ref)",
+            "Marginal Effect": b1,
+            "Std. Error": se_ref,
+            "t-stat": t_ref,
+            "p-value": p_ref,
+            "Sig.": _stars(p_ref),
         }
     )
 
-    return me_table
+    # Non-reference regimes: ME = β₁ + β_k
+    for int_term, regime_label in interaction_map:
+        if int_term not in params.index:
+            continue
+        bk = params[int_term]
+        me = b1 + bk
+        var_bk = cov.loc[int_term, int_term]
+        cov_b1_bk = cov.loc[g_var, int_term]
+        se = np.sqrt(var_b1 + var_bk + 2 * cov_b1_bk)
+        t_val = me / se if se > 0 else np.nan
+        p_val = (
+            2 * (1 - sp_stats.t.cdf(abs(t_val), df=results.df_resid))
+            if not np.isnan(t_val)
+            else np.nan
+        )
+        rows.append(
+            {
+                "Welfare Regime": regime_label,
+                "Marginal Effect": me,
+                "Std. Error": se,
+                "t-stat": t_val,
+                "p-value": p_val,
+                "Sig.": _stars(p_val),
+            }
+        )
+
+    return pd.DataFrame(rows)
+
+
+def _stars(p: float) -> str:
+    """Return significance stars for a p-value."""
+    if pd.isna(p):
+        return ""
+    if p < 0.01:
+        return "***"
+    if p < 0.05:
+        return "**"
+    if p < 0.10:
+        return "*"
+    return ""
 
 
 def plot_coefficients(results, title: str = "Regression Coefficients"):
@@ -340,7 +407,12 @@ def adjust_pvalues(pvalues: pd.Series, method: str = "fdr_bh") -> pd.DataFrame:
 
 
 def run_placebo_test(
-    ols_data: pd.DataFrame, dep_var: str, indep_var: str, exog_vars: list[str], n_sims: int = 100
+    ols_data: pd.DataFrame,
+    dep_var: str,
+    indep_var: str,
+    exog_vars: list[str],
+    n_sims: int = 100,
+    seed: int = 42,
 ):
     """
     Run a placebo test by shuffling the independent variable.
@@ -351,16 +423,16 @@ def run_placebo_test(
         indep_var: The variable to shuffle.
         exog_vars: All exogenous variables (including the one to be shuffled).
         n_sims: Number of simulations.
+        seed: Random seed for reproducibility.
     """
+    rng = np.random.default_rng(seed)
     coefficients = []
 
     for _ in range(n_sims):
         mock_data = ols_data.copy()
         # Shuffle the independent variable within each entity (country) to preserve structure
         # but destroy the correlation with the dependent variable
-        mock_data[indep_var] = mock_data.groupby(level=0)[indep_var].transform(
-            np.random.permutation
-        )
+        mock_data[indep_var] = mock_data.groupby(level=0)[indep_var].transform(rng.permutation)
 
         results = run_panel_ols(mock_data, dep_var, exog_vars)
         coefficients.append(results.params[indep_var])

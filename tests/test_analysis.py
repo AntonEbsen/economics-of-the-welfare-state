@@ -1,3 +1,4 @@
+import numpy as np
 import pandas as pd
 
 from analysis.regression_utils import generate_marginal_effects, prepare_regression_data
@@ -32,21 +33,25 @@ def test_prepare_regression_data():
 
 
 def test_generate_marginal_effects():
-    # Mock results object class
+    # Mock results object with params, covariance matrix, and df_resid
     class MockResults:
-        def __init__(self, params):
+        def __init__(self, params, cov, df_resid=100):
             self.params = params
+            self.cov = cov
+            self.df_resid = df_resid
 
+    var_names = ["x", "int_conservative", "int_mediterranean", "int_liberal", "int_post_communist"]
     params = pd.Series(
-        {
-            "x": 0.5,
-            "int_conservative": 0.2,
-            "int_mediterranean": -0.1,
-            "int_liberal": 0.0,
-            "int_post_communist": 0.3,
-        }
+        [0.5, 0.2, -0.1, 0.0, 0.3],
+        index=var_names,
     )
-    results = MockResults(params)
+    # Simple diagonal covariance (SE = 0.1 for all)
+    cov = pd.DataFrame(
+        np.eye(5) * 0.01,
+        index=var_names,
+        columns=var_names,
+    )
+    results = MockResults(params, cov)
 
     me_table = generate_marginal_effects(results, "x")
 
@@ -64,3 +69,13 @@ def test_generate_marginal_effects():
         me_table.loc[me_table["Welfare Regime"] == "Mediterranean", "Marginal Effect"].values[0]
         == 0.4
     )  # 0.5 - 0.1
+
+    # New columns from the SE upgrade
+    assert "Std. Error" in me_table.columns
+    assert "p-value" in me_table.columns
+    assert "Sig." in me_table.columns
+    # Reference group SE should be sqrt(0.01) = 0.1
+    ref_se = me_table.loc[
+        me_table["Welfare Regime"] == "Social Democrat (Ref)", "Std. Error"
+    ].values[0]
+    assert abs(ref_se - 0.1) < 1e-10

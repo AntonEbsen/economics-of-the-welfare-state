@@ -913,14 +913,17 @@ def export_marginal_effects_tables(
     out_paths: dict[str, Path] = {}
     for idx_name, result in models.items():
         g_var = f"{idx_name}_lag1"
-        me_table = generate_marginal_effects(result, g_var).round(4)
+        me_table = generate_marginal_effects(result, g_var)
+        # Round numerics for presentation
+        num_cols = ["Marginal Effect", "Std. Error", "t-stat", "p-value"]
+        me_table[num_cols] = me_table[num_cols].round(4)
         caption = f"Marginal Effects by Welfare Regime — {idx_name}"
         label = f"tab:marginal_effects_{idx_name}"
         latex_str = me_table.to_latex(
             index=False,
             caption=caption,
             label=label,
-            column_format="lcc",
+            column_format="lccccc",
             position="htbp",
         )
         out_path = out_dir / f"marginal_effects_{idx_name}.tex"

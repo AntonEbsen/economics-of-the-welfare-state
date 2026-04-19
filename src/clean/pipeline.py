@@ -253,21 +253,6 @@ def process_all_datasets(
         logger.error(f"❌ KOF failed: {e}")
         results["kof"] = None
 
-    # 7. Diagnostics
-    logger.info("\n🔍 Running research diagnostics...")
-    try:
-        from .utils import load_config
-
-        config = load_config()
-        ["sstran"] + config.get("controls", [])
-
-        # We need a master dataframe to run diagnostics on.
-        # Since this function processes individual datasets, we return the dict.
-        # But for convenience, let's suggest running diagnostics after merging.
-        logger.info("Tip: Run generate_diagnostic_report(master_df, variables) after merging.")
-    except Exception as e:
-        logger.warning(f"Diagnostics skipped: {e}")
-
     # Summary
     logger.info("\n" + "=" * 60)
     successful = sum(1 for v in results.values() if v is not None)
