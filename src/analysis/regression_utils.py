@@ -293,7 +293,7 @@ def generate_marginal_effects(results, g_var: str) -> pd.DataFrame:
             "Std. Error": se_ref,
             "t-stat": t_ref,
             "p-value": p_ref,
-            "Sig.": _stars(p_ref),
+            "Sig.": significance_stars(p_ref),
         }
     )
 
@@ -319,15 +319,18 @@ def generate_marginal_effects(results, g_var: str) -> pd.DataFrame:
                 "Std. Error": se,
                 "t-stat": t_val,
                 "p-value": p_val,
-                "Sig.": _stars(p_val),
+                "Sig.": significance_stars(p_val),
             }
         )
 
     return pd.DataFrame(rows)
 
 
-def _stars(p: float) -> str:
-    """Return significance stars for a p-value."""
+def significance_stars(p: float) -> str:
+    """Return conventional significance stars for a p-value.
+
+    ``***`` (<0.01), ``**`` (<0.05), ``*`` (<0.10). NaN-safe.
+    """
     if pd.isna(p):
         return ""
     if p < 0.01:

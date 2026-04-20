@@ -13,7 +13,12 @@ from linearmodels.panel import PanelOLS, RandomEffects
 from scipy import stats
 from statsmodels.stats.diagnostic import acorr_ljungbox
 
-from analysis.regression_utils import LATEX_LABEL_MAP, prepare_regression_data, run_panel_ols
+from analysis.regression_utils import (
+    LATEX_LABEL_MAP,
+    prepare_regression_data,
+    run_panel_ols,
+    significance_stars,
+)
 from clean.panel_utils import create_lags
 from clean.utils import load_config
 
@@ -265,12 +270,12 @@ def export_all_web_data(master: pd.DataFrame, config: dict, out_dir: str | Path)
                     "clustered": {
                         "se": round(float(res_clust.std_errors[var]), 4),
                         "pval": round(float(res_clust.pvalues[var]), 4),
-                        "stars": _get_stars(res_clust.pvalues[var]),
+                        "stars": significance_stars(res_clust.pvalues[var]),
                     },
                     "dk": {
                         "se": round(float(res_dk.std_errors[var]), 4),
                         "pval": round(float(res_dk.pvalues[var]), 4),
-                        "stars": _get_stars(res_dk.pvalues[var]),
+                        "stars": significance_stars(res_dk.pvalues[var]),
                     },
                 }
             )
@@ -322,16 +327,6 @@ def export_all_web_data(master: pd.DataFrame, config: dict, out_dir: str | Path)
         json.dump(profiles, f, indent=2)
 
     logger.info(f"✅ Web data sync complete! Files saved to {out_dir}")
-
-
-def _get_stars(pval):
-    if pval < 0.01:
-        return "***"
-    if pval < 0.05:
-        return "**"
-    if pval < 0.10:
-        return "*"
-    return ""
 
 
 if __name__ == "__main__":
