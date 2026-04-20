@@ -948,14 +948,20 @@ def export_cointegration_latex(
 
 def build_latex_appendix(
     tables_dir: str = "outputs/tables",
-    out_file: str = "outputs/tables/appendix_diagnostics.tex",
+    out_file: str | None = None,
 ) -> None:
     """
     Compile all diagnostic LaTeX tables into a single appendix file
     with section headers, ready to paste into Overleaf.
+
+    When ``out_file`` is None the appendix is written next to ``tables_dir``
+    as ``<tables_dir>/appendix_diagnostics.tex``. Previously the default
+    pointed at a hardcoded repo-relative path, which caused test pollution
+    — export_stepwise_robustness_tables(out_dir=tmp_path) still wrote the
+    appendix into the real ``outputs/tables/`` directory.
     """
     tables_dir = Path(tables_dir)
-    out_file = Path(out_file)
+    out_file = Path(out_file) if out_file is not None else tables_dir / "appendix_diagnostics.tex"
 
     # Define the table ordering and section titles
     sections = [

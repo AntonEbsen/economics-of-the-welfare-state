@@ -309,9 +309,7 @@ def export_subperiod_regressions(
         "post_gfc": (2008, 2023),
     }
 
-    print("\n" + "=" * 60)
-    print("🕰️ RUNNING SUBPERIOD REGRESSIONS (China Shock & GFC)")
-    print("=" * 60)
+    logger.info("🕰️ Running subperiod regressions (China Shock & GFC)")
 
     valid_indices = [idx for idx in indices if idx in master_regimes.columns]
 
@@ -354,7 +352,7 @@ def export_subperiod_regressions(
             continue
 
         comparison = compare(models, stars=True)
-        print(f"  Generated table for {period_name} with {len(models)} indices")
+        logger.info("Generated table for %s with %d indices", period_name, len(models))
 
         output_file = out_dir / f"baseline_regressions_{period_name}.tex"
         latex_str = comparison.summary.as_latex()
@@ -364,8 +362,6 @@ def export_subperiod_regressions(
 
         with open(output_file, "w", encoding="utf-8") as f:
             f.write(latex_str)
-
-    print("=" * 60 + "\n")
 
 
 def export_subperiod_heterogeneity_regressions(
@@ -397,9 +393,7 @@ def export_subperiod_heterogeneity_regressions(
         "post_gfc": (2008, 2023),
     }
 
-    print("\n" + "=" * 60)
-    print("🕰️ RUNNING SUBPERIOD REGRESSIONS (Heterogeneity)")
-    print("=" * 60)
+    logger.info("🕰️ Running subperiod heterogeneity regressions")
 
     # Need regime dummy columns to create interactions
     regime_cols = [
@@ -470,7 +464,9 @@ def export_subperiod_heterogeneity_regressions(
             continue
 
         comparison = compare(models, stars=True)
-        print(f"  Generated heterogeneity table for {period_name} with {len(models)} indices")
+        logger.info(
+            "Generated heterogeneity table for %s with %d indices", period_name, len(models)
+        )
 
         output_file = out_dir / f"heterogeneity_regressions_{period_name}.tex"
         latex_str = comparison.summary.as_latex()
@@ -480,8 +476,6 @@ def export_subperiod_heterogeneity_regressions(
 
         with open(output_file, "w", encoding="utf-8") as f:
             f.write(latex_str)
-
-    print("=" * 60 + "\n")
 
 
 def export_event_study_plots(

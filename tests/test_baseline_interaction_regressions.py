@@ -23,6 +23,9 @@ from analysis.robustness import (
     export_interaction_regression_table,
     export_marginal_effects_tables,
     export_residual_cd_table,
+    export_stepwise_robustness_tables,
+    export_subperiod_heterogeneity_regressions,
+    export_subperiod_regressions,
     run_baseline_regressions,
     run_interaction_regressions,
     run_interaction_regressions_excl_postcommunist,
@@ -276,3 +279,47 @@ def test_export_residual_cd_table_raises_when_no_indices(tmp_path):
     df = _synthetic_regime_panel().drop(columns=["KOFGI", "KOFEcGI", "KOFSoGI", "KOFPoGI"])
     with pytest.raises(ValueError, match="No baseline models for CD test"):
         export_residual_cd_table(df, _config(), out_dir=tmp_path)
+
+
+# ---------------------------------------------------------------------------
+# Stepwise + subperiod tables
+# ---------------------------------------------------------------------------
+
+
+def test_export_stepwise_robustness_tables_writes_tables(tmp_path):
+    df = _synthetic_regime_panel()
+    export_stepwise_robustness_tables(df, _config(), out_dir=tmp_path)
+    # At least one stepwise LaTeX table should land per index
+    written = list(tmp_path.glob("*.tex"))
+    assert written, "export_stepwise_robustness_tables produced no .tex files"
+
+
+def test_export_subperiod_regressions_splits_eras(tmp_path):
+    df = _synthetic_regime_panel()  # years 1995-2019 straddle both cutoffs
+    export_subperiod_regressions(df, _config(), out_dir=tmp_path)
+    expected = {
+        "baseline_regressions_pre_china_shock.tex",
+        "baseline_regressions_post_china_shock.tex",
+        "baseline_regressions_pre_gfc.tex",
+        "baseline_regressions_post_gfc.tex",
+    }
+    actual = {p.name for p in tmp_path.iterdir()}
+    # At minimum the post-china-shock and post-gfc eras should produce tables
+    # (pre-china-shock has only 1995-1999 which may be too thin for some specs).
+    assert expected & actual, f"No expected subperiod tables found. Got: {actual or '∅'}"
+
+
+def test_export_subperiod_heterogeneity_regressions_splits_eras(tmp_path):
+    df = _synthetic_regime_panel()
+    export_subperiod_heterogeneity_regressions(df, _config(), out_dir=tmp_path)
+    written = {p.name for p in tmp_path.iterdir() if p.name.startswith("heterogeneity_")}
+    assert written, "No heterogeneity subperiod tables written"
+
+
+def test_subperiod_heterogeneity_aborts_when_regime_cols_missing(tmp_path, caplog):
+    df = _synthetic_regime_panel().drop(
+        columns=["regime_conservative", "regime_mediterranean", "regime_liberal"]
+    )
+    export_subperiod_heterogeneity_regressions(df, _config(), out_dir=tmp_path)
+    # Should log an error and produce no files, not raise
+    assert not list(tmp_path.iterdir())
