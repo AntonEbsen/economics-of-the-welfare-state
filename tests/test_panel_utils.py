@@ -67,6 +67,19 @@ def test_create_lags(balanced_panel):
     assert usa_data.iloc[1]["gdp_lag1"] == pytest.approx(usa_data.iloc[0]["gdp"], rel=0.01)
 
 
+def test_create_lags_strict_raises_on_missing(balanced_panel):
+    """create_lags should raise when requested variables are absent by default."""
+    with pytest.raises(ValueError, match="not in DataFrame"):
+        create_lags(balanced_panel, ["gdp", "does_not_exist"], lags=[1])
+
+
+def test_create_lags_non_strict_skips_missing(balanced_panel):
+    """strict=False restores the old silent-skip behavior for opt-in callers."""
+    result = create_lags(balanced_panel, ["gdp", "does_not_exist"], lags=[1], strict=False)
+    assert "gdp_lag1" in result.columns
+    assert "does_not_exist_lag1" not in result.columns
+
+
 def test_create_differences(balanced_panel):
     """Test first difference creation."""
     result = create_differences(balanced_panel, ["gdp"])

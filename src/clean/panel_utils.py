@@ -72,6 +72,7 @@ def create_lags(
     lags: list[int] = [1],
     id_var: str = "iso3",
     time_var: str = "year",
+    strict: bool = True,
 ) -> pd.DataFrame:
     """
     Create lagged variables for panel data.
@@ -82,6 +83,10 @@ def create_lags(
         lags: List of lag periods (default: [1])
         id_var: Panel identifier
         time_var: Time identifier
+        strict: When True (default), raise ValueError if any requested variable
+            is missing from ``df``. Silent-skip in prior versions masked config
+            typos and upstream schema drift — both produce regressions that run
+            without the intended regressor.
 
     Returns:
         DataFrame with lagged variables added
@@ -91,16 +96,23 @@ def create_lags(
         >>> df_with_lags = create_lags(master, ['ln_gdppc'], lags=[1, 2])
         >>> # Creates: ln_gdppc_lag1, ln_gdppc_lag2
     """
+    missing = [v for v in variables if v not in df.columns]
+    if missing:
+        if strict:
+            raise ValueError(
+                f"create_lags: variables not in DataFrame: {missing}. "
+                f"Pass strict=False to silently skip."
+            )
+        logger.warning("create_lags: variables not found, skipping: %s", missing)
+
     result = df.copy()
 
     # Sort by id and time
     result = result.sort_values([id_var, time_var])
 
     for var in variables:
-        if var not in df.columns:
-            logger.info(f"⚠️  Warning: Variable '{var}' not found, skipping")
+        if var in missing:
             continue
-
         for lag in lags:
             lag_col = f"{var}_lag{lag}"
             result[lag_col] = result.groupby(id_var)[var].shift(lag)
