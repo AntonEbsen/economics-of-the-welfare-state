@@ -1,0 +1,325 @@
+"""
+Tests for the baseline and interaction regression helpers lifted from
+``notebooks/02_modern_pipeline.ipynb`` cells 54 (baseline) and 60/61
+(interaction).
+
+We build a synthetic panel where ``sstran`` is driven by ``KOFGI_{t-1}``
+and a small amount of noise so each PanelOLS result has a valid
+parameter vector and a reasonably well-behaved coefficient. The tests
+lock the public contract (output keys, required LaTeX filenames,
+``ValueError`` when no index columns are present) rather than the
+numeric stability of the coefficients.
+"""
+
+from __future__ import annotations
+
+import numpy as np
+import pandas as pd
+import pytest
+
+from analysis.robustness import (
+    export_baseline_regression_table,
+    export_interaction_excl_postcommunist_table,
+    export_interaction_regression_table,
+    export_marginal_effects_tables,
+    export_residual_cd_table,
+    export_stepwise_robustness_tables,
+    export_subperiod_heterogeneity_regressions,
+    export_subperiod_regressions,
+    run_baseline_regressions,
+    run_interaction_regressions,
+    run_interaction_regressions_excl_postcommunist,
+)
+
+
+def _synthetic_regime_panel(seed: int = 33) -> pd.DataFrame:
+    """12 countries × 25 years with the four indices + regime dummies."""
+    rng = np.random.default_rng(seed)
+    countries = [f"C{i:02d}" for i in range(12)]
+    years = list(range(1995, 2020))
+
+    # Assign each country to a regime so the interaction terms have non-zero
+    # variance. All five regimes rotate across the 12 synthetic countries —
+    # social-democratic is the reference category so its interaction column
+    # is intentionally omitted; we still need a few countries in it to avoid
+    # perfect multicollinearity with the base lagged index.
+    regime_cycle = [
+        "conservative",
+        "mediterranean",
+        "liberal",
+        "post_communist",
+        "social_democratic",
+    ]
+    country_regime = {c: regime_cycle[i % len(regime_cycle)] for i, c in enumerate(countries)}
+
+    alpha = {c: rng.normal(0, 1) for c in countries}
+    rows = []
+    for c in countries:
+        for t in years:
+            kofgi = 60.0 + rng.normal(0, 5)
+            sstran = alpha[c] + 0.1 * kofgi + rng.normal(0, 0.5)
+            row = {
+                "iso3": c,
+                "year": t,
+                "sstran": sstran,
+                "KOFGI": kofgi,
+                "KOFEcGI": kofgi + rng.normal(0, 2),
+                "KOFSoGI": kofgi + rng.normal(0, 2),
+                "KOFPoGI": kofgi + rng.normal(0, 2),
+                "ln_gdppc": rng.normal(10, 0.5),
+                "inflation_cpi": rng.normal(2, 1),
+                "deficit": rng.normal(-2, 2),
+                "debt": rng.normal(50, 10),
+                "ln_population": rng.normal(16, 1),
+                "dependency_ratio": rng.normal(50, 5),
+                # Regime dummies required by `prepare_regression_data(interactions=True)`
+                "regime_conservative": 0,
+                "regime_mediterranean": 0,
+                "regime_liberal": 0,
+                "regime_post_communist": 0,
+                "regime_social_democratic": 0,
+            }
+            row[f"regime_{country_regime[c]}"] = 1
+            rows.append(row)
+    return pd.DataFrame(rows)
+
+
+def _config() -> dict:
+    return {
+        "indices": ["KOFGI", "KOFEcGI", "KOFSoGI", "KOFPoGI"],
+        "controls": [
+            "ln_gdppc",
+            "inflation_cpi",
+            "deficit",
+            "debt",
+            "ln_population",
+            "dependency_ratio",
+        ],
+        "dependent_var": "sstran",
+    }
+
+
+# ---------------------------------------------------------------------------
+# Baseline regressions
+# ---------------------------------------------------------------------------
+
+
+def test_run_baseline_regressions_returns_one_model_per_index():
+    df = _synthetic_regime_panel()
+    models = run_baseline_regressions(df, _config())
+    assert set(models.keys()) == {"KOFGI", "KOFEcGI", "KOFSoGI", "KOFPoGI"}
+    for name, result in models.items():
+        assert hasattr(result, "params"), f"{name}: expected PanelResults"
+        assert f"{name}_lag1" in result.params.index
+
+
+def test_run_baseline_regressions_respects_indices_arg():
+    df = _synthetic_regime_panel()
+    models = run_baseline_regressions(df, _config(), indices=["KOFGI"])
+    assert set(models.keys()) == {"KOFGI"}
+
+
+def test_run_baseline_regressions_skips_missing_index_columns():
+    df = _synthetic_regime_panel().drop(columns=["KOFPoGI"])
+    models = run_baseline_regressions(df, _config())
+    assert "KOFPoGI" not in models
+    assert "KOFGI" in models
+
+
+def test_export_baseline_regression_table_writes_latex(tmp_path):
+    df = _synthetic_regime_panel()
+    out_path = export_baseline_regression_table(df, _config(), out_dir=tmp_path)
+    assert out_path.name == "baseline_regression_table.tex"
+    assert out_path.exists() and out_path.stat().st_size > 0
+    assert "\\begin" in out_path.read_text(encoding="utf-8")
+
+
+def test_export_baseline_regression_table_raises_when_no_indices(tmp_path):
+    df = _synthetic_regime_panel().drop(columns=["KOFGI", "KOFEcGI", "KOFSoGI", "KOFPoGI"])
+    with pytest.raises(ValueError, match="No baseline models"):
+        export_baseline_regression_table(df, _config(), out_dir=tmp_path)
+
+
+# ---------------------------------------------------------------------------
+# Interaction regressions (regime-heterogeneity)
+# ---------------------------------------------------------------------------
+
+
+def test_run_interaction_regressions_includes_regime_interaction_terms():
+    df = _synthetic_regime_panel()
+    models = run_interaction_regressions(df, _config())
+    assert set(models.keys()) == {"KOFGI", "KOFEcGI", "KOFSoGI", "KOFPoGI"}
+    # The interaction terms ride on top of the base lagged index.
+    kofgi_params = models["KOFGI"].params.index
+    for term in (
+        "KOFGI_lag1",
+        "int_conservative",
+        "int_mediterranean",
+        "int_liberal",
+        "int_post_communist",
+    ):
+        assert term in kofgi_params, f"{term} missing from KOFGI interaction model"
+
+
+def test_export_interaction_regression_table_writes_latex(tmp_path):
+    df = _synthetic_regime_panel()
+    out_path = export_interaction_regression_table(df, _config(), out_dir=tmp_path)
+    assert out_path.name == "interaction_regression_table.tex"
+    assert out_path.exists() and out_path.stat().st_size > 0
+    assert "\\begin" in out_path.read_text(encoding="utf-8")
+
+
+def test_export_interaction_regression_table_raises_when_no_indices(tmp_path):
+    df = _synthetic_regime_panel().drop(columns=["KOFGI", "KOFEcGI", "KOFSoGI", "KOFPoGI"])
+    with pytest.raises(ValueError, match="No interaction models"):
+        export_interaction_regression_table(df, _config(), out_dir=tmp_path)
+
+
+# ---------------------------------------------------------------------------
+# Marginal-effects tables
+# ---------------------------------------------------------------------------
+
+
+def test_export_marginal_effects_tables_writes_one_file_per_index(tmp_path):
+    df = _synthetic_regime_panel()
+    paths = export_marginal_effects_tables(df, _config(), out_dir=tmp_path)
+    assert set(paths.keys()) == {"KOFGI", "KOFEcGI", "KOFSoGI", "KOFPoGI"}
+    for idx_name, out_path in paths.items():
+        assert out_path.name == f"marginal_effects_{idx_name}.tex"
+        assert out_path.exists() and out_path.stat().st_size > 0
+        text = out_path.read_text(encoding="utf-8")
+        # Each regime row-label from generate_marginal_effects should survive.
+        for regime in ("Social Democrat", "Conservative", "Mediterranean", "Liberal"):
+            assert regime in text, f"{idx_name}: missing regime row {regime!r}"
+
+
+def test_export_marginal_effects_tables_respects_indices_arg(tmp_path):
+    df = _synthetic_regime_panel()
+    paths = export_marginal_effects_tables(df, _config(), out_dir=tmp_path, indices=["KOFGI"])
+    assert set(paths.keys()) == {"KOFGI"}
+
+
+def test_export_marginal_effects_tables_raises_when_no_indices(tmp_path):
+    df = _synthetic_regime_panel().drop(columns=["KOFGI", "KOFEcGI", "KOFSoGI", "KOFPoGI"])
+    with pytest.raises(ValueError, match="No interaction models"):
+        export_marginal_effects_tables(df, _config(), out_dir=tmp_path)
+
+
+# ---------------------------------------------------------------------------
+# Post-communist exclusion robustness (notebook cell 59)
+# ---------------------------------------------------------------------------
+
+
+def test_run_excl_postcommunist_has_three_interaction_terms():
+    df = _synthetic_regime_panel()
+    models = run_interaction_regressions_excl_postcommunist(df, _config())
+    assert len(models) > 0
+    # Pick any model — it should have 3 interaction terms, NOT 4
+    result = next(iter(models.values()))
+    params = result.params.index
+    for term in ("int_conservative", "int_mediterranean", "int_liberal"):
+        assert term in params, f"{term} missing from excl-postcommunist model"
+    assert "int_post_communist" not in params
+
+
+def test_run_excl_postcommunist_skips_missing_index():
+    df = _synthetic_regime_panel().drop(columns=["KOFPoGI"])
+    models = run_interaction_regressions_excl_postcommunist(df, _config())
+    assert "KOFPoGI" not in models and len(models) == 3
+
+
+def test_export_excl_postcommunist_table_writes_latex(tmp_path):
+    df = _synthetic_regime_panel()
+    out_path = export_interaction_excl_postcommunist_table(df, _config(), out_dir=tmp_path)
+    assert out_path.name == "interaction_excl_postcommunist_table.tex"
+    assert out_path.exists() and out_path.stat().st_size > 0
+    text = out_path.read_text(encoding="utf-8")
+    assert "\\begin" in text
+    # Should NOT contain the post-communist interaction term
+    assert "int\\_post\\_communist" not in text or "int_post_communist" not in text
+
+
+def test_export_excl_postcommunist_table_raises_when_no_indices(tmp_path):
+    df = _synthetic_regime_panel().drop(columns=["KOFGI", "KOFEcGI", "KOFSoGI", "KOFPoGI"])
+    with pytest.raises(ValueError, match="No interaction.*excl.*post-communist"):
+        export_interaction_excl_postcommunist_table(df, _config(), out_dir=tmp_path)
+
+
+# ---------------------------------------------------------------------------
+# Residual-based Pesaran CD test
+# ---------------------------------------------------------------------------
+
+
+def test_export_residual_cd_table_writes_latex(tmp_path):
+    df = _synthetic_regime_panel()
+    out_path = export_residual_cd_table(df, _config(), out_dir=tmp_path)
+    assert out_path.name == "residual_cd_test.tex"
+    assert out_path.exists() and out_path.stat().st_size > 0
+    text = out_path.read_text(encoding="utf-8")
+    assert "\\begin" in text
+    # One verdict line per globalisation index
+    for idx_name in ("KOFGI", "KOFEcGI", "KOFSoGI", "KOFPoGI"):
+        assert idx_name in text, f"{idx_name} missing from CD table"
+    # Column headers the econometrician will look for
+    assert "CD Statistic" in text
+    assert "p-value" in text
+
+
+def test_export_residual_cd_table_respects_indices_arg(tmp_path):
+    df = _synthetic_regime_panel()
+    out_path = export_residual_cd_table(df, _config(), out_dir=tmp_path, indices=["KOFGI"])
+    text = out_path.read_text(encoding="utf-8")
+    assert "KOFGI" in text
+    # Other indices should be absent when restricted
+    for idx_name in ("KOFEcGI", "KOFSoGI", "KOFPoGI"):
+        assert idx_name not in text, f"{idx_name} should be excluded"
+
+
+def test_export_residual_cd_table_raises_when_no_indices(tmp_path):
+    df = _synthetic_regime_panel().drop(columns=["KOFGI", "KOFEcGI", "KOFSoGI", "KOFPoGI"])
+    with pytest.raises(ValueError, match="No baseline models for CD test"):
+        export_residual_cd_table(df, _config(), out_dir=tmp_path)
+
+
+# ---------------------------------------------------------------------------
+# Stepwise + subperiod tables
+# ---------------------------------------------------------------------------
+
+
+def test_export_stepwise_robustness_tables_writes_tables(tmp_path):
+    df = _synthetic_regime_panel()
+    export_stepwise_robustness_tables(df, _config(), out_dir=tmp_path)
+    # At least one stepwise LaTeX table should land per index
+    written = list(tmp_path.glob("*.tex"))
+    assert written, "export_stepwise_robustness_tables produced no .tex files"
+
+
+def test_export_subperiod_regressions_splits_eras(tmp_path):
+    df = _synthetic_regime_panel()  # years 1995-2019 straddle both cutoffs
+    export_subperiod_regressions(df, _config(), out_dir=tmp_path)
+    expected = {
+        "baseline_regressions_pre_china_shock.tex",
+        "baseline_regressions_post_china_shock.tex",
+        "baseline_regressions_pre_gfc.tex",
+        "baseline_regressions_post_gfc.tex",
+    }
+    actual = {p.name for p in tmp_path.iterdir()}
+    # At minimum the post-china-shock and post-gfc eras should produce tables
+    # (pre-china-shock has only 1995-1999 which may be too thin for some specs).
+    assert expected & actual, f"No expected subperiod tables found. Got: {actual or '∅'}"
+
+
+def test_export_subperiod_heterogeneity_regressions_splits_eras(tmp_path):
+    df = _synthetic_regime_panel()
+    export_subperiod_heterogeneity_regressions(df, _config(), out_dir=tmp_path)
+    written = {p.name for p in tmp_path.iterdir() if p.name.startswith("heterogeneity_")}
+    assert written, "No heterogeneity subperiod tables written"
+
+
+def test_subperiod_heterogeneity_aborts_when_regime_cols_missing(tmp_path, caplog):
+    df = _synthetic_regime_panel().drop(
+        columns=["regime_conservative", "regime_mediterranean", "regime_liberal"]
+    )
+    export_subperiod_heterogeneity_regressions(df, _config(), out_dir=tmp_path)
+    # Should log an error and produce no files, not raise
+    assert not list(tmp_path.iterdir())

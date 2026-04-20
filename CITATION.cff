@@ -1,0 +1,24 @@
+cff-version: 1.2.0
+message: "If you use this software or the accompanying analysis, please cite it as below."
+title: "Economics of the Welfare State: Globalization and Social Security Transfers in OECD Countries"
+abstract: >-
+  Empirical analysis of how globalization affects social security spending
+  across OECD welfare states, using panel data from 1980-2022 with two-way
+  fixed effects regressions. Uses the KOF Globalization Index and the
+  Comparative Political Data Set (CPDS).
+type: software
+authors:
+  - family-names: Ebsen
+    given-names: Anton
+version: 0.3.0
+license: MIT
+repository-code: "https://github.com/AntonEbsen/economics-of-the-welfare-state"
+url: "https://github.com/AntonEbsen/economics-of-the-welfare-state"
+keywords:
+  - economics
+  - welfare-state
+  - globalization
+  - panel-data
+  - econometrics
+  - OECD
+  - fixed-effects

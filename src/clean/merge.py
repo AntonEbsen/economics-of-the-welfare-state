@@ -4,9 +4,12 @@ Data merging utilities for combining processed datasets.
 
 from __future__ import annotations
 
+import logging
 from typing import Literal
 
 import pandas as pd
+
+logger = logging.getLogger(__name__)
 
 
 def merge_all_datasets(
@@ -50,7 +53,7 @@ def merge_all_datasets(
     if "country" in master.columns:
         master = master.drop(columns=["country"])
 
-    print(f"Starting merge with {first_key}: {len(master)} rows")
+    logger.info("Starting merge with %s: %d rows", first_key, len(master))
 
     # Merge each subsequent dataset
     for name in dataset_order:
@@ -62,14 +65,19 @@ def merge_all_datasets(
                 other_df = other_df.drop(columns=["country"])
 
             master = master.merge(other_df, on=["iso3", "year"], how=how, validate=validate)
-            print(f"Merged {name}: {before_rows} → {len(master)} rows")
+            logger.info("Merged %s: %d → %d rows", name, before_rows, len(master))
 
     # Sort by iso3 and year
     master = master.sort_values(["iso3", "year"]).reset_index(drop=True)
 
-    print(f"\n✅ Final merged dataset: {len(master)} rows, {len(master.columns)} columns")
-    print(f"   Countries: {master['iso3'].nunique()}")
-    print(f"   Years: {master['year'].min()}-{master['year'].max()}")
+    logger.info(
+        "Final merged dataset: %d rows, %d columns, %d countries, %d–%d",
+        len(master),
+        len(master.columns),
+        master["iso3"].nunique(),
+        master["year"].min(),
+        master["year"].max(),
+    )
 
     return master
 
@@ -130,18 +138,18 @@ def save_master_dataset(
         path = output_path.with_suffix(".parquet")
         master_df.to_parquet(path, index=False)
         saved_files["parquet"] = str(path)
-        print(f"✅ Saved: {path}")
+        logger.info("Saved: %s", path)
 
     if "csv" in formats:
         path = output_path.with_suffix(".csv")
         master_df.to_csv(path, index=False)
         saved_files["csv"] = str(path)
-        print(f"✅ Saved: {path}")
+        logger.info("Saved: %s", path)
 
     if "stata" in formats:
         path = output_path.with_suffix(".dta")
         master_df.to_stata(path, write_index=False)
         saved_files["stata"] = str(path)
-        print(f"✅ Saved: {path}")
+        logger.info("Saved: %s", path)
 
     return saved_files

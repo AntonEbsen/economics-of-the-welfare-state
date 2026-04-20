@@ -9,13 +9,19 @@ from pathlib import Path
 
 import numpy as np
 import pandas as pd
-from clean.panel_utils import create_lags
-from clean.utils import load_config
+import statsmodels.api as sm
 from linearmodels.panel import PanelOLS, RandomEffects
 from scipy import stats
 from statsmodels.stats.diagnostic import acorr_ljungbox
 
-from analysis.regression_utils import LATEX_LABEL_MAP, prepare_regression_data, run_panel_ols
+from analysis.regression_utils import (
+    LATEX_LABEL_MAP,
+    prepare_regression_data,
+    run_panel_ols,
+    significance_stars,
+)
+from clean.panel_utils import create_lags
+from clean.utils import load_config
 
 logger = logging.getLogger(__name__)
 
@@ -99,8 +105,6 @@ def export_all_web_data(master: pd.DataFrame, config: dict, out_dir: str | Path)
         res = final_models[idx]
 
         # Hausman
-        import statsmodels.api as sm
-
         exog = sm.add_constant(ols_data[exog_vars])
         fe = PanelOLS(ols_data[dep_var], exog, entity_effects=True).fit(cov_type="unadjusted")
         re = RandomEffects(ols_data[dep_var], exog).fit(cov_type="unadjusted")
@@ -194,9 +198,7 @@ def export_all_web_data(master: pd.DataFrame, config: dict, out_dir: str | Path)
 
             # Reduced model without the target variable
             reduced_exog = [v for v in exog_vars if v != var]
-            from statsmodels.api import add_constant
-
-            reduced_X = add_constant(ols_data[reduced_exog])
+            reduced_X = sm.add_constant(ols_data[reduced_exog])
             reduced_X = reduced_X.loc[:, ~reduced_X.columns.duplicated()]
 
             try:
@@ -235,9 +237,7 @@ def export_all_web_data(master: pd.DataFrame, config: dict, out_dir: str | Path)
 
     for idx, (ols_data, exog_vars) in final_model_data.items():
         # Re-run models to get both SE types
-        from statsmodels.api import add_constant
-
-        X = add_constant(ols_data[exog_vars])
+        X = sm.add_constant(ols_data[exog_vars])
         X = X.loc[:, ~X.columns.duplicated()]
 
         mod = PanelOLS(ols_data[dep_var], X, entity_effects=True)
@@ -265,12 +265,12 @@ def export_all_web_data(master: pd.DataFrame, config: dict, out_dir: str | Path)
                     "clustered": {
                         "se": round(float(res_clust.std_errors[var]), 4),
                         "pval": round(float(res_clust.pvalues[var]), 4),
-                        "stars": _get_stars(res_clust.pvalues[var]),
+                        "stars": significance_stars(res_clust.pvalues[var]),
                     },
                     "dk": {
                         "se": round(float(res_dk.std_errors[var]), 4),
                         "pval": round(float(res_dk.pvalues[var]), 4),
-                        "stars": _get_stars(res_dk.pvalues[var]),
+                        "stars": significance_stars(res_dk.pvalues[var]),
                     },
                 }
             )
@@ -322,16 +322,6 @@ def export_all_web_data(master: pd.DataFrame, config: dict, out_dir: str | Path)
         json.dump(profiles, f, indent=2)
 
     logger.info(f"✅ Web data sync complete! Files saved to {out_dir}")
-
-
-def _get_stars(pval):
-    if pval < 0.01:
-        return "***"
-    if pval < 0.05:
-        return "**"
-    if pval < 0.10:
-        return "*"
-    return ""
 
 
 if __name__ == "__main__":

@@ -155,16 +155,40 @@ const base = import.meta.env.BASE_URL;
 	<script is:inline src="https://cdn.plot.ly/plotly-2.27.0.min.js"></script>
 
 	<script is:inline define:vars={{ base }}>
+		function showFetchError(message) {
+			const ids = ['diagnostics-list', 'plotly-chart', 'importance-chart'];
+			for (const id of ids) {
+				const el = document.getElementById(id);
+				if (el) {
+					el.innerHTML = `<div class="fetch-error" role="alert">⚠️ ${message}</div>`;
+				}
+			}
+		}
+
+		async function fetchJson(url) {
+			const res = await fetch(url);
+			if (!res.ok) {
+				throw new Error(`${url}: ${res.status} ${res.statusText}`);
+			}
+			return res.json();
+		}
+
 		async function init() {
-			const specRes = await fetch(`${base}/data/spec_curves.json`);
-			const diagRes = await fetch(`${base}/data/diagnostics.json`);
-			const simRes = await fetch(`${base}/data/simulator.json`);
-			const impRes = await fetch(`${base}/data/importance.json`);
-			
-			const specData = await specRes.json();
-			const diagData = await diagRes.json();
-			const simData = await simRes.json();
-			const impData = await impRes.json();
+			let specData, diagData, simData, impData;
+			try {
+				[specData, diagData, simData, impData] = await Promise.all([
+					fetchJson(`${base}/data/spec_curves.json`),
+					fetchJson(`${base}/data/diagnostics.json`),
+					fetchJson(`${base}/data/simulator.json`),
+					fetchJson(`${base}/data/importance.json`),
+				]);
+			} catch (err) {
+				console.error('Failed to load analysis data:', err);
+				showFetchError(
+					'Could not load analysis data. Run <code>econ-clean analyze</code> to regenerate the JSON fixtures, then refresh.'
+				);
+				return;
+			}
 
 			const select = document.getElementById('index-select');
 			const diagList = document.getElementById('diagnostics-list');
@@ -594,6 +618,23 @@ const base = import.meta.env.BASE_URL;
 		margin-top: 1rem;
 		color: var(--text-muted);
 		text-align: center;
+	}
+
+	.fetch-error {
+		padding: 1.5rem;
+		background: rgba(239, 68, 68, 0.08);
+		border: 1px solid rgba(239, 68, 68, 0.25);
+		border-radius: 8px;
+		color: #fca5a5;
+		font-size: 0.9rem;
+		line-height: 1.5;
+	}
+	.fetch-error code {
+		background: rgba(0, 0, 0, 0.3);
+		padding: 0.1rem 0.35rem;
+		border-radius: 4px;
+		font-family: monospace;
+		color: #fde68a;
 	}
 
 	/* Tooltip */
