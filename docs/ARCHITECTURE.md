@@ -75,7 +75,7 @@ country-year panel.
 | Module | Responsibility |
 |---|---|
 | `regression_utils.py` | `run_panel_ols`, `run_hausman_test`, `run_event_study`, `run_placebo_test`, `prepare_regression_data`, `LATEX_LABEL_MAP` |
-| `robustness.py` | baseline + regime-interaction tables, per-regime marginal-effects tables, post-communist exclusion robustness, stepwise specs, subperiod splits, heterogeneity by welfare regime, feedback (reverse-causality) regressions, KOF sub-component regressions |
+| `robustness.py` | baseline + regime-interaction tables, per-regime marginal-effects tables (with proper linear-combination SEs), post-communist exclusion robustness, stepwise specs, subperiod splits, heterogeneity by welfare regime, feedback (reverse-causality) regressions, KOF sub-component regressions, residual-based Pesaran CD test |
 | `correlations.py` | lagged-variable correlation matrix with significance stars (CSV + LaTeX export) |
 | `trend_plots.py` | cross-country mean time-series figures (sstran + KOF indices) as PNG + PDF |
 | `export_web_data.py` | JSON/CSV fixtures consumed by the Astro front-end in `web/` |
@@ -89,7 +89,7 @@ country-year panel.
 | `dashboard.py` | Streamlit data-quality dashboard (optional; not in CI) |
 | `config.py` | pydantic settings wrapper around `config.yaml` |
 
-### `tests/` — 109 tests
+### `tests/` — 112 tests
 
 - `test_constants.py` — ISO3 coverage and year-range sanity
 - `test_merge.py` — outer-join shape and column carry-through

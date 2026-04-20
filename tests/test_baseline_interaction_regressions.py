@@ -22,6 +22,7 @@ from analysis.robustness import (
     export_interaction_excl_postcommunist_table,
     export_interaction_regression_table,
     export_marginal_effects_tables,
+    export_residual_cd_table,
     run_baseline_regressions,
     run_interaction_regressions,
     run_interaction_regressions_excl_postcommunist,
@@ -239,3 +240,39 @@ def test_export_excl_postcommunist_table_raises_when_no_indices(tmp_path):
     df = _synthetic_regime_panel().drop(columns=["KOFGI", "KOFEcGI", "KOFSoGI", "KOFPoGI"])
     with pytest.raises(ValueError, match="No interaction.*excl.*post-communist"):
         export_interaction_excl_postcommunist_table(df, _config(), out_dir=tmp_path)
+
+
+# ---------------------------------------------------------------------------
+# Residual-based Pesaran CD test
+# ---------------------------------------------------------------------------
+
+
+def test_export_residual_cd_table_writes_latex(tmp_path):
+    df = _synthetic_regime_panel()
+    out_path = export_residual_cd_table(df, _config(), out_dir=tmp_path)
+    assert out_path.name == "residual_cd_test.tex"
+    assert out_path.exists() and out_path.stat().st_size > 0
+    text = out_path.read_text(encoding="utf-8")
+    assert "\\begin" in text
+    # One verdict line per globalisation index
+    for idx_name in ("KOFGI", "KOFEcGI", "KOFSoGI", "KOFPoGI"):
+        assert idx_name in text, f"{idx_name} missing from CD table"
+    # Column headers the econometrician will look for
+    assert "CD Statistic" in text
+    assert "p-value" in text
+
+
+def test_export_residual_cd_table_respects_indices_arg(tmp_path):
+    df = _synthetic_regime_panel()
+    out_path = export_residual_cd_table(df, _config(), out_dir=tmp_path, indices=["KOFGI"])
+    text = out_path.read_text(encoding="utf-8")
+    assert "KOFGI" in text
+    # Other indices should be absent when restricted
+    for idx_name in ("KOFEcGI", "KOFSoGI", "KOFPoGI"):
+        assert idx_name not in text, f"{idx_name} should be excluded"
+
+
+def test_export_residual_cd_table_raises_when_no_indices(tmp_path):
+    df = _synthetic_regime_panel().drop(columns=["KOFGI", "KOFEcGI", "KOFSoGI", "KOFPoGI"])
+    with pytest.raises(ValueError, match="No baseline models for CD test"):
+        export_residual_cd_table(df, _config(), out_dir=tmp_path)

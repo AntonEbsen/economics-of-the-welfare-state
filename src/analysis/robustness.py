@@ -1022,3 +1022,79 @@ def export_interaction_excl_postcommunist_table(
         fh.write(latex_str)
     logger.info(f"✅ Interaction (excl. post-communist) table saved to: {out_path}")
     return out_path
+
+
+# ---------------------------------------------------------------------------
+# Residual-based Pesaran CD test (post-estimation diagnostic)
+# ---------------------------------------------------------------------------
+
+
+def export_residual_cd_table(
+    master_regimes: pd.DataFrame,
+    config: dict,
+    out_dir: str | Path | None = None,
+    indices: list[str] | None = None,
+) -> Path:
+    """Run the Pesaran CD test on baseline residuals and export LaTeX.
+
+    Two-way clustered SEs (the project default) handle *weak* cross-
+    sectional dependence but become inconsistent under *strong* CSD —
+    i.e. common shocks that hit many countries simultaneously (oil
+    shocks, 2008 financial crisis, COVID-19). The Pesaran (2004) CD
+    test on the regression residuals diagnoses whether this matters:
+
+        H0: E[ε_{it} · ε_{jt}] = 0  for all i ≠ j
+
+    Rejecting H0 indicates that Driscoll-Kraay standard errors (or a
+    factor-augmented model) would be a more conservative choice. We
+    run the test per globalisation index on the *baseline* (no
+    interactions) specification, which is the cleanest residual series.
+
+    Writes ``outputs/tables/residual_cd_test.tex``.
+    """
+    from clean.tests import test_pesaran_cd
+
+    if out_dir is None:
+        out_dir = Path(__file__).resolve().parent.parent.parent / "outputs" / "tables"
+    else:
+        out_dir = Path(out_dir)
+    out_dir.mkdir(parents=True, exist_ok=True)
+
+    models = run_baseline_regressions(master_regimes, config, indices=indices)
+    if not models:
+        raise ValueError("No baseline models for CD test — check that index columns exist.")
+
+    rows = []
+    for idx_name, result in models.items():
+        # linearmodels exposes resids with (iso3, year) MultiIndex
+        residuals = result.resids.reset_index()
+        residuals.columns = ["iso3", "year", "resid"]
+        cd_stat, p_value = test_pesaran_cd(residuals, var="resid")
+        rows.append(
+            {
+                "Index": idx_name,
+                "CD Statistic": round(cd_stat, 4) if not np.isnan(cd_stat) else np.nan,
+                "p-value": round(p_value, 4) if not np.isnan(p_value) else np.nan,
+                "Verdict": (
+                    "Reject H₀ → CSD present"
+                    if not np.isnan(p_value) and p_value < 0.05
+                    else "Fail to reject H₀"
+                ),
+            }
+        )
+
+    cd_df = pd.DataFrame(rows)
+    latex_str = cd_df.to_latex(
+        index=False,
+        caption="Pesaran (2004) Cross-Sectional Dependence Test on Baseline Residuals",
+        label="tab:residual_cd_test",
+        column_format="lccl",
+        position="htbp",
+        escape=False,
+    )
+
+    out_path = out_dir / "residual_cd_test.tex"
+    with open(out_path, "w", encoding="utf-8") as fh:
+        fh.write(latex_str)
+    logger.info(f"✅ Residual CD test table saved to: {out_path}")
+    return out_path
