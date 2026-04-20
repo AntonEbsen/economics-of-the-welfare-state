@@ -9,6 +9,7 @@ from pathlib import Path
 
 import numpy as np
 import pandas as pd
+import statsmodels.api as sm
 from linearmodels.panel import PanelOLS, RandomEffects
 from scipy import stats
 from statsmodels.stats.diagnostic import acorr_ljungbox
@@ -104,8 +105,6 @@ def export_all_web_data(master: pd.DataFrame, config: dict, out_dir: str | Path)
         res = final_models[idx]
 
         # Hausman
-        import statsmodels.api as sm
-
         exog = sm.add_constant(ols_data[exog_vars])
         fe = PanelOLS(ols_data[dep_var], exog, entity_effects=True).fit(cov_type="unadjusted")
         re = RandomEffects(ols_data[dep_var], exog).fit(cov_type="unadjusted")
@@ -199,9 +198,7 @@ def export_all_web_data(master: pd.DataFrame, config: dict, out_dir: str | Path)
 
             # Reduced model without the target variable
             reduced_exog = [v for v in exog_vars if v != var]
-            from statsmodels.api import add_constant
-
-            reduced_X = add_constant(ols_data[reduced_exog])
+            reduced_X = sm.add_constant(ols_data[reduced_exog])
             reduced_X = reduced_X.loc[:, ~reduced_X.columns.duplicated()]
 
             try:
@@ -240,9 +237,7 @@ def export_all_web_data(master: pd.DataFrame, config: dict, out_dir: str | Path)
 
     for idx, (ols_data, exog_vars) in final_model_data.items():
         # Re-run models to get both SE types
-        from statsmodels.api import add_constant
-
-        X = add_constant(ols_data[exog_vars])
+        X = sm.add_constant(ols_data[exog_vars])
         X = X.loc[:, ~X.columns.duplicated()]
 
         mod = PanelOLS(ols_data[dep_var], X, entity_effects=True)
