@@ -140,6 +140,7 @@ def analyze(
         export_subcomponent_regression_table,
         export_subperiod_heterogeneity_regressions,
         export_subperiod_regressions,
+        export_subperiod_se_comparison_tables,
     )
     from analysis.trend_plots import plot_kof_trend, plot_sstran_trend
     from clean.panel_utils import add_welfare_regimes
@@ -172,6 +173,7 @@ def analyze(
     export_feedback_regression_table(panel, config, out_dir=tables_dir)
     export_residual_cd_table(panel, config, out_dir=tables_dir)
     export_se_comparison_table(panel, config, out_dir=tables_dir)
+    export_subperiod_se_comparison_tables(panel, config, out_dir=tables_dir)
     export_correlation_matrix(panel, tables_dir)
     try:
         export_subcomponent_regression_table(panel, config, out_dir=tables_dir)

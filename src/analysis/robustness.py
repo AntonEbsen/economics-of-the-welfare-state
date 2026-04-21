@@ -1095,6 +1095,45 @@ def export_residual_cd_table(
     return out_path
 
 
+def _se_comparison_row(
+    data: pd.DataFrame,
+    idx_name: str,
+    ctrl_vars: list[str],
+    dep_var: str,
+) -> dict | None:
+    """Refit the baseline spec three ways and return one row for the SE table.
+
+    Expects ``data`` to already contain lagged columns (``{v}_lag1``) for
+    the index and each control. Returns ``None`` when the PanelOLS fit
+    drops to an empty sample — caller decides how to surface that.
+    """
+    indep_var = f"{idx_name}_lag1"
+    lagged_ctrls = [f"{v}_lag1" for v in ctrl_vars]
+    ols_data, exog_vars = prepare_regression_data(
+        data, dep_var, indep_var, lagged_ctrls, interactions=False
+    )
+    if len(ols_data) < len(exog_vars) + 10:
+        return None
+
+    one_way = run_panel_ols(ols_data, dep_var, exog_vars, cluster_entity=True, cluster_time=False)
+    two_way = run_panel_ols(ols_data, dep_var, exog_vars, cluster_entity=True, cluster_time=True)
+    dk = run_panel_ols(ols_data, dep_var, exog_vars, cov_type="kernel")
+
+    row = {"Index": idx_name, "N": int(one_way.nobs)}
+    for label, res in [
+        ("One-way entity", one_way),
+        ("Two-way", two_way),
+        ("Driscoll-Kraay", dk),
+    ]:
+        coef = float(res.params[indep_var])
+        se = float(res.std_errors[indep_var])
+        pval = float(res.pvalues[indep_var])
+        row[f"{label} coef"] = f"{coef:.4f}{significance_stars(pval)}"
+        row[f"{label} SE"] = f"({se:.4f})"
+        row[f"{label} p"] = round(pval, 4)
+    return row
+
+
 def export_se_comparison_table(
     master_regimes: pd.DataFrame,
     config: dict,
@@ -1139,36 +1178,10 @@ def export_se_comparison_table(
         if idx_name not in master_regimes.columns:
             logger.warning("Index %s not in master panel; skipping.", idx_name)
             continue
-
-        all_needed_vars = [idx_name] + ctrl_vars
-        reg_data = create_lags(master_regimes, all_needed_vars, lags=[1])
-        indep_var = f"{idx_name}_lag1"
-        lagged_ctrls = [f"{v}_lag1" for v in ctrl_vars]
-        ols_data, exog_vars = prepare_regression_data(
-            reg_data, dep_var, indep_var, lagged_ctrls, interactions=False
-        )
-
-        one_way = run_panel_ols(
-            ols_data, dep_var, exog_vars, cluster_entity=True, cluster_time=False
-        )
-        two_way = run_panel_ols(
-            ols_data, dep_var, exog_vars, cluster_entity=True, cluster_time=True
-        )
-        dk = run_panel_ols(ols_data, dep_var, exog_vars, cov_type="kernel")
-
-        row = {"Index": idx_name, "N": int(one_way.nobs)}
-        for label, res in [
-            ("One-way entity", one_way),
-            ("Two-way", two_way),
-            ("Driscoll-Kraay", dk),
-        ]:
-            coef = float(res.params[indep_var])
-            se = float(res.std_errors[indep_var])
-            pval = float(res.pvalues[indep_var])
-            row[f"{label} coef"] = f"{coef:.4f}{significance_stars(pval)}"
-            row[f"{label} SE"] = f"({se:.4f})"
-            row[f"{label} p"] = round(pval, 4)
-        rows.append(row)
+        reg_data = create_lags(master_regimes, [idx_name] + ctrl_vars, lags=[1])
+        row = _se_comparison_row(reg_data, idx_name, ctrl_vars, dep_var)
+        if row is not None:
+            rows.append(row)
 
     if not rows:
         raise ValueError("No indices found in panel — cannot build SE comparison table.")
@@ -1193,3 +1206,98 @@ def export_se_comparison_table(
         fh.write(latex_str)
     logger.info(f"✅ SE comparison table saved to: {out_path}")
     return out_path
+
+
+SE_COMPARISON_SUBPERIODS: dict[str, tuple[int, int]] = {
+    "pre_china_shock": (1980, 1999),
+    "post_china_shock": (2000, 2023),
+    "pre_gfc": (1980, 2007),
+    "post_gfc": (2008, 2023),
+}
+
+
+def export_subperiod_se_comparison_tables(
+    master_regimes: pd.DataFrame,
+    config: dict,
+    out_dir: str | Path | None = None,
+    indices: list[str] | None = None,
+) -> dict[str, Path]:
+    """Per-era SE sensitivity: one-way entity vs two-way vs Driscoll-Kraay.
+
+    Same idea as :func:`export_se_comparison_table` but repeated for each of
+    the four subperiods used elsewhere in the project
+    (pre/post China shock, pre/post GFC). Writes one LaTeX table per era:
+
+    ``outputs/tables/se_comparison_{period}.tex``.
+
+    This matters because papers that split on the China shock or the GFC
+    almost always keep one-way entity clustering even though the shorter
+    post-break samples are exactly where residual cross-sectional
+    dependence bites hardest (fewer years to average out common shocks).
+    The table lets a reviewer see whether a subperiod result that looks
+    significant under the literature's SE convention survives Driscoll-
+    Kraay.
+
+    Returns a mapping ``{period_name: output_path}`` for every era that
+    produced at least one fit.
+    """
+    if out_dir is None:
+        out_dir = Path(__file__).resolve().parent.parent.parent / "outputs" / "tables"
+    else:
+        out_dir = Path(out_dir)
+    out_dir.mkdir(parents=True, exist_ok=True)
+
+    if indices is None:
+        indices = config.get("indices", ["KOFGI", "KOFEcGI", "KOFSoGI", "KOFPoGI"])
+    ctrl_vars = config.get(
+        "controls",
+        ["ln_gdppc", "inflation_cpi", "deficit", "debt", "ln_population", "dependency_ratio"],
+    )
+    dep_var = config.get("dependent_var", "sstran")
+
+    valid_indices = [i for i in indices if i in master_regimes.columns]
+    if not valid_indices:
+        raise ValueError("No indices found in panel — cannot build subperiod SE tables.")
+
+    written: dict[str, Path] = {}
+    for period_name, (start_year, end_year) in SE_COMPARISON_SUBPERIODS.items():
+        rows = []
+        for idx_name in valid_indices:
+            # Lag on the full panel, *then* filter by year so the earliest
+            # year in the subperiod still has a valid lag.
+            reg_data = create_lags(master_regimes, [idx_name] + ctrl_vars, lags=[1])
+            if "year" not in reg_data.columns:
+                logger.warning("year column missing; cannot slice subperiod %s", period_name)
+                continue
+            period_data = reg_data[
+                (reg_data["year"] >= start_year) & (reg_data["year"] <= end_year)
+            ].copy()
+            row = _se_comparison_row(period_data, idx_name, ctrl_vars, dep_var)
+            if row is not None:
+                rows.append(row)
+
+        if not rows:
+            logger.warning("Subperiod %s produced no fits; skipping.", period_name)
+            continue
+
+        se_df = pd.DataFrame(rows)
+        pretty = period_name.replace("_", " ").title()
+        latex_str = se_df.to_latex(
+            index=False,
+            caption=(
+                f"SE sensitivity in subperiod {pretty} ({start_year}--{end_year}): "
+                "one-way entity clustering vs. two-way clustering vs. Driscoll-Kraay. "
+                "Stars: *** p<0.01, ** p<0.05, * p<0.10."
+            ),
+            label=f"tab:se_comparison_{period_name}",
+            column_format="lc" + "ccc" * 3,
+            position="htbp",
+            escape=False,
+        )
+        out_path = out_dir / f"se_comparison_{period_name}.tex"
+        with open(out_path, "w", encoding="utf-8") as fh:
+            fh.write(latex_str)
+        logger.info(f"✅ Subperiod SE comparison ({period_name}) saved to: {out_path}")
+        written[period_name] = out_path
+
+    return written
