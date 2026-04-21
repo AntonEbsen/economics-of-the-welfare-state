@@ -27,6 +27,7 @@ from analysis.robustness import (
     export_stepwise_robustness_tables,
     export_subperiod_heterogeneity_regressions,
     export_subperiod_regressions,
+    export_subperiod_se_comparison_tables,
     run_baseline_regressions,
     run_interaction_regressions,
     run_interaction_regressions_excl_postcommunist,
@@ -316,6 +317,27 @@ def test_export_se_comparison_table_raises_when_no_indices(tmp_path):
     df = _synthetic_regime_panel().drop(columns=["KOFGI", "KOFEcGI", "KOFSoGI", "KOFPoGI"])
     with pytest.raises(ValueError, match="No indices found"):
         export_se_comparison_table(df, _config(), out_dir=tmp_path)
+
+
+def test_export_subperiod_se_comparison_tables_writes_per_era(tmp_path):
+    df = _synthetic_regime_panel()  # years 1995-2019 straddle both cutoffs
+    written = export_subperiod_se_comparison_tables(df, _config(), out_dir=tmp_path)
+    # Post-china-shock (2000-2019) and both GFC halves should always have
+    # enough observations; the pre-china-shock slice (1995-1999) is thin.
+    assert "post_china_shock" in written
+    assert "post_gfc" in written
+    for period, out_path in written.items():
+        assert out_path.name == f"se_comparison_{period}.tex"
+        assert out_path.exists() and out_path.stat().st_size > 0
+        text = out_path.read_text(encoding="utf-8")
+        assert "One-way entity" in text
+        assert "Driscoll-Kraay" in text
+
+
+def test_export_subperiod_se_comparison_tables_raises_when_no_indices(tmp_path):
+    df = _synthetic_regime_panel().drop(columns=["KOFGI", "KOFEcGI", "KOFSoGI", "KOFPoGI"])
+    with pytest.raises(ValueError, match="No indices found"):
+        export_subperiod_se_comparison_tables(df, _config(), out_dir=tmp_path)
 
 
 # ---------------------------------------------------------------------------
