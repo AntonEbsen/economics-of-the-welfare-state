@@ -28,6 +28,7 @@ from .regression_utils import (
     generate_marginal_effects,
     prepare_regression_data,
     run_panel_ols,
+    significance_stars,
 )
 
 logger = logging.getLogger(__name__)
@@ -1091,4 +1092,104 @@ def export_residual_cd_table(
     with open(out_path, "w", encoding="utf-8") as fh:
         fh.write(latex_str)
     logger.info(f"✅ Residual CD test table saved to: {out_path}")
+    return out_path
+
+
+def export_se_comparison_table(
+    master_regimes: pd.DataFrame,
+    config: dict,
+    out_dir: str | Path | None = None,
+    indices: list[str] | None = None,
+) -> Path:
+    """Side-by-side SE sensitivity: one-way entity clustering vs Driscoll-Kraay.
+
+    Papers in the globalisation-vs-welfare-state literature typically cluster
+    standard errors by country only (one-way entity clustering). That handles
+    within-country serial correlation but assumes cross-sectional
+    independence — which the Pesaran CD test on our residuals rejects
+    (see :func:`export_residual_cd_table`). Driscoll-Kraay kernel SEs are
+    robust to both serial correlation and cross-sectional dependence.
+
+    This helper refits the baseline per-index spec three times — once with
+    one-way entity clustering (literature convention), once with two-way
+    clustering (project default), and once with Driscoll-Kraay — and writes
+    a single LaTeX table comparing the coefficient on the lagged
+    globalisation index under each covariance estimator. Only the
+    coefficient on the KOF index is shown because that is the quantity of
+    interest; controls are in the table footer.
+
+    Writes ``outputs/tables/se_comparison.tex``.
+    """
+    if out_dir is None:
+        out_dir = Path(__file__).resolve().parent.parent.parent / "outputs" / "tables"
+    else:
+        out_dir = Path(out_dir)
+    out_dir.mkdir(parents=True, exist_ok=True)
+
+    if indices is None:
+        indices = config.get("indices", ["KOFGI", "KOFEcGI", "KOFSoGI", "KOFPoGI"])
+    ctrl_vars = config.get(
+        "controls",
+        ["ln_gdppc", "inflation_cpi", "deficit", "debt", "ln_population", "dependency_ratio"],
+    )
+    dep_var = config.get("dependent_var", "sstran")
+
+    rows = []
+    for idx_name in indices:
+        if idx_name not in master_regimes.columns:
+            logger.warning("Index %s not in master panel; skipping.", idx_name)
+            continue
+
+        all_needed_vars = [idx_name] + ctrl_vars
+        reg_data = create_lags(master_regimes, all_needed_vars, lags=[1])
+        indep_var = f"{idx_name}_lag1"
+        lagged_ctrls = [f"{v}_lag1" for v in ctrl_vars]
+        ols_data, exog_vars = prepare_regression_data(
+            reg_data, dep_var, indep_var, lagged_ctrls, interactions=False
+        )
+
+        one_way = run_panel_ols(
+            ols_data, dep_var, exog_vars, cluster_entity=True, cluster_time=False
+        )
+        two_way = run_panel_ols(
+            ols_data, dep_var, exog_vars, cluster_entity=True, cluster_time=True
+        )
+        dk = run_panel_ols(ols_data, dep_var, exog_vars, cov_type="kernel")
+
+        row = {"Index": idx_name, "N": int(one_way.nobs)}
+        for label, res in [
+            ("One-way entity", one_way),
+            ("Two-way", two_way),
+            ("Driscoll-Kraay", dk),
+        ]:
+            coef = float(res.params[indep_var])
+            se = float(res.std_errors[indep_var])
+            pval = float(res.pvalues[indep_var])
+            row[f"{label} coef"] = f"{coef:.4f}{significance_stars(pval)}"
+            row[f"{label} SE"] = f"({se:.4f})"
+            row[f"{label} p"] = round(pval, 4)
+        rows.append(row)
+
+    if not rows:
+        raise ValueError("No indices found in panel — cannot build SE comparison table.")
+
+    se_df = pd.DataFrame(rows)
+    latex_str = se_df.to_latex(
+        index=False,
+        caption=(
+            "Sensitivity of the lagged globalisation coefficient to the covariance "
+            "estimator: one-way entity clustering (literature convention) vs. two-way "
+            "clustering (project default) vs. Driscoll-Kraay kernel SEs (robust to CSD). "
+            "Stars follow conventional thresholds (*** p<0.01, ** p<0.05, * p<0.10)."
+        ),
+        label="tab:se_comparison",
+        column_format="lc" + "ccc" * 3,
+        position="htbp",
+        escape=False,
+    )
+
+    out_path = out_dir / "se_comparison.tex"
+    with open(out_path, "w", encoding="utf-8") as fh:
+        fh.write(latex_str)
+    logger.info(f"✅ SE comparison table saved to: {out_path}")
     return out_path

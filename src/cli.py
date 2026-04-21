@@ -135,6 +135,7 @@ def analyze(
         export_interaction_regression_table,
         export_marginal_effects_tables,
         export_residual_cd_table,
+        export_se_comparison_table,
         export_stepwise_robustness_tables,
         export_subcomponent_regression_table,
         export_subperiod_heterogeneity_regressions,
@@ -170,6 +171,7 @@ def analyze(
     export_subperiod_heterogeneity_regressions(panel, config)
     export_feedback_regression_table(panel, config, out_dir=tables_dir)
     export_residual_cd_table(panel, config, out_dir=tables_dir)
+    export_se_comparison_table(panel, config, out_dir=tables_dir)
     export_correlation_matrix(panel, tables_dir)
     try:
         export_subcomponent_regression_table(panel, config, out_dir=tables_dir)
