@@ -23,6 +23,7 @@ from analysis.robustness import (
     export_interaction_regression_table,
     export_marginal_effects_tables,
     export_residual_cd_table,
+    export_se_comparison_table,
     export_stepwise_robustness_tables,
     export_subperiod_heterogeneity_regressions,
     export_subperiod_regressions,
@@ -279,6 +280,42 @@ def test_export_residual_cd_table_raises_when_no_indices(tmp_path):
     df = _synthetic_regime_panel().drop(columns=["KOFGI", "KOFEcGI", "KOFSoGI", "KOFPoGI"])
     with pytest.raises(ValueError, match="No baseline models for CD test"):
         export_residual_cd_table(df, _config(), out_dir=tmp_path)
+
+
+# ---------------------------------------------------------------------------
+# SE comparison (one-way vs two-way vs Driscoll-Kraay)
+# ---------------------------------------------------------------------------
+
+
+def test_export_se_comparison_table_writes_latex(tmp_path):
+    df = _synthetic_regime_panel()
+    out_path = export_se_comparison_table(df, _config(), out_dir=tmp_path)
+    assert out_path.name == "se_comparison.tex"
+    assert out_path.exists() and out_path.stat().st_size > 0
+    text = out_path.read_text(encoding="utf-8")
+    assert "\\begin" in text
+    # All three SE labels should appear in the table
+    assert "One-way entity" in text
+    assert "Two-way" in text
+    assert "Driscoll-Kraay" in text
+    # One row per globalisation index
+    for idx_name in ("KOFGI", "KOFEcGI", "KOFSoGI", "KOFPoGI"):
+        assert idx_name in text, f"{idx_name} missing from SE comparison table"
+
+
+def test_export_se_comparison_table_respects_indices_arg(tmp_path):
+    df = _synthetic_regime_panel()
+    out_path = export_se_comparison_table(df, _config(), out_dir=tmp_path, indices=["KOFGI"])
+    text = out_path.read_text(encoding="utf-8")
+    assert "KOFGI" in text
+    for idx_name in ("KOFEcGI", "KOFSoGI", "KOFPoGI"):
+        assert idx_name not in text, f"{idx_name} should be excluded"
+
+
+def test_export_se_comparison_table_raises_when_no_indices(tmp_path):
+    df = _synthetic_regime_panel().drop(columns=["KOFGI", "KOFEcGI", "KOFSoGI", "KOFPoGI"])
+    with pytest.raises(ValueError, match="No indices found"):
+        export_se_comparison_table(df, _config(), out_dir=tmp_path)
 
 
 # ---------------------------------------------------------------------------
