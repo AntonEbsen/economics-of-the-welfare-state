@@ -424,9 +424,12 @@ def _modified_wald_groupwise_hetero(resids: pd.Series) -> tuple[float, float]:
     return W, p_value
 
 
-def export_model_diagnostics_latex(final_models: dict, out_dir: str) -> None:
+def export_model_diagnostics_latex(final_models: dict, out_dir: str) -> pd.DataFrame:
     """
     Export post-estimation residual diagnostics for a dictionary of fitted models.
+
+    Returns the diagnostics DataFrame so notebooks can display it inline
+    alongside writing the LaTeX file.
 
     Heteroskedasticity battery:
         1. Breusch-Pagan (1979) — assumes errors are linear in the regressors.
@@ -565,6 +568,7 @@ def export_model_diagnostics_latex(final_models: dict, out_dir: str) -> None:
         f.write(latex_str)
 
     print(f"✅ Exported Model Diagnostics LaTeX table to: {out_file}")
+    return summary_df
 
 
 def export_hausman_latex(
