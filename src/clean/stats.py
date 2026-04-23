@@ -7,7 +7,7 @@ import statsmodels.api as sm
 from linearmodels.panel import PanelOLS, RandomEffects
 from scipy import stats
 from scipy import stats as sp_stats
-from statsmodels.stats.diagnostic import acorr_ljungbox, het_breuschpagan
+from statsmodels.stats.diagnostic import acorr_ljungbox, het_breuschpagan, het_white
 from statsmodels.stats.outliers_influence import variance_inflation_factor
 from statsmodels.tsa.stattools import adfuller
 
@@ -393,24 +393,66 @@ def export_vif_latex(
     print(f"✅ Exported VIF LaTeX table to: {out_file}")
 
 
+def _modified_wald_groupwise_hetero(resids: pd.Series) -> tuple[float, float]:
+    """Modified Wald test for groupwise heteroskedasticity in FE panels.
+
+    Tests H₀: σ²ᵢ = σ² for all entities i (Greene 2000, §11.4.3).
+
+    Under H₀ the test statistic W = Σᵢ nᵢ (σ̂²ᵢ − σ̂²)² / (2 σ̂⁴) is
+    χ²(N−1) where N is the number of entities. The entity-specific
+    variance estimator uses the FE residuals from the within-transformed
+    regression.
+
+    Returns ``(W_statistic, p_value)``.
+    """
+    if isinstance(resids.index, pd.MultiIndex):
+        entity_level = resids.index.names[0]
+        grouped = resids.groupby(level=entity_level)
+    else:
+        raise ValueError("Residuals must have a (entity, time) MultiIndex.")
+
+    entity_vars = grouped.var(ddof=0)
+    entity_counts = grouped.count()
+    sigma2_pool = float((resids**2).mean())
+
+    if sigma2_pool == 0:
+        return np.nan, np.nan
+
+    N = len(entity_vars)
+    W = float((entity_counts * (entity_vars - sigma2_pool) ** 2).sum() / (2.0 * sigma2_pool**2))
+    p_value = 1.0 - stats.chi2.cdf(W, N - 1)
+    return W, p_value
+
+
 def export_model_diagnostics_latex(final_models: dict, out_dir: str) -> None:
     """
     Export post-estimation residual diagnostics for a dictionary of fitted models.
+
+    Heteroskedasticity battery:
+        1. Breusch-Pagan (1979) — assumes errors are linear in the regressors.
+        2. White (1980) — general test, no functional-form assumption.
+        3. Modified Wald (Greene 2000) — panel-specific test for groupwise
+           heteroskedasticity across entities (H₀: σ²ᵢ = σ² for all i).
+    Serial correlation:
+        4. Ljung-Box at lag 1.
     """
     print("\n" + "=" * 60)
     print("🔬 CALCULATING POST-ESTIMATION MODEL DIAGNOSTICS")
     print("=" * 60)
 
-    # We want a row for each test
     bp_stat_row = {"Test": "Breusch-Pagan Stat"}
     bp_pval_row = {"Test": "Breusch-Pagan p-val"}
+    wh_stat_row = {"Test": "White Stat"}
+    wh_pval_row = {"Test": "White p-val"}
+    mw_stat_row = {"Test": "Mod. Wald Stat"}
+    mw_pval_row = {"Test": "Mod. Wald p-val"}
     lb_stat_row = {"Test": "Ljung-Box (Lag 1) Stat"}
     lb_pval_row = {"Test": "Ljung-Box (Lag 1) p-val"}
 
     for idx_name, res in final_models.items():
         resids = res.resids
 
-        # 1. Heteroskedasticity (Breusch-Pagan)
+        # 1. Breusch-Pagan
         try:
             exog = res.model.exog.dataframe
             if "const" not in exog.columns:
@@ -423,9 +465,30 @@ def export_model_diagnostics_latex(final_models: dict, out_dir: str) -> None:
             bp_stat_row[idx_name] = "-"
             bp_pval_row[idx_name] = "-"
 
-        # 2. Serial Correlation (Ljung-Box)
+        # 2. White's test
         try:
-            # Sort MultiIndex residuals carefully to avoid spurious boundaries
+            exog = res.model.exog.dataframe
+            if "const" not in exog.columns:
+                exog = sm.add_constant(exog)
+
+            wh_stat, wh_p, _, _ = het_white(resids, exog)
+            wh_stat_row[idx_name] = f"{wh_stat:.2f}"
+            wh_pval_row[idx_name] = f"{wh_p:.3f}"
+        except Exception:
+            wh_stat_row[idx_name] = "-"
+            wh_pval_row[idx_name] = "-"
+
+        # 3. Modified Wald for groupwise heteroskedasticity
+        try:
+            mw_stat, mw_p = _modified_wald_groupwise_hetero(resids)
+            mw_stat_row[idx_name] = f"{mw_stat:.2f}" if not np.isnan(mw_stat) else "-"
+            mw_pval_row[idx_name] = f"{mw_p:.3f}" if not np.isnan(mw_p) else "-"
+        except Exception:
+            mw_stat_row[idx_name] = "-"
+            mw_pval_row[idx_name] = "-"
+
+        # 4. Serial Correlation (Ljung-Box)
+        try:
             if isinstance(resids, pd.DataFrame):
                 resids_series = resids.iloc[:, 0]
             else:
@@ -447,18 +510,27 @@ def export_model_diagnostics_latex(final_models: dict, out_dir: str) -> None:
             lb_stat_row[idx_name] = "-"
             lb_pval_row[idx_name] = "-"
 
-    records = [bp_stat_row, bp_pval_row, lb_stat_row, lb_pval_row]
+    records = [
+        bp_stat_row,
+        bp_pval_row,
+        wh_stat_row,
+        wh_pval_row,
+        mw_stat_row,
+        mw_pval_row,
+        lb_stat_row,
+        lb_pval_row,
+    ]
     summary_df = pd.DataFrame(records)
 
-    # Print to console
     print(summary_df.to_string(index=False))
     print("-" * 60)
     print("Interpretation:")
-    print("BP Test (H0): Homoskedasticity (p < 0.05 implies Heteroskedasticity)")
-    print("LB Test (H0): No Serial Corr. (p < 0.05 implies Serial Correlation)")
+    print("BP Test  (H0): Homoskedasticity (linear form)")
+    print("White    (H0): Homoskedasticity (general, with cross-terms)")
+    print("Mod.Wald (H0): Equal variance across entities (groupwise)")
+    print("LB Test  (H0): No Serial Corr. at lag 1")
     print("=" * 60 + "\n")
 
-    # Format the LaTeX
     col_fmt = "l" + "c" * len(final_models)
     latex_str = summary_df.to_latex(
         index=False,
@@ -468,7 +540,6 @@ def export_model_diagnostics_latex(final_models: dict, out_dir: str) -> None:
         label="tab:model_diagnostics",
     )
 
-    # Beautify LaTeX table
     beautified_header = (
         "\\toprule\n& \\multicolumn{"
         + str(len(final_models))
@@ -478,7 +549,6 @@ def export_model_diagnostics_latex(final_models: dict, out_dir: str) -> None:
     )
     latex_str = latex_str.replace("\\toprule", beautified_header)
 
-    # Import map for nice labels if present
     try:
         from analysis.regression_utils import LATEX_LABEL_MAP
 
@@ -988,7 +1058,8 @@ def build_latex_appendix(
             [
                 (
                     "model_diagnostics.tex",
-                    "Breusch-Pagan Heteroskedasticity and Ljung-Box Serial Correlation",
+                    "Heteroskedasticity (Breusch-Pagan, White, Modified Wald)"
+                    " and Ljung-Box Serial Correlation",
                 ),
             ],
         ),
