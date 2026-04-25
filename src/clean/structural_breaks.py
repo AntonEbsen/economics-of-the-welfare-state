@@ -7,6 +7,7 @@ in the globalization → welfare spending relationship:
 1. Chow Test (known break at China WTO accession, year 2000)
 2. QLR / Sup-Wald Test (unknown break date via Andrews 1993)
 3. Rolling OLS coefficient plots (visual instability analysis)
+4. Bai-Perron (1998, 2003) sequential multiple structural break test
 
 All tests pool the within-country (demeaned) variation so that results
 are consistent with the PanelOLS + entity-FE estimator used elsewhere.
@@ -14,6 +15,9 @@ are consistent with the PanelOLS + entity-FE estimator used elsewhere.
 References:
     Chow (1960), Econometrica.
     Andrews (1993), Econometrica.
+    Bai (1997), Econometrica.
+    Bai & Perron (1998), Econometrica.
+    Bai & Perron (2003), Journal of Applied Econometrics.
     Stock & Watson (2020), Introduction to Econometrics, ch. 14.
 """
 
@@ -412,6 +416,177 @@ def rolling_ols_coefficients(
 
 
 # ---------------------------------------------------------------------------
+# 4. Bai-Perron Sequential Multiple Break Test
+# ---------------------------------------------------------------------------
+
+
+def bai_perron_test(
+    df: pd.DataFrame,
+    dep_var: str,
+    indep_var: str,
+    controls: list[str],
+    max_breaks: int = 5,
+    trim: float = TRIM_FRAC,
+    significance: float = 0.05,
+    time_var: str = "year",
+    id_var: str = "iso3",
+) -> dict:
+    """
+    Bai-Perron (1998, 2003) sequential multiple structural break test.
+
+    Uses the sequential procedure of Bai (1997): applies a sup-F test
+    to the full sample to locate the first break.  If significant, the
+    sample is split and each resulting segment is searched for further
+    breaks.  Iteration continues until *max_breaks* is reached or no
+    segment produces a significant sup-F.
+
+    The number of breaks is also validated via BIC (Schwarz criterion):
+
+        BIC(m) = n ln(RSS_m / n) + (m+1) k ln(n)
+
+    where m is the number of breaks, k the number of regressors, and
+    RSS_m the total residual sum of squares across the m+1 segments.
+
+    Significance is assessed against Andrews (1993) asymptotic critical
+    values for sup-F (15 % trimming, k=1 restriction).  This is a
+    conservative approximation; exact Bai-Perron (2003, Table II)
+    critical values are break-number-specific and not tabulated here.
+
+    Parameters
+    ----------
+    df : pd.DataFrame
+        Long-format panel with id_var, time_var, dep_var, indep_var,
+        and all controls.
+    max_breaks : int
+        Maximum number of breaks to search for (default 5).
+    trim : float
+        Fraction trimmed from each end of each segment (default 0.15).
+    significance : float
+        Significance level for sup-F rejection (0.05 or 0.01).
+
+    Returns
+    -------
+    dict with keys: indep_var, break_years, n_breaks, sup_f_stats,
+                    cv_used, significance, bic_by_k, k_star_bic, n_obs.
+    """
+    data, regressors = _demean_panel(df, dep_var, indep_var, controls, id_var)
+    k = len(regressors)
+    n_total = len(data)
+
+    data = data.copy()
+    data["_year"] = df.loc[data.index, time_var]
+    all_years = sorted(data["_year"].unique())
+
+    cv = _QLR_CV["k1_5pct"] if significance >= 0.05 else _QLR_CV["k1_1pct"]
+
+    # ---- Sequential procedure (Bai 1997) --------------------------------
+    segments: list[tuple[int, int]] = [(all_years[0], all_years[-1])]
+    breaks_found: list[int] = []
+    sup_f_stats: list[float] = []
+
+    for _iteration in range(max_breaks):
+        best_f = -np.inf
+        best_break: int | None = None
+        best_seg_idx: int | None = None
+
+        for seg_idx, (seg_start, seg_end) in enumerate(segments):
+            seg_years = [y for y in all_years if seg_start <= y <= seg_end]
+            n_seg_years = len(seg_years)
+            lo = max(1, int(np.floor(trim * n_seg_years)))
+            hi = min(n_seg_years - 1, int(np.ceil((1 - trim) * n_seg_years)))
+            candidates = seg_years[lo:hi]
+
+            if not candidates:
+                continue
+
+            seg_data = data[(data["_year"] >= seg_start) & (data["_year"] <= seg_end)]
+            if len(seg_data) < 2 * k + 10:
+                continue
+
+            try:
+                res_seg = _ols_on_demeaned(seg_data, dep_var, regressors)
+            except Exception:
+                continue
+            rss_seg = res_seg.ssr
+            n_seg = len(seg_data)
+
+            for yr in candidates:
+                pre = seg_data[seg_data["_year"] < yr]
+                post = seg_data[seg_data["_year"] >= yr]
+                min_obs = k + 3
+                if len(pre) < min_obs or len(post) < min_obs:
+                    continue
+
+                try:
+                    res_pre = _ols_on_demeaned(pre, dep_var, regressors)
+                    res_post = _ols_on_demeaned(post, dep_var, regressors)
+                    rss_split = res_pre.ssr + res_post.ssr
+                    df_den = n_seg - 2 * k
+                    if df_den > 0 and rss_split > 0:
+                        f_val = ((rss_seg - rss_split) / k) / (rss_split / df_den)
+                        if f_val > best_f:
+                            best_f = f_val
+                            best_break = yr
+                            best_seg_idx = seg_idx
+                except Exception:
+                    pass
+
+        if best_break is None or best_f < cv:
+            break
+
+        breaks_found.append(best_break)
+        sup_f_stats.append(round(float(best_f), 3))
+
+        seg_start, seg_end = segments[best_seg_idx]
+        segments.pop(best_seg_idx)
+        segments.append((seg_start, best_break - 1))
+        segments.append((best_break, seg_end))
+        segments.sort()
+
+    breaks_sorted = sorted(breaks_found)
+
+    # ---- BIC for 0 .. len(breaks_sorted) --------------------------------
+    bic_values: dict[int, float] = {}
+    for m in range(len(breaks_sorted) + 1):
+        bp = breaks_sorted[:m]
+        boundaries = [all_years[0]] + bp + [all_years[-1] + 1]
+        total_rss = 0.0
+        total_n = 0
+        valid = True
+
+        for j in range(len(boundaries) - 1):
+            b_lo, b_hi = boundaries[j], boundaries[j + 1]
+            seg_data = data[(data["_year"] >= b_lo) & (data["_year"] < b_hi)]
+            if len(seg_data) < k + 3:
+                valid = False
+                break
+            try:
+                res = _ols_on_demeaned(seg_data, dep_var, regressors)
+                total_rss += res.ssr
+                total_n += len(seg_data)
+            except Exception:
+                valid = False
+                break
+
+        if valid and total_rss > 0 and total_n > 0:
+            bic_values[m] = total_n * np.log(total_rss / total_n) + (m + 1) * k * np.log(total_n)
+
+    k_star = min(bic_values, key=bic_values.get) if bic_values else 0
+
+    return {
+        "indep_var": indep_var,
+        "break_years": breaks_sorted,
+        "n_breaks": len(breaks_sorted),
+        "sup_f_stats": sup_f_stats,
+        "cv_used": cv,
+        "significance": significance,
+        "bic_by_k": bic_values,
+        "k_star_bic": k_star,
+        "n_obs": n_total,
+    }
+
+
+# ---------------------------------------------------------------------------
 # Plotting
 # ---------------------------------------------------------------------------
 
@@ -546,6 +721,42 @@ def plot_qlr_f_path(
     plt.close(fig)
 
 
+def plot_bai_perron_bic(
+    bic_by_k: dict[int, float],
+    indep_var: str,
+    k_star: int,
+    out_dir: Path | str | None = None,
+) -> None:
+    """BIC vs. number of breaks for Bai-Perron model selection."""
+    if not bic_by_k:
+        return
+
+    label = _INDEX_LABELS.get(indep_var.replace("_lag1", ""), indep_var)
+    ks = sorted(bic_by_k)
+    bics = [bic_by_k[m] for m in ks]
+
+    sns.set_theme(style="whitegrid", palette="muted")
+    fig, ax = plt.subplots(figsize=(8, 4.5))
+    ax.plot(ks, bics, "o-", color="#1D4ED8", linewidth=2, markersize=8)
+    ax.axvline(k_star, color="#10B981", linestyle="--", linewidth=1.5, label=f"k* = {k_star}")
+    ax.set_xticks(ks)
+    ax.set_xlabel("Number of breaks (m)", fontsize=10)
+    ax.set_ylabel("BIC", fontsize=10)
+    ax.set_title(f"Bai-Perron BIC — {label}", fontsize=13, fontweight="bold", pad=14)
+    ax.legend(fontsize=9)
+    sns.despine()
+    plt.tight_layout()
+
+    if out_dir is not None:
+        out_dir = Path(out_dir)
+        out_dir.mkdir(parents=True, exist_ok=True)
+        fname = out_dir / f"bai_perron_bic_{indep_var.replace('_lag1', '')}.png"
+        fig.savefig(fname, dpi=300, bbox_inches="tight")
+        logger.info(f"Saved Bai-Perron BIC plot: {fname}")
+
+    plt.close(fig)
+
+
 # ---------------------------------------------------------------------------
 # LaTeX export helpers
 # ---------------------------------------------------------------------------
@@ -621,6 +832,38 @@ def _qlr_results_to_latex(records: list[dict], out_dir: Path) -> None:
         label="tab:qlr_test",
     )
     _write_latex(latex_str, out_dir / "qlr_test_table.tex")
+
+
+def _bai_perron_results_to_latex(records: list[dict], out_dir: Path) -> None:
+    """Export Bai-Perron test results table to LaTeX."""
+    rows = []
+    for r in records:
+        label = _INDEX_LABELS.get(r["indep_var"].replace("_lag1", ""), r["indep_var"])
+        breaks_str = ", ".join(str(y) for y in r["break_years"]) if r["break_years"] else "None"
+        f_str = "; ".join(f"{f:.2f}" for f in r["sup_f_stats"]) if r["sup_f_stats"] else "---"
+        rows.append(
+            {
+                "Index": label,
+                "Breaks (seq.)": breaks_str,
+                "Sup-F values": f_str,
+                r"$k^*$ (BIC)": r["k_star_bic"],
+                "N": r["n_obs"],
+            }
+        )
+
+    df_out = pd.DataFrame(rows)
+    latex_str = df_out.to_latex(
+        index=False,
+        escape=False,
+        column_format="llccc",
+        caption=(
+            "Bai-Perron Sequential Multiple Structural Break Test. "
+            r"Breaks identified via sequential sup-F (Andrews 1993 CV at 5\%). "
+            r"$k^*$ selected by BIC."
+        ),
+        label="tab:bai_perron_test",
+    )
+    _write_latex(latex_str, out_dir / "bai_perron_test_table.tex")
 
 
 def _write_latex(latex_str: str, out_path: Path) -> None:
