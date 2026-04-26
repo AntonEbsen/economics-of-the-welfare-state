@@ -1,0 +1,36 @@
+\begin{table}[htbp]
+\centering
+\caption{Marginal Effects of Globalization on Social Security Transfers by Welfare Regime}
+\label{tab:marginal_effects_consolidated}
+\begin{tabular}{lcccc}
+\toprule
+ & Overall & Economic & Social & Political \\
+ & (KOFGI) & (KOFEcGI) & (KOFSoGI) & (KOFPoGI) \\
+\midrule
+Social Democrat (Ref) & $-$0.143 & $-$0.187* & $-$0.083 & $-$0.084 \\
+ & (0.153) & (0.109) & (0.146) & (0.074) \\
+\addlinespace
+Conservative & $-$0.006 & $-$0.112 & \phantom{$-$}0.030 & \phantom{$-$}0.026 \\
+ & (0.094) & (0.080) & (0.073) & (0.045) \\
+\addlinespace
+Mediterranean & \phantom{$-$}0.050 & $-$0.028 & \phantom{$-$}0.133 & \phantom{$-$}0.067 \\
+ & (0.184) & (0.133) & (0.180) & (0.118) \\
+\addlinespace
+Liberal & \phantom{$-$}0.088 & \phantom{$-$}0.012 & \phantom{$-$}0.083 & \phantom{$-$}0.053 \\
+ & (0.081) & (0.067) & (0.071) & (0.055) \\
+\addlinespace
+Post-Communist & \phantom{$-$}0.061 & $-$0.020 & \phantom{$-$}0.104 & \phantom{$-$}0.050 \\
+ & (0.072) & (0.043) & (0.078) & (0.048) \\
+\midrule
+Country FE & Yes & Yes & Yes & Yes \\
+Year FE & Yes & Yes & Yes & Yes \\
+Controls & Yes & Yes & Yes & Yes \\
+Observations & 996 & 996 & 996 & 996 \\
+$R^2$ (within) & 0.371 & 0.265 & 0.387 & 0.351 \\
+\bottomrule
+\end{tabular}
+\begin{tablenotes}
+\small
+\item \textit{Notes:} Each cell reports the marginal effect of the lagged globalization index on social security transfers (\% of GDP) for the indicated welfare regime. Standard errors (in parentheses) are computed from the full variance--covariance matrix: $\mathrm{SE}(\hat\beta_1 + \hat\beta_k) = \sqrt{\mathrm{Var}(\hat\beta_1) + \mathrm{Var}(\hat\beta_k) + 2\,\mathrm{Cov}(\hat\beta_1, \hat\beta_k)}$. All specifications include entity and time fixed effects with two-way clustered standard errors (entity $\times$ time). Controls: log GDP per capita, inflation, deficit/GDP, government debt/GDP, log population, and dependency ratio (all lagged one period). Social Democratic is the reference category. $^{***}\,p<0.01$, $^{**}\,p<0.05$, $^{*}\,p<0.10$.
+\end{tablenotes}
+\end{table}

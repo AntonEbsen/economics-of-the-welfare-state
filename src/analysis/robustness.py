@@ -929,6 +929,225 @@ def export_marginal_effects_tables(
     return out_paths
 
 
+def export_consolidated_marginal_effects_table(
+    master_regimes: pd.DataFrame,
+    config: dict,
+    out_dir: str | Path | None = None,
+    indices: list[str] | None = None,
+) -> Path:
+    """Consolidated marginal-effects table (indices as columns, regimes as rows).
+
+    Produces a publication-ready LaTeX table using booktabs formatting with:
+
+    - Point estimates and significance stars (en-dash ``$-$`` for negatives)
+    - Standard errors in parentheses from the full variance--covariance matrix:
+      ``SE(β₁ + β_k) = sqrt(Var(β₁) + Var(β_k) + 2 Cov(β₁, β_k))``
+    - Model statistics footer (FE, controls, N, R²)
+    - Explanatory notes
+
+    Also prints numeric results to the console for verification.
+
+    Returns the output file path.
+    """
+    if out_dir is None:
+        out_dir = Path(__file__).resolve().parent.parent.parent / "outputs" / "tables"
+    else:
+        out_dir = Path(out_dir)
+    out_dir.mkdir(parents=True, exist_ok=True)
+
+    if indices is None:
+        indices = ["KOFGI", "KOFEcGI", "KOFSoGI", "KOFPoGI"]
+
+    models = run_interaction_regressions(master_regimes, config, indices=indices)
+    if not models:
+        raise ValueError("No interaction models produced — check that index columns exist.")
+
+    all_me: dict[str, pd.DataFrame] = {}
+    model_stats: dict[str, dict] = {}
+    for idx_name, result in models.items():
+        g_var = f"{idx_name}_lag1"
+        all_me[idx_name] = generate_marginal_effects(result, g_var)
+        model_stats[idx_name] = {
+            "nobs": int(result.nobs),
+            "r2_within": float(result.rsquared_within),
+        }
+
+    regime_order = [
+        "Social Democrat (Ref)",
+        "Conservative",
+        "Mediterranean",
+        "Liberal",
+        "Post-Communist",
+    ]
+
+    idx_labels = {
+        "KOFGI": "Overall",
+        "KOFEcGI": "Economic",
+        "KOFSoGI": "Social",
+        "KOFPoGI": "Political",
+    }
+
+    def _fmt_coef(val, stars):
+        if pd.isna(val):
+            return ""
+        sign = "$-$" if val < 0 else "\\phantom{$-$}"
+        return f"{sign}{abs(val):.3f}{stars}"
+
+    def _fmt_se(val):
+        if pd.isna(val):
+            return ""
+        return f"({val:.3f})"
+
+    # ---- Build LaTeX --------------------------------------------------------
+    n_cols = len(indices)
+    col_fmt = "l" + "c" * n_cols
+
+    lines = [
+        r"\begin{table}[htbp]",
+        r"\centering",
+        r"\caption{Marginal Effects of Globalization on Social Security Transfers by Welfare Regime}",
+        r"\label{tab:marginal_effects_consolidated}",
+        f"\\begin{{tabular}}{{{col_fmt}}}",
+        r"\toprule",
+    ]
+
+    header1 = " & ".join(idx_labels.get(idx, idx) for idx in indices)
+    header2 = " & ".join(f"({idx})" for idx in indices)
+    lines.append(f" & {header1} \\\\")
+    lines.append(f" & {header2} \\\\")
+    lines.append(r"\midrule")
+
+    for i, regime in enumerate(regime_order):
+        coef_cells = []
+        se_cells = []
+        for idx_name in indices:
+            me_df = all_me.get(idx_name)
+            if me_df is not None:
+                row = me_df[me_df["Welfare Regime"] == regime]
+                if not row.empty:
+                    coef_cells.append(
+                        _fmt_coef(row["Marginal Effect"].iloc[0], row["Sig."].iloc[0])
+                    )
+                    se_cells.append(_fmt_se(row["Std. Error"].iloc[0]))
+                else:
+                    coef_cells.append("")
+                    se_cells.append("")
+            else:
+                coef_cells.append("")
+                se_cells.append("")
+
+        lines.append(f"{regime} & " + " & ".join(coef_cells) + " \\\\")
+        lines.append(" & " + " & ".join(se_cells) + " \\\\")
+        if i < len(regime_order) - 1:
+            lines.append(r"\addlinespace")
+
+    lines.append(r"\midrule")
+    yes_row = " & ".join(["Yes"] * n_cols)
+    lines.append(f"Country FE & {yes_row} \\\\")
+    lines.append(f"Year FE & {yes_row} \\\\")
+    lines.append(f"Controls & {yes_row} \\\\")
+
+    nobs_row = " & ".join(str(model_stats[idx]["nobs"]) for idx in indices)
+    lines.append(f"Observations & {nobs_row} \\\\")
+
+    r2_row = " & ".join(f"{model_stats[idx]['r2_within']:.3f}" for idx in indices)
+    lines.append(f"$R^2$ (within) & {r2_row} \\\\")
+
+    lines.append(r"\bottomrule")
+    lines.append(r"\end{tabular}")
+    lines.append(r"\begin{tablenotes}")
+    lines.append(r"\small")
+    lines.append(
+        r"\item \textit{Notes:} Each cell reports the marginal effect of the lagged "
+        r"globalization index on social security transfers (\% of GDP) for the indicated "
+        r"welfare regime. Standard errors (in parentheses) are computed from the full "
+        r"variance--covariance matrix: "
+        r"$\mathrm{SE}(\hat\beta_1 + \hat\beta_k) = "
+        r"\sqrt{\mathrm{Var}(\hat\beta_1) + \mathrm{Var}(\hat\beta_k) + "
+        r"2\,\mathrm{Cov}(\hat\beta_1, \hat\beta_k)}$. "
+        r"All specifications include entity and time fixed effects with two-way "
+        r"clustered standard errors (entity $\times$ time). Controls: "
+        r"log GDP per capita, inflation, deficit/GDP, government debt/GDP, "
+        r"log population, and dependency ratio (all lagged one period). "
+        r"Social Democratic is the reference category. "
+        r"$^{***}\,p<0.01$, $^{**}\,p<0.05$, $^{*}\,p<0.10$."
+    )
+    lines.append(r"\end{tablenotes}")
+    lines.append(r"\end{table}")
+
+    latex_str = "\n".join(lines)
+    out_path = out_dir / "marginal_effects_consolidated.tex"
+    with open(out_path, "w", encoding="utf-8") as fh:
+        fh.write(latex_str)
+    logger.info(f"✅ Consolidated marginal effects table saved to: {out_path}")
+
+    # ---- Console summary ----------------------------------------------------
+    print("\n" + "=" * 70)
+    print("MARGINAL EFFECTS BY WELFARE REGIME (with proper linear-combination SEs)")
+    print("=" * 70)
+    for idx_name in indices:
+        me_df = all_me[idx_name]
+        print(f"\n  {idx_name}:")
+        for _, row in me_df.iterrows():
+            print(
+                f"    {row['Welfare Regime']:25s}  ME={row['Marginal Effect']:+.4f}  "
+                f"SE={row['Std. Error']:.4f}  t={row['t-stat']:+.3f}  "
+                f"p={row['p-value']:.4f} {row['Sig.']}"
+            )
+    print("=" * 70)
+
+    return out_path
+
+
+def wald_test_marginal_effect(result, g_var: str, int_term: str) -> dict:
+    """Wald test sanity check for a single marginal effect β₁ + β_k = 0.
+
+    Constructs the restriction matrix R = [0 ... 1 ... 1 ... 0] (ones at
+    the positions of *g_var* and *int_term*) and tests Rβ = 0 via the
+    result object's variance--covariance matrix.
+
+    Returns a dict with ``me``, ``se_manual``, ``t_manual``, ``chi2_wald``,
+    ``p_wald`` so the caller can verify that t² ≈ χ².
+    """
+    from scipy import stats as sp_stats
+
+    params = result.params
+    cov = result.cov
+    param_names = list(params.index)
+
+    b1 = float(params[g_var])
+    bk = float(params[int_term])
+    me = b1 + bk
+
+    var_b1 = float(cov.loc[g_var, g_var])
+    var_bk = float(cov.loc[int_term, int_term])
+    cov_b1_bk = float(cov.loc[g_var, int_term])
+    se = np.sqrt(var_b1 + var_bk + 2 * cov_b1_bk)
+    t_manual = me / se if se > 0 else np.nan
+
+    R = np.zeros((1, len(param_names)))
+    R[0, param_names.index(g_var)] = 1.0
+    R[0, param_names.index(int_term)] = 1.0
+    q = np.array([0.0])
+
+    beta = params.values
+    cov_mat = cov.values
+    diff = R @ beta - q
+    var_diff = R @ cov_mat @ R.T
+    chi2 = float(diff @ np.linalg.solve(var_diff, diff))
+    p_wald = 1.0 - sp_stats.chi2.cdf(chi2, df=1)
+
+    return {
+        "me": me,
+        "se_manual": se,
+        "t_manual": t_manual,
+        "t_squared": t_manual**2 if not np.isnan(t_manual) else np.nan,
+        "chi2_wald": chi2,
+        "p_manual": 2 * (1 - sp_stats.t.cdf(abs(t_manual), df=result.df_resid)),
+        "p_wald": p_wald,
+    }
+
+
 # ---------------------------------------------------------------------------
 # Post-Communist exclusion robustness check (notebook cell 59)
 # ---------------------------------------------------------------------------
