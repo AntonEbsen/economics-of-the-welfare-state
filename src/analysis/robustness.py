@@ -834,6 +834,93 @@ def export_baseline_regression_table(
     return out_path
 
 
+# Six de-facto / de-jure subcomponents of KOF social globalisation.
+SOCIAL_SUBCOMPONENTS: dict[str, str] = {
+    "KOFIpGIdf": "Interpersonal (de facto)",
+    "KOFIpGIdj": "Interpersonal (de jure)",
+    "KOFInGIdf": "Informational (de facto)",
+    "KOFInGIdj": "Informational (de jure)",
+    "KOFCuGIdf": "Cultural (de facto)",
+    "KOFCuGIdj": "Cultural (de jure)",
+}
+
+
+def run_social_subcomponent_regressions(
+    master_regimes: pd.DataFrame,
+    config: dict,
+    subcomponents: list[str] | None = None,
+) -> dict:
+    """Baseline FE regressions on KOF social-globalisation subcomponents.
+
+    For each subcomponent ``X`` runs ``sstran ~ X_{t-1} + controls_{t-1}`` with
+    entity + time fixed effects and **country-clustered** standard errors
+    (single-way clustering on entity, *not* the two-way default used by
+    :func:`run_baseline_regressions`).
+
+    Subcomponents absent from the panel are skipped with a warning, so this
+    helper still works on master frames missing any df/dj column.
+
+    Returns ``{idx_name: PanelResults}``.
+    """
+    if subcomponents is None:
+        subcomponents = list(SOCIAL_SUBCOMPONENTS.keys())
+    return _run_regressions_per_index(
+        master_regimes,
+        config,
+        interactions=False,
+        indices=subcomponents,
+        cluster_time=False,
+    )
+
+
+def export_social_subcomponent_regression_table(
+    master_regimes: pd.DataFrame,
+    config: dict,
+    out_dir: str | Path | None = None,
+    subcomponents: list[str] | None = None,
+) -> Path:
+    """Run :func:`run_social_subcomponent_regressions` and write LaTeX comparison."""
+    if out_dir is None:
+        out_dir = Path(__file__).resolve().parent.parent.parent / "outputs" / "tables"
+    else:
+        out_dir = Path(out_dir)
+    out_dir.mkdir(parents=True, exist_ok=True)
+
+    models = run_social_subcomponent_regressions(
+        master_regimes, config, subcomponents=subcomponents
+    )
+    if not models:
+        raise ValueError(
+            "No subcomponent models produced — check that KOF df/dj columns "
+            "exist in the master panel (rebuild via notebook 01 if needed)."
+        )
+
+    # Quick console summary in the spirit of the user's example
+    for idx_name, res in models.items():
+        var_lag = f"{idx_name}_lag1"
+        coef = res.params[var_lag]
+        se = res.std_errors[var_lag]
+        pval = res.pvalues[var_lag]
+        n = int(res.nobs)
+        r2 = res.rsquared_within
+        label = SOCIAL_SUBCOMPONENTS.get(idx_name, idx_name)
+        logger.info(
+            "%-28s coef=%+.4f  SE=%.4f  p=%.3f  N=%d  R²=%.3f",
+            label, coef, se, pval, n, r2,
+        )
+
+    comparison = compare(models, stars=True)
+    latex_str = comparison.summary.as_latex()
+    for old, new in LATEX_LABEL_MAP.items():
+        latex_str = latex_str.replace(old, new)
+
+    out_path = out_dir / "social_subcomponent_regression_table.tex"
+    with open(out_path, "w", encoding="utf-8") as fh:
+        fh.write(latex_str)
+    logger.info(f"✅ Social subcomponent comparison table saved to: {out_path}")
+    return out_path
+
+
 def run_interaction_regressions(
     master_regimes: pd.DataFrame,
     config: dict,
