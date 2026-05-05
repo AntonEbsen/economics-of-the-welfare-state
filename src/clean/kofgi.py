@@ -73,16 +73,19 @@ def filter_kof_32countries(df: pd.DataFrame, cfg: KOFConfig = KOFConfig()) -> pd
     if cfg.year_max is not None:
         out = out[out["year"] <= cfg.year_max]
 
-    # select core indices and sub-components
+    # select core indices and sub-components.
+    # The *df / *dj suffixes capture the de-facto vs de-jure split published by
+    # KOF — needed to run baseline regressions on the social-globalisation
+    # subcomponents.
     core_indices = [
         "KOFGI",
         "KOFEcGI",
         "KOFTrGI",
         "KOFFiGI",
         "KOFSoGI",
-        "KOFIpGI",
-        "KOFInGI",
-        "KOFCuGI",
+        "KOFIpGI", "KOFIpGIdf", "KOFIpGIdj",
+        "KOFInGI", "KOFInGIdf", "KOFInGIdj",
+        "KOFCuGI", "KOFCuGIdf", "KOFCuGIdj",
         "KOFPoGI",
     ]
 
