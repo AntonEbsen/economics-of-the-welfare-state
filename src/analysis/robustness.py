@@ -118,7 +118,7 @@ def export_stepwise_robustness_tables(
 
         # Log robustness summary
         robustness_df = get_robustness_summary(models)
-        logger.info(f"\n📈 Robustness Summary for {idx_name}:")
+        logger.info(f"\n[SUMMARY] Robustness Summary for {idx_name}:")
         logger.info("\n" + robustness_df.to_string())
 
     # ── Post-Estimation Diagnostics Suite ──
@@ -240,7 +240,7 @@ def plot_specification_curve(
     out_path = out_dir / f"specification_curve_{idx_name}.png"
     fig.savefig(out_path, dpi=300, bbox_inches="tight")  # High DPI for publication
     plt.close(fig)
-    logger.info(f"✅ Saved High-DPI Specification Curve: {out_path}")
+    logger.info(f"[SUCCESS] Saved High-DPI Specification Curve: {out_path}")
 
 
 def get_robustness_summary(models: dict) -> pd.DataFrame:
@@ -310,7 +310,7 @@ def export_subperiod_regressions(
         "post_gfc": (2008, 2023),
     }
 
-    logger.info("🕰️ Running subperiod regressions (China Shock & GFC)")
+    logger.info("[PERIODS] Running subperiod regressions (China Shock & GFC)")
 
     valid_indices = [idx for idx in indices if idx in master_regimes.columns]
 
@@ -394,7 +394,7 @@ def export_subperiod_heterogeneity_regressions(
         "post_gfc": (2008, 2023),
     }
 
-    logger.info("🕰️ Running subperiod heterogeneity regressions")
+    logger.info("[PERIODS] Running subperiod heterogeneity regressions")
 
     # Need regime dummy columns to create interactions
     regime_cols = [
@@ -505,7 +505,7 @@ def export_event_study_plots(
     window = 5
 
     logger.info("\n=======================================================")
-    logger.info(f"📈 RUNNING EVENT STUDY ({event_year} +/- {window} years)")
+    logger.info(f"[EVENT] RUNNING EVENT STUDY ({event_year} +/- {window} years)")
     logger.info("=======================================================")
 
     for idx_name in indices:
@@ -564,7 +564,7 @@ def export_event_study_plots(
             fig.savefig(out_file, dpi=300)
             plt.close(fig)
 
-            logger.info(f"  ✅ Saved Event Study Plot: {out_file.name}")
+            logger.info(f"  [SUCCESS] Saved Event Study Plot: {out_file.name}")
         except Exception as e:
             logger.error(f"  ❌ Error running event study for {idx_name}: {e}")
 
@@ -653,7 +653,7 @@ def export_feedback_regression_table(
     out_path = out_dir / "feedback_regression_table.tex"
     with open(out_path, "w", encoding="utf-8") as fh:
         fh.write(latex_str)
-    logger.info(f"✅ Feedback regression table saved to: {out_path}")
+    logger.info(f"[SUCCESS] Feedback regression table saved to: {out_path}")
     return out_path
 
 
@@ -736,7 +736,7 @@ def export_subcomponent_regression_table(
     out_path = out_dir / "component_regression_table.tex"
     with open(out_path, "w", encoding="utf-8") as fh:
         fh.write(latex_str)
-    logger.info(f"✅ Sub-component comparison table saved to: {out_path}")
+    logger.info(f"[SUCCESS] Sub-component comparison table saved to: {out_path}")
     return out_path
 
 

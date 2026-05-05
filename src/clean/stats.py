@@ -170,7 +170,7 @@ def export_stata_labels(df: pd.DataFrame, output_path: str):
                 desc = info["description"]
                 f.write(f"notes {var}: {desc}\n")
 
-    print(f"✅ Stata labels exported to: {output_path}")
+    print(f"[SUCCESS] Stata labels exported to: {output_path}")
 
 
 def create_publication_table(
@@ -209,7 +209,7 @@ def create_publication_table(
     try:
         from stargazer.stargazer import Stargazer
     except ImportError:
-        print("⚠️  stargazer package recommended: pip install stargazer")
+        print("[WARNING] stargazer package recommended: pip install stargazer")
         # Fallback to manual formatting
         return _manual_regression_table(results_list, model_names, stars, decimals)
 
@@ -316,7 +316,7 @@ def export_vif_latex(
     summary_df = pd.DataFrame(vif_summary).set_index("Variable")
 
     print("\n" + "=" * 60)
-    print("📈 CALCULATING VARIANCE INFLATION FACTORS (VIF)")
+    print(" [VIF] CALCULATING VARIANCE INFLATION FACTORS (VIF)")
     print("=" * 60)
 
     for idx_name in indices:
@@ -390,7 +390,7 @@ def export_vif_latex(
     with open(out_file, "w", encoding="utf-8") as f:
         f.write(latex_str)
 
-    print(f"✅ Exported VIF LaTeX table to: {out_file}")
+    print(f"[SUCCESS] Exported VIF LaTeX table to: {out_file}")
 
 
 def _modified_wald_groupwise_hetero(resids: pd.Series) -> tuple[float, float]:
@@ -440,7 +440,7 @@ def export_model_diagnostics_latex(final_models: dict, out_dir: str) -> pd.DataF
         4. Ljung-Box at lag 1.
     """
     print("\n" + "=" * 60)
-    print("🔬 CALCULATING POST-ESTIMATION MODEL DIAGNOSTICS")
+    print(" [DIAG] CALCULATING POST-ESTIMATION MODEL DIAGNOSTICS")
     print("=" * 60)
 
     bp_stat_row = {"Test": "Breusch-Pagan Stat"}
@@ -567,7 +567,7 @@ def export_model_diagnostics_latex(final_models: dict, out_dir: str) -> pd.DataF
     with open(out_file, "w", encoding="utf-8") as f:
         f.write(latex_str)
 
-    print(f"✅ Exported Model Diagnostics LaTeX table to: {out_file}")
+    print(f"[SUCCESS] Exported Model Diagnostics LaTeX table to: {out_file}")
     return summary_df
 
 
@@ -586,7 +586,7 @@ def export_hausman_latex(
         out_dir: Output directory for LaTeX table.
     """
     print("\n" + "=" * 60)
-    print("⚖️  RUNNING HAUSMAN SPECIFICATION TESTS (FE vs RE)")
+    print(" [HAUSMAN] RUNNING HAUSMAN SPECIFICATION TESTS (FE vs RE)")
     print("=" * 60)
 
     records = []
@@ -625,7 +625,7 @@ def export_hausman_latex(
                 }
             )
 
-            status = "✅ FE preferred" if p_value < 0.05 else "⚠️  RE consistent"
+            status = "[FE preferred]" if p_value < 0.05 else "[RE consistent]"
             print(f"  {idx_name}: χ²={h_stat:.2f}, p={p_value:.3f} → {status}")
 
         except Exception as e:
@@ -668,7 +668,7 @@ def export_hausman_latex(
     with open(out_file, "w", encoding="utf-8") as f:
         f.write(latex_str)
 
-    print(f"✅ Exported Hausman Test LaTeX table to: {out_file}")
+    print(f"[SUCCESS] Exported Hausman Test LaTeX table to: {out_file}")
 
 
 def export_granger_causality_latex(
@@ -692,7 +692,7 @@ def export_granger_causality_latex(
     joint significance of the added lags.
     """
     print("\n" + "=" * 60)
-    print("🔄 RUNNING PANEL GRANGER CAUSALITY TESTS")
+    print(" [GRANGER] RUNNING PANEL GRANGER CAUSALITY TESTS")
     print("=" * 60)
 
     records = []

@@ -143,6 +143,7 @@ def analyze(
         export_subperiod_se_comparison_tables,
     )
     from analysis.trend_plots import plot_kof_trend, plot_sstran_trend
+    from analysis.map_viz import create_welfare_regimes_map
     from clean.panel_utils import add_welfare_regimes
     from clean.utils import load_config, setup_logging
 
@@ -184,6 +185,7 @@ def analyze(
         typer.secho(f"Skipping sub-component table: {exc}", fg=typer.colors.YELLOW, err=True)
     plot_sstran_trend(panel, figures_dir)
     plot_kof_trend(panel, figures_dir)
+    create_welfare_regimes_map(out_dir=figures_dir)
     typer.secho("Tables and figures saved to outputs/", fg=typer.colors.GREEN)
 
 
