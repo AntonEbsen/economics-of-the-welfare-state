@@ -52,7 +52,6 @@ def create_welfare_regimes_map(out_dir=None):
     world_regimes = world.dropna(subset=['regime'])
     world_regimes.plot(
         ax=ax, 
-        column='regime', 
         categorical=True,
         legend=True,
         legend_kwds={'loc': 'lower left', 'bbox_to_anchor': (1, 0), 'frameon': False},
@@ -76,6 +75,8 @@ def create_welfare_regimes_map(out_dir=None):
     plt.savefig(output_path, bbox_inches='tight', dpi=300, format='pdf')
     print(f"Map saved to {output_path}")
     plt.close()
+    
+    return output_path
 
 if __name__ == "__main__":
     create_welfare_regimes_map()
