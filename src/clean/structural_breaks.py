@@ -96,11 +96,21 @@ def _ols_on_demeaned(
     data: pd.DataFrame,
     dep_var: str,
     regressors: list[str],
+    cluster_groups: np.ndarray | None = None,
 ) -> sm.regression.linear_model.RegressionResultsWrapper:
-    """Run plain OLS on (already demeaned) data. No constant needed post-demeaning."""
+    """Run OLS on (already demeaned) data. No constant needed post-demeaning.
+
+    When ``cluster_groups`` is provided, standard errors are clustered by
+    that grouping variable (typically country id); otherwise plain OLS SEs
+    are returned so that test-statistic callers (Chow / QLR / Bai-Perron)
+    keep their existing behaviour.
+    """
     X = data[regressors].values
     y = data[dep_var].values
-    return sm.OLS(y, X).fit()
+    model = sm.OLS(y, X)
+    if cluster_groups is not None:
+        return model.fit(cov_type="cluster", cov_kwds={"groups": cluster_groups})
+    return model.fit()
 
 
 # ---------------------------------------------------------------------------
@@ -371,6 +381,9 @@ def rolling_ols_coefficients(
     and 95 % CI for indep_var.  This reveals how the estimated effect of
     globalisation on welfare spending drifts over time.
 
+    Standard errors are clustered by ``id_var`` (country), so the reported
+    SEs and CIs account for serial correlation of residuals within country.
+
     Parameters
     ----------
     window : int
@@ -395,7 +408,12 @@ def rolling_ols_coefficients(
             continue
 
         try:
-            res = _ols_on_demeaned(subset, dep_var, regressors)
+            res = _ols_on_demeaned(
+                subset,
+                dep_var,
+                regressors,
+                cluster_groups=subset[id_var].values,
+            )
             # indep_var is always the first regressor
             coef = res.params[0]
             se = res.bse[0]

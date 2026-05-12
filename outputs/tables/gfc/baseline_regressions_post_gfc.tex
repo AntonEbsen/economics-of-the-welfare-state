@@ -1,0 +1,57 @@
+\begin{center}
+\begin{tabular}{lccccccccc}
+\toprule
+                                   & \textbf{KOFGI} & \textbf{KOFEcGI} & \textbf{KOFTrGI} & \textbf{KOFFiGI} & \textbf{KOFSoGI} & \textbf{KOFIpGI} & \textbf{KOFInGI} & \textbf{KOFCuGI} & \textbf{KOFPoGI}  \\
+\midrule
+\textbf{Dep. Variable}             &     sstran     &      sstran      &      sstran      &      sstran      &      sstran      &      sstran      &      sstran      &      sstran      &      sstran       \\
+\textbf{Estimator}                 &    PanelOLS    &     PanelOLS     &     PanelOLS     &     PanelOLS     &     PanelOLS     &     PanelOLS     &     PanelOLS     &     PanelOLS     &     PanelOLS      \\
+\textbf{No. Observations}          &      509       &       509        &       509        &       509        &       509        &       509        &       509        &       509        &       509         \\
+\textbf{Cov. Est.}                 &   Clustered    &    Clustered     &    Clustered     &    Clustered     &    Clustered     &    Clustered     &    Clustered     &    Clustered     &    Clustered      \\
+\textbf{R-squared}                 &     0.3220     &      0.3303      &      0.3142      &      0.3368      &      0.3168      &      0.3486      &      0.3190      &      0.3159      &      0.3128       \\
+\textbf{R-Squared (Within)}        &     0.2244     &      0.2194      &      0.2132      &      0.1738      &      0.2149      &      0.2674      &      0.2294      &      0.1930      &      0.1978       \\
+\textbf{R-Squared (Between)}       &    -5.1665     &     -5.9412      &     -7.2230      &     -10.727      &     -7.0569      &     -4.7723      &     -5.7519      &     -9.2295      &     -9.2209       \\
+\textbf{R-Squared (Overall)}       &    -4.5064     &     -5.1854      &     -6.3178      &     -9.3806      &     -6.1712      &     -4.1495      &     -5.0284      &     -8.0814      &     -8.0727       \\
+\textbf{F-statistic}               &     30.872     &      32.057      &      29.778      &      33.015      &      30.143      &      34.780      &      30.445      &      30.018      &      29.592       \\
+\textbf{P-value (F-stat)}          &     0.0000     &      0.0000      &      0.0000      &      0.0000      &      0.0000      &      0.0000      &      0.0000      &      0.0000      &      0.0000       \\
+\textbf{=======================}   &  ============  &   ============   &   ============   &   ============   &   ============   &   ============   &   ============   &   ============   &   ============    \\
+\textbf{Constant}                     &     107.01     &      108.86      &      126.59      &     146.69**     &      123.05      &      91.280      &      115.47      &     146.43*      &     143.70*       \\
+\textbf{ }                         &    (1.1927)    &     (1.2583)     &     (1.3475)     &     (2.0475)     &     (1.6330)     &     (1.3524)     &     (1.6418)     &     (1.9223)     &     (1.7935)      \\
+\textbf{Globalization (Overall)$_{t-1}$}               &     0.1370     &                  &                  &                  &                  &                  &                  &                  &                   \\
+\textbf{ }                         &    (0.9786)    &                  &                  &                  &                  &                  &                  &                  &                   \\
+\textbf{log GDP per capita$_{t-1}$}           &   -6.4621***   &    -6.1377**     &    -6.3721**     &    -6.5754***    &    -6.4836***    &    -6.6144***    &    -6.5616***    &    -6.6616***    &    -6.5640***     \\
+\textbf{ }                         &   (-2.6251)    &    (-2.5479)     &    (-2.5593)     &    (-2.6516)     &    (-2.6802)     &    (-3.0621)     &    (-2.8049)     &    (-2.6809)     &    (-2.6052)      \\
+\textbf{Inflation$_{t-1}$}      &   0.0973***    &    0.0941***     &    0.0994***     &    0.0942***     &    0.1015***     &    0.0986***     &    0.1032***     &    0.1007***     &    0.1007***      \\
+\textbf{ }                         &    (2.6877)    &     (2.7468)     &     (2.8754)     &     (2.8769)     &     (2.9782)     &     (2.9839)     &     (2.9057)     &     (2.8456)     &     (2.9647)      \\
+\textbf{Deficit$_{t-1}$}             &   -0.1363***   &    -0.1445***    &    -0.1378***    &    -0.1439***    &    -0.1363***    &    -0.1294***    &    -0.1356***    &    -0.1345***    &    -0.1363***     \\
+\textbf{ }                         &   (-5.0391)    &    (-5.6670)     &    (-5.2570)     &    (-5.8884)     &    (-5.2111)     &    (-4.9251)     &    (-5.2266)     &    (-5.2415)     &    (-5.1520)      \\
+\textbf{Debt$_{t-1}$}                &     0.0010     &    5.983e-05     &      0.0018      &     -0.0003      &      0.0013      &      0.0041      &     -0.0003      &      0.0021      &      0.0020       \\
+\textbf{ }                         &    (0.0961)    &     (0.0056)     &     (0.1616)     &    (-0.0286)     &     (0.1202)     &     (0.4040)     &    (-0.0293)     &     (0.1883)     &     (0.1817)      \\
+\textbf{log Population$_{t-1}$}      &    -4.5296     &     -4.5816      &     -5.2503      &     -6.6672*     &     -5.2056      &     -3.7342      &     -4.6854      &     -6.1475      &     -6.1153       \\
+\textbf{ }                         &   (-0.9299)    &    (-0.9651)     &    (-1.0074)     &    (-1.6970)     &    (-1.2209)     &    (-0.9644)     &    (-1.1657)     &    (-1.4509)     &    (-1.3767)      \\
+\textbf{Dependency Ratio$_{t-1}$}   &    -0.0299     &     -0.0434      &     -0.0185      &     -0.0544      &     -0.0100      &     -0.0160      &     -0.0027      &     -0.0191      &     -0.0167       \\
+\textbf{ }                         &   (-0.5537)    &    (-0.7577)     &    (-0.3588)     &    (-0.9363)     &    (-0.2011)     &    (-0.3423)     &    (-0.0512)     &    (-0.3698)     &    (-0.3156)      \\
+\textbf{Globalization (Economic)$_{t-1}$}             &                &      0.1206      &                  &                  &                  &                  &                  &                  &                   \\
+\textbf{ }                         &                &     (1.1359)     &                  &                  &                  &                  &                  &                  &                   \\
+\textbf{Globalization (Trade)$_{t-1}$}             &                &                  &      0.0276      &                  &                  &                  &                  &                  &                   \\
+\textbf{ }                         &                &                  &     (0.3865)     &                  &                  &                  &                  &                  &                   \\
+\textbf{Globalization (Financial)$_{t-1}$}             &                &                  &                  &      0.0985      &                  &                  &                  &                  &                   \\
+\textbf{ }                         &                &                  &                  &     (1.4923)     &                  &                  &                  &                  &                   \\
+\textbf{Globalization (Social)$_{t-1}$}             &                &                  &                  &                  &      0.0644      &                  &                  &                  &                   \\
+\textbf{ }                         &                &                  &                  &                  &     (0.9290)     &                  &                  &                  &                   \\
+\textbf{Globalization (Interpersonal)$_{t-1}$}             &                &                  &                  &                  &                  &     0.1836**     &                  &                  &                   \\
+\textbf{ }                         &                &                  &                  &                  &                  &     (2.4033)     &                  &                  &                   \\
+\textbf{Globalization (Informational)$_{t-1}$}             &                &                  &                  &                  &                  &                  &      0.0547      &                  &                   \\
+\textbf{ }                         &                &                  &                  &                  &                  &                  &     (1.0595)     &                  &                   \\
+\textbf{Globalization (Cultural)$_{t-1}$}             &                &                  &                  &                  &                  &                  &                  &     -0.0238      &                   \\
+\textbf{ }                         &                &                  &                  &                  &                  &                  &                  &    (-1.0206)     &                   \\
+\textbf{Globalization (Political)$_{t-1}$}             &                &                  &                  &                  &                  &                  &                  &                  &     -0.0031       \\
+\textbf{ }                         &                &                  &                  &                  &                  &                  &                  &                  &    (-0.0649)      \\
+\textbf{=========================} & ============== &  ==============  &  ==============  &  ==============  &  ==============  &  ==============  &  ==============  &  ==============  &  ==============   \\
+\textbf{Effects}                   &     Entity     &      Entity      &      Entity      &      Entity      &      Entity      &      Entity      &      Entity      &      Entity      &      Entity       \\
+\textbf{}                          &      Time      &       Time       &       Time       &       Time       &       Time       &       Time       &       Time       &       Time       &       Time        \\
+\bottomrule
+\end{tabular}
+%\caption{Model Comparison}
+\end{center}
+
+T-stats reported in parentheses
